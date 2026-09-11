@@ -3,6 +3,9 @@
 개체·관계
 - 가려진 기록 텍스트를 30건씩 LLM 에 보내 사람·장소·활동·음식·물건·동물·일·단체와 "나 —함께함→ 지인D" 같은 관계를 받는다.
 - 그래프는 networkx 로 만든다. 노드 = (종류, 이름), 간선 = 같은 기록에 함께 나온 횟수 + 관계 동사.
+- 그래프를 만들기 전에 이름을 합친다: 제주도→제주, 우리집→집, 우리 크루·크루→러닝 크루, 지인D씨→지인D.
+  대명사("우리", "너희")와 가린 표기("누군가")는 사람 노드에서 뺀다. 같은 이름이 종류만 다르게 잡히면(회사: 장소·단체)
+  더 많이 나온 종류로 모은다.
 - 노드마다 처음·마지막 날짜, 언급된 기록의 평균 정서가를 붙인다.
 
 간극
@@ -104,15 +107,72 @@ def extract(store: Store, model: str = LLM_MODEL, batch: int = 30) -> dict[str, 
     return {"extracted": n_done, "cached": hits}
 
 
+NOT_PEOPLE = {"우리", "너희", "저", "저희", "제", "너", "니", "누군가", "사람", "사람들", "나이", "여러분", "다들", "모두", "본인"}
+
+
+def canonical_names(rows: list[tuple[str, str, str]]) -> dict[tuple[str, str], tuple[str, str] | None]:
+    """(종류, 이름) → 합칠 (종류, 이름). None 이면 그래프에서 뺀다."""
+    count: Counter[tuple[str, str]] = Counter((t, n) for _, t, n in rows)
+    names_by_type: dict[str, Counter[str]] = defaultdict(Counter)
+    for (t, n), c in count.items():
+        names_by_type[t][n] += c
+    out: dict[tuple[str, str], tuple[str, str] | None] = {}
+
+    def base(t: str, n: str) -> str | None:
+        n = n.strip().strip("()")
+        if t == "person":
+            if n in NOT_PEOPLE:
+                return None
+            for suf in ("씨", "님"):
+                if n.endswith(suf) and n[: -len(suf)] in names_by_type[t]:
+                    return n[: -len(suf)]
+            return n
+        if n.startswith("우리") and n[2:].strip() in names_by_type[t]:
+            n = n[2:].strip()
+        for suf in (" 앞", " 근처", "도"):
+            if n.endswith(suf) and len(n) - len(suf) >= 2 and n[: -len(suf)] in names_by_type[t]:
+                n = n[: -len(suf)]
+                break
+        # 머리 명사만 쓴 이름("크루")은 그 머리 명사로 끝나는 복합어가 하나뿐이고 그쪽이 더 자주 나올 때만 합친다
+        # ("크루" 3번 → "러닝 크루" 5번). "카페"(6번)를 "제주도 카페"(1번)로 합치는 일은 없게 한다
+        compounds = [m for m in names_by_type[t] if m != n and m.endswith(" " + n) and not m.startswith("우리")]
+        if len(compounds) == 1 and names_by_type[t][compounds[0]] > names_by_type[t][n]:
+            n = compounds[0]
+        return n
+
+    merged: Counter[tuple[str, str]] = Counter()
+    for (t, n), c in count.items():
+        b = base(t, n)
+        out[(t, n)] = (t, b) if b else None
+        if b:
+            merged[(t, b)] += c
+    # 같은 이름이 여러 종류로 잡히면 많이 나온 종류로 (사람·동물은 섞지 않는다)
+    by_name: dict[str, list[tuple[int, str]]] = defaultdict(list)
+    for (t, n), c in merged.items():
+        by_name[n].append((c, t))
+    major = {n: max(v)[1] for n, v in by_name.items()}
+    for key, val in out.items():
+        if val and val[0] not in ("person", "animal") and major[val[1]] not in ("person", "animal"):
+            out[key] = (major[val[1]], val[1])
+    return out
+
+
 def graph(store: Store, emotions: dict[str, tuple[float, float, str]], record_ids: set[str] | None = None,
           limit: int = 40) -> dict[str, Any]:
     """노드·간선 목록. record_ids 를 주면 그 기록에 나온 개체와 그 이웃만 남긴다."""
     import networkx as nx
 
     recs = {r.id: r for r in store.records()}
+    rows = store.entity_rows()
+    canon = canonical_names(rows)
+    aliases: dict[tuple[str, str], set[str]] = defaultdict(set)
     by_rec: dict[str, list[tuple[str, str]]] = defaultdict(list)
-    for rid, t, n in store.entity_rows():
-        by_rec[rid].append((t, n))
+    for rid, t, n in rows:
+        c = canon.get((t, n))
+        if c:
+            by_rec[rid].append(c)
+            if c[1] != n:
+                aliases[c].add(n)
     g = nx.Graph()
     for rid, ents in by_rec.items():
         r = recs.get(rid)
@@ -135,7 +195,9 @@ def graph(store: Store, emotions: dict[str, tuple[float, float, str]], record_id
                 a, b = f"{uniq[i][0]}:{uniq[i][1]}", f"{uniq[j][0]}:{uniq[j][1]}"
                 w = g.get_edge_data(a, b, {}).get("weight", 0)
                 g.add_edge(a, b, weight=w + 1)
-    rel_count: Counter[tuple[str, str, str]] = Counter((s, p, o) for _, s, p, o in store.relation_rows())
+    rename = {n: c[1] for (t, n), c in canon.items() if c}
+    rel_count: Counter[tuple[str, str, str]] = Counter((rename.get(s, s), p, rename.get(o, o))
+                                                       for _, s, p, o in store.relation_rows())
     names = {d["name"]: k for k, d in g.nodes(data=True)}
     for (s, p, o), c in rel_count.items():
         if s in names and o in names and names[s] != names[o]:
@@ -155,6 +217,7 @@ def graph(store: Store, emotions: dict[str, tuple[float, float, str]], record_id
     for k in keep:
         d = g.nodes[k]
         out_nodes.append({"id": k, "type": d["type"], "type_ko": TYPE_KO.get(d["type"], d["type"]), "name": d["name"],
+                          "aliases": sorted(aliases.get((d["type"], d["name"]), ())),
                           "count": d["count"], "first": d["first"], "last": d["last"],
                           "valence": round(d["vsum"] / d["vn"], 3) if d["vn"] else None,
                           "focus": (len(set(d["records"]) & record_ids) if record_ids is not None else None)})

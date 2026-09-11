@@ -51,3 +51,21 @@ def test_graph_from_stored_entities(svc):
     assert edge["weight"] == 2 and edge["predicates"] == {"함": 1}
     focus = entities.graph(svc.store, svc.engine.emotions, {recs[2].id})
     assert {n["name"] for n in focus["nodes"]} == {"콩이", "나"}
+
+
+def test_canonical_names_merge_variants_and_drop_pronouns():
+    from virtueme_core.entities import canonical_names
+
+    rows = [("r1", "place", "제주")] * 3 + [("r2", "place", "제주도"), ("r3", "place", "우리집"), ("r4", "place", "집"),
+            ("r5", "place", "카페"), ("r5", "place", "카페"), ("r6", "place", "제주도 카페"),
+            ("r7", "org", "크루"), ("r8", "org", "러닝 크루"), ("r9", "org", "러닝 크루"), ("r9", "org", "회사"),
+            ("r9", "place", "회사"), ("r9", "place", "회사"),
+            ("r10", "person", "우리"), ("r10", "person", "지인D씨"), ("r11", "person", "지인D")]
+    c = canonical_names(rows)
+    assert c[("place", "제주도")] == ("place", "제주")
+    assert c[("place", "우리집")] == ("place", "집")
+    assert c[("place", "카페")] == ("place", "카페")  # 더 드문 복합어로 합치지 않는다
+    assert c[("org", "크루")] == ("org", "러닝 크루")
+    assert c[("org", "회사")] == ("place", "회사")  # 더 많이 나온 종류로
+    assert c[("person", "우리")] is None
+    assert c[("person", "지인D씨")] == ("person", "지인D")

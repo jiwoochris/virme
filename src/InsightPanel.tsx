@@ -1,24 +1,24 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { coreFetch } from './coreApi'
 import { koDate, relabel, type NarrativeObject } from './narrative'
 
 /* 시각화 렌더러: 서사 오브젝트 + core 서버의 전체 정서 곡선·주제 묶음·관계 그래프·간극.
    색은 역할로만 쓴다 (dataviz 기준 팔레트의 어두운 단계, 2026-09-11 validate_palette.js 통과):
    선 = 1번 파랑, 근거 날짜 점 = 2번 주황, 그래프 종류 = 파랑·주황·청록 3가지 + 그 밖 회색. 글자는 모두 텍스트 색. */
 
-const API = '/api/core'
 const C = { line: '#3987e5', evidence: '#d95926', aqua: '#199e70', gray: '#6f6e69', grid: 'rgba(255,255,255,.07)',
   axis: 'rgba(255,255,255,.16)', muted: '#898781', sub: '#c3c2b7' }
 
 type DaySeries = { date: string; valence: number; valence_raw: number | null; records: number; sparse: boolean }
 type Topic = { id: string; label: string; size: number; keywords: string[]; first: string | null; last: string | null }
-type GraphNode = { id: string; type: string; type_ko: string; name: string; count: number; first: string; last: string; valence: number | null; focus: number | null }
+type GraphNode = { id: string; type: string; type_ko: string; name: string; aliases?: string[]; count: number; first: string; last: string; valence: number | null; focus: number | null }
 type GraphEdge = { source: string; target: string; weight: number; predicates: Record<string, number> }
 type Gap = { claim: string; topic: string; date: string; quote: string; verdict: '간극' | '일치' | '판단 보류'; summary: string; evidence_after: number }
 type People = Record<string, string | null>
 type Core = { series: DaySeries[]; topics: Topic[]; other: number; graph: { nodes: GraphNode[]; edges: GraphEdge[] }; gaps: Gap[] | null; people: People; records: number }
 
 async function getJson<T>(path: string): Promise<T> {
-  const r = await fetch(API + path, { signal: AbortSignal.timeout(120000) })
+  const r = await coreFetch(path, { signal: AbortSignal.timeout(120000) })
   if (!r.ok) throw new Error(`HTTP ${r.status}`)
   return r.json() as Promise<T>
 }
@@ -351,6 +351,7 @@ function RelationGraph({ graph }: { graph: { nodes: GraphNode[]; edges: GraphEdg
         <div className="graph-tip">
           <strong>{hn.name}</strong> <span>{hn.type_ko} · 기록 {hn.count}건{hn.focus != null ? ` · 근거 ${hn.focus}건` : ''}</span>
           <br /><span>{koDate(hn.first)} ~ {koDate(hn.last)}{hn.valence != null ? ` · 정서 평균 ${hn.valence.toFixed(2)}` : ''}</span>
+          {hn.aliases?.length ? <><br /><span>함께 센 이름: {hn.aliases.join(', ')}</span></> : null}
         </div>
       )}
     </div>
