@@ -69,3 +69,13 @@ def test_canonical_names_merge_variants_and_drop_pronouns():
     assert c[("org", "회사")] == ("place", "회사")  # 더 많이 나온 종류로
     assert c[("person", "우리")] is None
     assert c[("person", "지인D씨")] == ("person", "지인D")
+
+
+def test_canonical_names_apply_llm_synonyms():
+    from virtueme_core.entities import canonical_names
+
+    rows = [("r1", "activity", "러닝")] * 3 + [("r2", "activity", "뜀"), ("r3", "activity", "산책")]
+    c = canonical_names(rows, {"activity:뜀": "러닝"})
+    assert c[("activity", "러닝")] == ("activity", "러닝")
+    assert c[("activity", "산책")] == ("activity", "산책")
+    assert ("activity", "뜀") not in c or c[("activity", "뜀")] == ("activity", "러닝")

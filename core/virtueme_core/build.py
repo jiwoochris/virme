@@ -79,4 +79,5 @@ def build(
     if extract_entities:
         log("개체·관계 추출")
         report["entities"] = entities.extract(store)
+        report["entity_synonyms"] = len(entities.build_synonyms(store))
     return report

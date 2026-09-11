@@ -4,6 +4,7 @@
 - 가려진 기록 텍스트를 30건씩 LLM 에 보내 사람·장소·활동·음식·물건·동물·일·단체와 "나 —함께함→ 지인D" 같은 관계를 받는다.
 - 그래프는 networkx 로 만든다. 노드 = (종류, 이름), 간선 = 같은 기록에 함께 나온 횟수 + 관계 동사.
 - 그래프를 만들기 전에 이름을 합친다: 제주도→제주, 우리집→집, 우리 크루·크루→러닝 크루, 지인D씨→지인D.
+  규칙으로 못 잡는 다른 낱말(뜀·달리기→러닝)은 빌드 때 LLM 에 한 번 물어 동의어 표를 만들어 둔다(synonyms).
   대명사("우리", "너희")와 가린 표기("누군가")는 사람 노드에서 뺀다. 같은 이름이 종류만 다르게 잡히면(회사: 장소·단체)
   더 많이 나온 종류로 모은다.
 - 노드마다 처음·마지막 날짜, 언급된 기록의 평균 정서가를 붙인다.
@@ -17,12 +18,13 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from . import patterns
-from .config import LLM_MODEL, openrouter_key
+from .config import JUDGE_MODEL, LLM_MODEL, openrouter_key
 from .llm import chat_json
 from .privacy import Masker
 from .query import QueryEngine
@@ -110,8 +112,65 @@ def extract(store: Store, model: str = LLM_MODEL, batch: int = 30) -> dict[str, 
 NOT_PEOPLE = {"우리", "너희", "저", "저희", "제", "너", "니", "누군가", "사람", "사람들", "나이", "여러분", "다들", "모두", "본인"}
 
 
-def canonical_names(rows: list[tuple[str, str, str]]) -> dict[tuple[str, str], tuple[str, str] | None]:
-    """(종류, 이름) → 합칠 (종류, 이름). None 이면 그래프에서 뺀다."""
+SYN_SYSTEM = """너는 개인 기록에서 뽑은 개체 이름 목록을 정리한다. 종류마다 이름과 나온 횟수가 주어진다.
+같은 것을 가리킬 가능성이 있는 이름끼리 묶고, 묶음 안의 이름마다 대표 이름과의 관계를 적는다.
+- same: 정확히 같은 것. 동의어·활용형·띄어쓰기 차이·줄임말 (뜀·뛰었어·달리기 ↔ 러닝, 제주도 ↔ 제주)
+- narrower: 대표 이름보다 좁은 말 (회 ↔ 해물, 운동화 ↔ 신발, 야근 ↔ 일, 뚝섬 ↔ 한강)
+- broader: 대표 이름보다 넓은 말
+- related: 비슷하지만 다른 것 (장마 ↔ 비, 아침 ↔ 저녁, 밥그릇 ↔ 사료)
+대표 이름은 묶음에서 가장 많이 나온 이름이다. 대표 이름 말고 다른 이름이 하나 이상 있는 묶음만 적는다(혼자인 이름은 적지 않는다).
+JSON 하나만 출력한다: {"groups":[{"type":"activity","canonical":"러닝","members":[{"name":"뜀","relation":"same"}]}]}"""
+SYN_VERSION = "syn3"
+
+
+def _syn_key(rows: list[tuple[str, str, str]], model: str) -> tuple[str, dict[str, Counter[str]]]:
+    by_type: dict[str, Counter[str]] = defaultdict(Counter)
+    for _, t, n in rows:
+        if t != "person":  # 사람은 가명이라 LLM 이 묶을 수 없다
+            by_type[t][n] += 1
+    top = {t: Counter(dict(c.most_common(60))) for t, c in by_type.items()}
+    sig = _hash(json.dumps({t: sorted(c) for t, c in sorted(top.items())}, ensure_ascii=False))
+    return f"{SYN_VERSION}:{model}:{sig}", top
+
+
+def build_synonyms(store: Store, model: str = JUDGE_MODEL) -> dict[str, str]:
+    """"종류:이름" → 대표 이름. 빌드 때 한 번 LLM 을 부르고 캐시한다. 키가 없으면 빈 표."""
+    rows = store.entity_rows()
+    key, top = _syn_key(rows, model)
+    hit = store.cache_get(key)
+    if hit is not None:
+        return hit
+    if not openrouter_key() or not top:
+        return {}
+    body = "\n".join(f"[{t}] " + ", ".join(f"{n}({c})" for n, c in cnt.most_common()) for t, cnt in top.items())
+    try:
+        data = chat_json(SYN_SYSTEM, body, model=model, max_tokens=4000)
+    except Exception:
+        return {}
+    out: dict[str, str] = {}
+    # 관계를 적게 한 뒤 same 만 합친다. 묶기만 시키면 넓은 말·좁은 말(해물·회)까지 묶어서다 (2026-09-11 확인)
+    for g in data.get("groups", []) if isinstance(data, dict) else []:
+        t, canon = str(g.get("type", "")), str(g.get("canonical", "")).strip()
+        if t not in top or canon not in top[t]:
+            continue
+        for m in g.get("members", []):
+            n = str(m.get("name", "")).strip()
+            if m.get("relation") == "same" and n != canon and n in top[t]:
+                out[f"{t}:{n}"] = canon
+    store.cache_put(key, out)
+    return out
+
+
+def cached_synonyms(store: Store, model: str = JUDGE_MODEL) -> dict[str, str]:
+    key, _ = _syn_key(store.entity_rows(), model)
+    return store.cache_get(key) or {}
+
+
+def canonical_names(rows: list[tuple[str, str, str]],
+                    synonyms: dict[str, str] | None = None) -> dict[tuple[str, str], tuple[str, str] | None]:
+    """(종류, 이름) → 합칠 (종류, 이름). None 이면 그래프에서 뺀다. synonyms 는 "종류:이름" → 대표 이름."""
+    syn = synonyms or {}
+    rows = [(rid, t, syn.get(f"{t}:{n}", n)) for rid, t, n in rows] if syn else rows
     count: Counter[tuple[str, str]] = Counter((t, n) for _, t, n in rows)
     names_by_type: dict[str, Counter[str]] = defaultdict(Counter)
     for (t, n), c in count.items():
@@ -164,7 +223,9 @@ def graph(store: Store, emotions: dict[str, tuple[float, float, str]], record_id
 
     recs = {r.id: r for r in store.records()}
     rows = store.entity_rows()
-    canon = canonical_names(rows)
+    syn = cached_synonyms(store)
+    canon = canonical_names(rows, syn)
+    canon.update({(t, n): canon.get((t, syn[f"{t}:{n}"])) for _, t, n in rows if f"{t}:{n}" in syn})
     aliases: dict[tuple[str, str], set[str]] = defaultdict(set)
     by_rec: dict[str, list[tuple[str, str]]] = defaultdict(list)
     for rid, t, n in rows:
