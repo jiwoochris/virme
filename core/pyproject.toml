@@ -1,0 +1,42 @@
+[project]
+name = "virtueme-core"
+version = "0.1.0"
+description = "Virtueme 기록 처리·키워드 검색 레이어: 개인 기록 가져오기, 임베딩, 정서 곡선, 패턴 탐지, 근거 등급, 서사 오브젝트"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pillow>=10.0",
+    "pillow-heif>=0.16",
+    "ruptures>=1.1.10",
+    "statsmodels>=0.14",
+    "kiwipiepy>=0.20",
+    "httpx>=0.27",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "jsonschema>=4.21",
+    "torch>=2.4",
+    "transformers>=4.49",
+    "sentence-transformers>=3.0",
+    "sentencepiece>=0.2",
+    "protobuf>=4.25",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+virtueme = "virtueme_core.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["virtueme_core"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["models: 실제 임베딩 모델을 내려받아 쓰는 느린 테스트 (기본 제외, -m models 로 실행)"]
+addopts = "-m 'not models'"
