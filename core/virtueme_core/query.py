@@ -58,6 +58,11 @@ JUDGE_SYSTEM = """너는 개인 기록 검색 결과를 검수한다. 키워드 
 (나)는 기록 주인이고, 지인A 같은 표기는 가명 처리한 사람이다. [ ] 안은 출처와 대화 상대다.
 JSON 하나만 출력한다: {"labels":[{"i":번호,"r":0}]}"""
 JUDGE_VERSION = "v4"  # 판정 기준 문구를 바꾸면 올려서 예전 캐시를 쓰지 않게 한다
+# 관계 키워드("친구", "동기")일 때만 대화 상대의 관계를 보여 주고 이 문장을 더한다. 다른 키워드에 관계를 보여 주면
+# "러닝 크루 친구"와 나눈 잡담이 "러닝" 근거로 끌려와서(eval/profile_eval.py, 러닝 F1 0.84 → 0.67) 관계 키워드에만 쓴다
+JUDGE_RELATION_NOTE = ("대화 상대 옆 ( ) 는 기록 주인과의 관계다 (예: 지인A(대학 친구)). 이 키워드는 관계를 가리키므로, "
+                       "그 관계인 사람을 키워드의 사람으로 본다.")
+JUDGE_VERSION_RELATION = "v5r"
 JUDGE_BATCH = 40
 
 BACKGROUND = [
@@ -115,25 +120,41 @@ def expand_keyword(store: Store, keyword: str, model: str = LLM_MODEL) -> dict[s
     return out
 
 
-def judge_line(r: Record, chars: int = 160) -> str:
-    """LLM 판정·집필에 넘기는 한 줄. 텍스트는 가져올 때 이미 가려져 있다."""
-    src = {"kakao": "카카오톡", "instagram": "인스타그램", "photo": "사진", "synthetic": "활동"}.get(r.source, r.source)
-    who = [p for p in r.participants if p != "나"]
+def judge_line(r: Record, chars: int = 160, people: dict[str, str | None] | None = None) -> str:
+    """LLM 판정·집필에 넘기는 한 줄. 텍스트는 가져올 때 이미 가려져 있다. people(가명 → 관계)을 주면
+    "지인A(대학 친구)"처럼 적는다: 관계를 모르면 "친구" 키워드에서 친구와 나눈 대화를 가려낼 수 없다."""
+    src = {"kakao": "카카오톡", "sms": "문자", "instagram": "인스타그램", "photo": "사진", "synthetic": "활동"}.get(r.source, r.source)
+    people = people or {}
+    who = [f"{p}({people[p]})" if people.get(p) else p for p in r.participants if p != "나"]
     ctx = f"{src} · {', '.join(who)}와의 대화" if r.thread and who else src
     body = (embed_text(r) or "").replace("\n", " / ")
     return f"[{ctx}] {body[:chars]}"
 
 
-def judge(store: Store, keyword: str, records: list[Record], model: str = JUDGE_MODEL) -> dict[str, int]:
-    """기록마다 0·1·2 판정. 캐시에 있는 판정은 다시 묻지 않는다."""
+def relation_aliases(people: dict[str, str | None], keyword: str) -> set[str]:
+    """키워드가 관계를 가리킬 때 그 관계인 가명. 관계 전체("대학 친구")나 끝 낱말("친구", "동기")과 같아야 한다
+    ("친구" → 대학 친구·러닝 크루 친구, "러닝" → 없음)."""
+    kw = keyword.strip()
+    return {a for a, rel in people.items() if rel and (kw == rel or kw == rel.split()[-1])}
+
+
+def judge(store: Store, keyword: str, records: list[Record], model: str = JUDGE_MODEL,
+          people: dict[str, str | None] | None = None) -> dict[str, int]:
+    """기록마다 0·1·2 판정. 캐시에 있는 판정은 다시 묻지 않는다.
+    관계 키워드면 판정 줄에 대화 상대의 관계를 보여 준다. people 을 주지 않으면 가명표의 관계를 쓴다."""
     import hashlib
     from concurrent.futures import ThreadPoolExecutor
 
+    people = store.relations() if people is None else people
+    relational = bool(relation_aliases(people, keyword))
+    system = JUDGE_SYSTEM.replace("\nJSON", f"\n{JUDGE_RELATION_NOTE}\nJSON") if relational else JUDGE_SYSTEM
+    version = JUDGE_VERSION_RELATION if relational else JUDGE_VERSION
+    shown = people if relational else {}
     out: dict[str, int] = {}
     todo: list[tuple[Record, str, str]] = []
     for r in records:
-        line = judge_line(r)
-        key = f"judge:{JUDGE_VERSION}:{model}:{keyword}:{r.id}:{hashlib.sha1(line.encode()).hexdigest()[:8]}"
+        line = judge_line(r, people=shown)
+        key = f"judge:{version}:{model}:{keyword}:{r.id}:{hashlib.sha1(line.encode()).hexdigest()[:8]}"
         hit = store.cache_get(key)
         if hit is not None:
             out[r.id] = int(hit)
@@ -142,7 +163,7 @@ def judge(store: Store, keyword: str, records: list[Record], model: str = JUDGE_
 
     def run(batch: list[tuple[Record, str, str]]) -> list[tuple[str, str, int]]:
         body = "\n".join(f"{i}. {line}" for i, (_, line, _) in enumerate(batch))
-        data = chat_json(JUDGE_SYSTEM, f"키워드: {keyword}\n기록 {len(batch)}건:\n{body}", model=model,
+        data = chat_json(system, f"키워드: {keyword}\n기록 {len(batch)}건:\n{body}", model=model,
                          max_tokens=20 * len(batch) + 200)
         got = []
         for item in data.get("labels", []) if isinstance(data, dict) else data:
@@ -185,6 +206,7 @@ class QueryEngine:
         self.settings = settings
         self.llm_model = llm_model
         self.judge_model = judge_model
+        self.relation_aware = True  # 관계 키워드를 붙인 관계로 찾는다 (평가에서 3단계 방식과 비교할 때만 끈다)
         self.reload()
 
     def reload(self) -> None:
@@ -248,10 +270,18 @@ class QueryEngine:
                 direct[i] = cfg.direct_keyword
             elif form_l & lem:
                 direct[i] = cfg.direct_form
-        # 구조: 키워드가 대화 상대(관계어 연락처 "엄마" 등)와 같으면 그 방에서 내가 보낸 발화도 직접 근거로 본다
+        # 구조: 키워드가 대화 상대(관계어 연락처 "엄마" 등)와 같으면 그 방에서 내가 보낸 발화도 직접 근거로 본다.
+        # 기록 넣기 화면에서 붙인 관계가 키워드를 품으면("친구" ⊂ "대학 친구") 그 사람과 단둘이 나눈 대화는 직접 근거,
+        # 여럿이 있는 대화방은 약한 근거 후보로 둔다 (판정 기준 v4 와 같은 선: 단체방 잡담은 간접)
+        rel_aliases = relation_aliases(self.store.relations(), keyword) if self.relation_aware else set()
         for i, r in enumerate(self.records):
-            if r.is_self and r.thread and keyword in r.participants and keyword != "나":
+            if not (r.is_self and r.thread):
+                continue
+            if keyword in r.participants and keyword != "나":
                 direct[i] = max(direct[i], cfg.direct_form)
+            elif rel_aliases and rel_aliases & set(r.participants):
+                one_to_one = len([p for p in r.participants if p != "나"]) == 1
+                direct[i] = max(direct[i], cfg.direct_form if one_to_one else (cfg.weak + cfg.judge_floor) / 2)
         # 의미 유사도
         semantic = np.zeros(n)
         space_of: list[str | None] = [None] * n
@@ -297,7 +327,8 @@ class QueryEngine:
         if use_judge and openrouter_key():
             cands = sorted((s for s in scope if s.rel >= cfg.judge_floor), key=lambda s: -s.rel)[: cfg.judge_limit]
             try:
-                judged = judge(self.store, keyword, [s.record for s in cands], self.judge_model)
+                judged = judge(self.store, keyword, [s.record for s in cands], self.judge_model,
+                               people=None if self.relation_aware else {})
             except Exception:  # 네트워크 오류면 임베딩 점수만으로 계속한다
                 judged = {}
         if judged:

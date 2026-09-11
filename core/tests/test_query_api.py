@@ -131,3 +131,24 @@ def test_semantic_map_points_and_keyword_marks(svc):
     again = client.get("/map").json()  # 좌표는 캐시에서 같은 값
     assert [(p["id"], p["x"]) for p in again["points"]] == [(p["id"], p["x"]) for p in m["points"]]
     assert all(p["ev"] is None for p in again["points"])
+
+
+def test_relation_keywords_use_the_relations_people_attached(svc):
+    """"친구"는 기록 넣기 화면에서 "대학 친구"라고 붙인 사람과의 대화를 후보로 삼고, 판정 줄에도 관계를 보여 준다."""
+    from virtueme_core.query import judge_line, relation_aliases
+
+    group = next(r for r in svc.store.records() if r.source == "kakao" and r.is_self and len(r.participants) >= 3)
+    friend = next(p for p in group.participants if p != "나")
+    svc.store.set_relation(friend, "대학 친구")
+    svc.invalidate()
+    people = svc.store.relations()
+    assert relation_aliases(people, "친구") == {friend} and relation_aliases(people, "동기") == set()
+    assert f"{friend}(대학 친구)" in judge_line(group, people=people)
+    eng = svc.engine
+    _, direct, _, _ = eng.scores("친구", {"forms": [], "situations": []})
+    # 여럿이 있는 대화방은 약한 근거 후보까지만 (단둘이 나눈 대화라면 직접 근거)
+    cfg = svc.settings.relevance
+    assert abs(direct[eng.pos[group.id]] - (cfg.weak + cfg.judge_floor) / 2) < 1e-9
+    eng.relation_aware = False
+    _, direct_off, _, _ = eng.scores("친구", {"forms": [], "situations": []})
+    assert direct_off[eng.pos[group.id]] < direct[eng.pos[group.id]]
