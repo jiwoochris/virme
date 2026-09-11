@@ -24,6 +24,21 @@ bun run dev
 bun run build:public
 ```
 
+## 내 기록으로 쓰기 (core)
+
+`core/` 는 카카오톡·인스타그램·사진 기록을 가져와 키워드별 근거 등급과 서사 오브젝트를 만드는 로컬 파이썬 패키지입니다.
+core 서버를 켜 두면 노벨 모드에 **기록 → 내 기록** 선택이 나타나고, 합성 페르소나 대신 내 기록으로 이야기를 씁니다.
+서버가 없으면 화면은 이전과 같습니다. 설치와 샘플 실행 방법은 [core/README.md](core/README.md) 에 있습니다.
+
+```bash
+bun run core:setup                          # 처음 한 번 (uv 필요)
+VIRTUEME_PROFILE=seoyeon bun run core:serve # 로컬 API http://127.0.0.1:8767
+bun run dev                                 # Vite 가 /api/core 를 core 서버로 넘긴다
+```
+
+두 모드 모두 근거가 부족한 키워드는 이야기를 짓지 않고 기준과 함께 안내합니다. 사용자가 "그래도 지어 보기"를 누르면
+등급을 "근거 부족"으로 그대로 표시한 채 짓습니다.
+
 ## Scope
 
 - 한 페이지 상단에서 전환하는 `NOVEL`·`TALK`·`VISUAL` 경험 모드

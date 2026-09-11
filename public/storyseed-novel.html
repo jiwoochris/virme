@@ -152,6 +152,19 @@ button:focus-visible{outline:2px solid rgba(255,61,154,.5);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .fade{animation:fi .6s cubic-bezier(.2,.7,.3,1) both}
 @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* ── 기록 출처: 합성 페르소나 / 내 기록 (virtueme core) ── */
+.srcrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:7px;margin-top:12px}
+#srcBtns button{font-size:12px;padding:7px 13px;color:var(--sub);border-color:var(--line);background:rgba(255,255,255,.035)}
+#srcBtns button:hover{color:var(--ink);border-color:rgba(255,255,255,.35)}
+#srcBtns button.on{border-color:rgba(255,255,255,.5);color:var(--ink);background:rgba(255,255,255,.1);font-weight:700}
+.srcnote{font-size:11px;color:var(--dim);font-family:var(--mono);letter-spacing:.02em;margin-left:4px}
+.gradepill{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:10.5px;font-weight:700;
+  border:1px solid var(--line);color:var(--sub);letter-spacing:0}
+.gradepill.g0{border-color:rgba(217,179,106,.6);color:var(--gold)}
+.gradepill.g2{border-color:rgba(255,110,184,.5);color:var(--pink2)}
+.insuf .force{margin-top:18px;font-size:12.5px;padding:9px 16px}
+#ctxPre:not([hidden]){display:block;margin-top:10px;max-height:260px;overflow:auto;font-family:var(--mono);font-size:10.5px;
+  line-height:1.5;color:var(--mut);white-space:pre-wrap;background:rgba(0,0,0,.25);border-radius:8px;padding:10px}
 </style>
 </head>
 <body style="background:#070A10;color:#EEF0F5">
@@ -174,6 +187,11 @@ button:focus-visible{outline:2px solid rgba(255,61,154,.5);outline-offset:2px}
   <div class="tones">
 
     <span id="styleBtns" style="display:contents" data-mode="ai"></span>
+  </div>
+  <div class="srcrow" id="srcRow" hidden>
+    <span class="tlab">기록</span>
+    <span id="srcBtns" style="display:contents"></span>
+    <span class="srcnote" id="srcNote"></span>
   </div>
 </div>
 
@@ -583,11 +601,14 @@ function gather(kw){
 
 /* ============ AI 집필 — 컨텍스트 구성과 프롬프트 ============ */
 function buildContext(g){
+  if(g.core)return buildContextCore(g);
   const nq={status:'ok',grade:g.grade==='근거 부족'?'약한 근거':g.grade,
     strong:g.S,weak:g.q.weak||[],adjacent:g.q.adjacent||[],
     days:new Set(g.S.map(e=>e.d)).size,span:g.span,
     ratio:g.S.length/(EVv.length||1),coverage:g.S.length/(EVv.length||1)};
   const no=narrativeObject(ME.uuid.slice(0,6),g.kw,nq,ECC,CPP,PERR);
+  // 근거 부족인데 사용자가 "그래도 지어 보기"를 누른 경우: 재료는 보강하되 등급 이름은 바꾸지 않는다
+  if(g.grade==='근거 부족')no.evidence_grade='근거 부족 (사용자 요청으로 전체 기록에서 보강)';
   let recs=g.S.slice().sort((a,b)=>a.d-b.d||a.h-b.h);
   if(recs.length>48){const step=Math.ceil(recs.length/48);recs=recs.filter((_,i)=>i%step===0)}
   const ctx={
@@ -622,7 +643,7 @@ function writerSystem(gi){
 5. 장르: ${GENRES[gi][1]}
 6. 분량 8~12단락. 사람 작가처럼 리듬 있는 문장으로. 줄표(—)와 하이픈, 잦은 말줄임표 금지. 신파 금지.
 7. 기록에서 가져온 흔적(활동, N일째, 시각, 횟수)을 쓸 때만 <em>…</em>으로 감싸라. 이야기 전체에 두세 번이면 충분하다. <em> 안의 값은 취재 노트에 실제로 있는 값과 정확히 일치해야 한다. 노트에 없는 날짜·시각·횟수는 <em> 없이 쓰거나 아예 쓰지 마라. 지어낸 부분에는 절대 쓰지 마라. 그 외 HTML·마크다운 금지.
-8. 출력 형식: 첫 줄에 "TITLE: 제목" / 빈 줄 / 본문 단락(단락 사이 빈 줄).`;
+8. 출력 형식: 첫 줄에 "TITLE: 제목" / 빈 줄 / 본문 단락(단락 사이 빈 줄).`+(SOURCE==='core'?CORE_RULE:'');
 }
 const SPARKS=[
  '화자를 엉뚱한 존재로 바꿔라: 주인공의 고양이, 냉장고, AI 스피커, 베란다 화분 같은 것의 시점에서 주인공을 관찰하며 쓴다.',
@@ -637,6 +658,7 @@ const SPARKS=[
 function writerUser(g,gi){
   const SP=SPARKS[Math.floor(Math.random()*SPARKS.length)];
   let u=`씨앗 단어: ${g.kw}\n장르: ${GENRES[gi][0]} — 장르적 재미가 최우선이다. 사건과 긴장을 만들고, 끝은 반드시 갚아라.${SP?'\n오늘의 비틀기(반드시 반영): '+SP:''}\n근거 등급: ${g.grade}\n\n취재 노트(JSON):\n${JSON.stringify(LASTCTX)}`;
+  if(g.grade==='근거 부족')u+='\n\n근거가 부족하다. 기록의 흔적을 사실처럼 단정하지 말고 <em>은 한 번 이하로만 써라.';
   if(VAR>0)u+=`\n\n변주 #${VAR+1}: 이전과 완전히 다른 설정과 도입으로 다시 써라. 골라 쓰는 흔적도 바꿔 보라.`;
   return u;
 }
@@ -644,6 +666,7 @@ function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g
 function fmt(s){return esc(s.replace(/\*\*(.+?)\*\*/g,'$1').replace(/^#+\s*/gm,'')).replace(/&lt;em&gt;/g,'<em>').replace(/&lt;\/em&gt;/g,'</em>')}
 let EM_ALLOW=null;
 function emWhitelist(g){
+  if(g.core)return emWhitelistCore(g);
   const S=new Set(), num=n=>{S.add(n+'일째');S.add(n+'일');S.add(n+'시');S.add(n+'회');S.add(n+'번');S.add(n+'개')};
   g.S.forEach(e=>{S.add(e.tag);num(e.d+1);num(Math.round(e.h));S.add(e.h.toFixed(1)+'시')});
   g.top.forEach(([t,c])=>{S.add(t);num(c)});
@@ -756,6 +779,7 @@ function paperHTML(title,sub,bodyHTML){
   return `<div class="stitle">${title}</div><div class="ssub">${sub}</div><div class="body">${bodyHTML}</div>`;
 }
 function sideFill(g){
+  if(g.core){sideFillCore(g);return}
   $('grid').classList.remove('solo');$('sidebox').hidden=false;
   $('gbadge').innerHTML='';
   const show=g.S.slice().sort((a,b)=>a.d-b.d).filter((_,i,arr)=>arr.length<=14||i%Math.ceil(arr.length/14)===0);
@@ -819,16 +843,25 @@ async function renderAI(kw){
   const my=++GENSEQ;
   BUSY=true;
   try{
-    if(!KW[kw]){
-      showThinking(`‘${kw}’의 의미 좌표를 잡는 중 — 모델이 다섯 활동 그룹과의 관련도만 평가합니다`);
-      await mapKeyword(kw);
+    let g;
+    if(SOURCE==='core'){
+      showThinking(`‘${kw}’${JO(kw,'과','와')} 이어지는 기록을 찾는 중 — 이 컴퓨터 안에서 검색하고, 가린 후보만 판정 모델에 묻습니다`);
+      g=await coreGather(kw);
       if(my!==GENSEQ)return;
+    }else{
+      if(!KW[kw]){
+        showThinking(`‘${kw}’의 의미 좌표를 잡는 중 — 모델이 다섯 활동 그룹과의 관련도만 평가합니다`);
+        await mapKeyword(kw);
+        if(my!==GENSEQ)return;
+      }
+      g=gather(kw);
     }
-    const g=gather(kw);
     if(!g.ok){renderRefusal(kw,g);return}
+    if(g.grade==='근거 부족'&&FORCE_KW!==kw){renderInsufficient(kw,g);return}
     sideFill(g);
     LASTCTX=buildContext(g);
     EM_ALLOW=emWhitelist(g);
+    $('ctxPre').textContent=JSON.stringify(LASTCTX,null,1);
     const gi=GENRE<0?Math.floor(Math.random()*GENRES.length):GENRE;
     const tag=`${GICON[gi]} ${GENRES[gi][0]} · ${g.kw}`;
     showThinking(`오늘의 장르는 ${GICON[gi]} ${GENRES[gi][0]} — 이야기가 자라는 중`);
@@ -837,20 +870,22 @@ async function renderAI(kw){
       const st=parseStory(txt);
       $('paper').className='paper';
       $('paper').innerHTML=paperHTML(fmt(st.title)||'…',tag,
-        st.paras.map((p,i)=>`<p>${verifyEm(fmt(p),EM_ALLOW)}${i===st.paras.length-1?'<span class="cursor"></span>':''}</p>`).join('')||'<p><span class="cursor"></span></p>');
+        st.paras.map((p,i)=>`<p>${verifyEm(g.core?unalias(fmt(p),g.people):fmt(p),EM_ALLOW)}${i===st.paras.length-1?'<span class="cursor"></span>':''}</p>`).join('')||'<p><span class="cursor"></span></p>');
     });
     if(my!==GENSEQ)return;
     const st=parseStory(full);
     if(!st.paras.length)throw new Error('모델이 빈 응답을 반환했습니다');
     $('paper').className='paper';
-    $('paper').innerHTML=paperHTML(fmt(st.title),tag,
-      st.paras.map(p=>`<p>${verifyEm(fmt(p),EM_ALLOW)}</p>`).join(''));
+    const un=h=>g.core?unalias(h,g.people):h;
+    $('paper').innerHTML=paperHTML(un(fmt(st.title)),tag,
+      st.paras.map(p=>`<p>${verifyEm(un(fmt(p)),EM_ALLOW)}</p>`).join(''));
 
 
   }catch(e){
     if(my!==GENSEQ)return;
-    const g2=gather(kw);
-    if(g2&&g2.ok){renderRule(kw,g2)}
+    const g2=SOURCE==='core'?null:gather(kw);
+    if(g2&&g2.ok&&g2.grade==='근거 부족'&&FORCE_KW!==kw){renderInsufficient(kw,g2)}
+    else if(g2&&g2.ok){renderRule(kw,g2)}
     else if(g2&&g2.reason==='unknown'){renderRefusal(kw,g2)}
     else showError(kw,e);
   }finally{
@@ -860,14 +895,143 @@ async function renderAI(kw){
 
 function render(kw){
   LASTKW=kw;
-  if(MODE==='ai'){renderAI(kw);return}
+  if(MODE==='ai'||SOURCE==='core'){renderAI(kw);return}
   const g=gather(kw);
   if(!g.ok){renderRefusal(kw,g);return}
+  if(g.grade==='근거 부족'&&FORCE_KW!==kw){renderInsufficient(kw,g);return}
   renderRule(kw,g);
 }
 
+/* ============ VIRTUEME CORE BRIDGE: 내 기록 (로컬 API, core/) ============
+   core 서버(uv run virtueme serve)가 켜져 있으면 "내 기록"을 고를 수 있다. 서버가 없으면 이 줄은 숨고
+   화면은 원래 Storyseed 와 같다. 서버 응답의 텍스트는 이미 가명·개인정보 가리기를 거친 것이다. */
+const CORE_BASES=['/api/core','http://127.0.0.1:8767'];
+let CORE=null,SOURCE='persona',FORCE_KW=null;
+const SRC_COLOR={'카카오톡':'#F5D34B','인스타그램':'#F26AA0','사진':'#5CE8D5','활동 기록':'#8A6BF2'};
+const CORE_RULE=`
+9. 취재 노트의 evidence_records 는 실제 메시지·게시물·사진 기록이다. 기록 속 "지인A" 같은 표기는 가명이다. 이야기에서는 가명 표기를 절대 쓰지 말고, people 에 관계가 적힌 사람은 그 관계(예: 회사 동기)로, 관계가 없는 사람은 "친구"나 "그 사람"처럼 부른다. 엄마처럼 관계로 적힌 사람은 그대로 불러도 된다.
+10. <em> 안에 넣을 수 있는 값은 기록의 날짜(예: 7월 5일), 요일, 시각(예: 오후 9시), 횟수, 기록에 실제로 나온 낱말뿐이다.`;
+const ALIAS_RE=/지인([A-Z]{1,2})(이가|이랑|에게|한테|이야|가|이|은|는|을|를|와|과|아|야|랑|의|도|만)?/g;
+/* 가명 표기가 이야기에 남으면 관계어나 "그 사람"으로 바꾸고 조사를 맞춘다 */
+function unalias(html,people){
+  return html.replace(ALIAS_RE,(m,id,pt)=>{
+    const who=(people&&people['지인'+id])||'그 사람';
+    if(!pt)return who;
+    const fix={'가':JO(who,'이','가'),'이':JO(who,'이','가'),'이가':JO(who,'이','가'),'은':JO(who,'은','는'),'는':JO(who,'은','는'),
+      '을':JO(who,'을','를'),'를':JO(who,'을','를'),'와':JO(who,'과','와'),'과':JO(who,'과','와'),'랑':JO(who,'이랑','랑'),
+      '이랑':JO(who,'이랑','랑'),'아':'','야':'','이야':JO(who,'이야','야')};
+    return who+(pt in fix?fix[pt]:pt);
+  });
+}
+async function detectCore(){
+  for(const b of CORE_BASES){
+    try{
+      const r=await fetch(b+'/health',{signal:AbortSignal.timeout(1500)});
+      if(!r.ok)continue;
+      const h=await r.json();
+      if(h&&h.built){CORE={base:b,health:h};break}
+    }catch(e){}
+  }
+  renderSources();
+}
+function renderSources(){
+  if(!CORE){$('srcRow').hidden=true;return}
+  $('srcRow').hidden=false;
+  const opts=[['persona','합성 페르소나'],['core','내 기록']];
+  $('srcBtns').innerHTML=opts.map(([k,l])=>`<button data-s="${k}" class="${SOURCE===k?'on':''}">${l}</button>`).join('');
+  $('srcBtns').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    interrupt();SOURCE=b.dataset.s;FORCE_KW=null;renderSources();
+    if(LASTKW)render(LASTKW);
+  });
+  const h=CORE.health,dr=h.date_range||[];
+  $('srcNote').textContent=SOURCE==='core'
+    ?`로컬 기록 ${h.records}건 · ${(dr[0]||'').slice(0,10)} ~ ${(dr[1]||'').slice(0,10)}`
+    :`${ME?ME.name:''} · 합성 90일 기록`;
+}
+async function coreGather(kw){
+  const r=await fetch(CORE.base+'/query',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({keyword:kw}),signal:AbortSignal.timeout(180000)});
+  if(!r.ok){let m='';try{m=(await r.json()).detail||''}catch(e){}
+    throw new Error(`로컬 기록 서버 오류 (HTTP ${r.status})${m?' — '+m:''}`)}
+  const res=await r.json();
+  const no=res.narrative_object;
+  return {ok:true,core:true,kw,grade:no.evidence_grade,no,recs:res.evidence_records||[],adj:res.adjacent_records||[],
+    people:res.people||{}};
+}
+function fmtKo(iso){const [,m,d]=String(iso).split('-').map(Number);return `${m}월 ${d}일`}
+function buildContextCore(g){
+  const no=g.no,st=no.stats||{},em=no.emotion||{};
+  return {
+    keyword:no.keyword,evidence_grade:no.evidence_grade,
+    summary:{distinct_days:st.distinct_days,first_date:st.first_date?fmtKo(st.first_date):undefined,
+      last_date:st.last_date?fmtKo(st.last_date):undefined,time_band:st.time_band,
+      peak_date:st.peak_date?fmtKo(st.peak_date):undefined,sources:st.sources,
+      top_terms:(no.top_terms||[]).map(t=>t.term),photo_tags:(no.top_tags||[]).map(t=>t.tag),
+      mood:{mean:em.mean,baseline:em.baseline,min:em.min,max:em.max},
+      turning_points:(no.change_points||[]).map(c=>({date:fmtKo(c.date),direction:c.direction,near_evidence:c.near_evidence}))},
+    evidence_records:g.recs.map(r=>({date:r.date_ko,weekday:r.weekday+'요일',time:r.time,source:r.source,
+      with:r.room||undefined,author:r.author,text:r.text||undefined,photo:r.photo_tags?r.photo_tags.join(', '):undefined})),
+    nearby_records:g.adj.slice(0,8).map(r=>({date:r.date_ko,time:r.time,author:r.author,text:r.text||undefined})),
+    people:Object.fromEntries(Object.entries(g.people||{}).map(([a,r])=>[a,r||'관계 모름 — 친구나 그 사람으로 부를 것']))
+  };
+}
+function emWhitelistCore(g){
+  const S=new Set(),add=v=>{if(v!=null&&String(v).trim())S.add(String(v).trim())};
+  const num=n=>{if(n==null)return;['일','번','회','개','건','명','주','달'].forEach(u=>add(n+u))};
+  g.recs.concat(g.adj).forEach(r=>{
+    add(r.date_ko);
+    const [,mm,dd]=String(r.date||'').split('-').map(Number);
+    if(mm){add(mm+'월');add(dd+'일')}
+    add(r.weekday+'요일');add(r.time);
+    const h=r.hour;
+    if(h!=null){const h12=h%12||12;[h+'시',h12+'시',(h<12?'오전 ':'오후 ')+h12+'시',(h<12?'아침 ':'저녁 ')+h12+'시',
+      '새벽 '+h12+'시','밤 '+h12+'시'].forEach(add)}
+    (r.photo_tags||[]).forEach(add);
+    (String(r.text||'').match(/\d+(?:\.\d+)?\s?(?:km|킬로|분|시간|개|번|회|잔|명|층|kg)/g)||[])
+      .forEach(x=>{add(x);add(x.replace(/\s/g,''))});
+  });
+  const no=g.no,st=no.stats||{},b=no.grade_basis||{};
+  (no.top_terms||[]).forEach(t=>add(t.term));(no.top_tags||[]).forEach(t=>add(t.tag));
+  [st.distinct_days,st.span_days,st.peak_count,b.strong_records,b.strong_days].forEach(num);
+  [st.first_date,st.last_date,st.peak_date].forEach(d=>{if(d)add(fmtKo(d))});
+  (no.change_points||[]).forEach(c=>add(fmtKo(c.date)));
+  add(no.keyword);
+  return S;
+}
+function sideFillCore(g){
+  $('grid').classList.remove('solo');$('sidebox').hidden=false;
+  const gi=['강한 근거','약한 근거','근거 부족'].indexOf(g.grade);
+  $('gbadge').innerHTML=`<span class="gradepill g${gi}">${g.grade}</span>`;
+  const show=g.recs.filter((_,i,arr)=>arr.length<=14||i%Math.ceil(arr.length/14)===0);
+  $('recs').innerHTML=show.length?show.map(r=>
+    `<li><i style="background:${SRC_COLOR[r.source]||'#9BA0B0'}"></i>${esc((r.text||('사진 · '+(r.photo_tags||[]).join(', '))).replace(/\n/g,' / ').replace(ALIAS_RE,(m,id,pt)=>(g.people['지인'+id]||'지인'+id)+(pt||'')).slice(0,40))}
+      <span class="d">${r.date_ko} · ${r.time}</span></li>`).join('')
+    :'<li style="color:var(--dim)">—</li>';
+  const b=g.no.grade_basis||{};
+  $('meta').innerHTML=`강한 근거 <em>${b.strong_records||0}건</em> · 약한 근거 <em>${b.weak_records||0}건</em> · 기록이 있는 ${b.active_days||0}일 가운데 <em>${b.strong_days||0}일</em>`+
+    (b.method?`<br>${esc(b.method)}${b.judge_model?' · '+esc(b.judge_model.split('/').pop()):''}`:'');
+  $('ctxBtn').hidden=false;$('ctxPre').hidden=true;$('ctxBtn').textContent='AI에 보낸 컨텍스트 보기';
+}
+function renderInsufficient(kw,g){
+  $('paper').className='paper fade insuf';
+  let detail;
+  if(g.core){
+    const b=g.no.grade_basis||{},w=(b.thresholds||{}).weak_grade||{};
+    detail=`<p>강한 근거가 ${b.strong_records||0}건(${b.strong_days||0}일), 약한 근거가 ${b.weak_records||0}건입니다. 강한 근거가 ${w.records??3}건·${w.days??2}일 이상이거나, 근거를 합쳐 ${w.or_any_records??8}건·${w.or_any_days??4}일 이상일 때 이야기를 짓습니다.</p>`;
+  }else{
+    detail=`<p>가깝게 이어지는 기록이 ${g.q.strong.length}건, ${g.q.days}일뿐입니다.</p>`;
+  }
+  $('paper').innerHTML=paperHTML('이야기를 짓지 않았습니다',`seed — ${esc(kw)} · 근거 부족`,
+    `<p>‘${esc(kw)}’${JO(kw,'과','와')} 이어지는 기록이 아직 부족해요.</p>${detail}
+     <p>기록이 부족한데 이야기를 지으면, 이야기 속 흔적이 기록보다 상상에 가까워집니다. 다른 단어를 심어 보세요.</p>
+     <button class="force" id="forceBtn">그래도 지어 보기 · 근거 부족 표시</button>`);
+  if(g.core)sideFillCore(g);else sideClear();
+  $('forceBtn').onclick=()=>{interrupt();FORCE_KW=kw;render(kw)};
+  void $('paper').offsetWidth;
+}
+
 /* ============ 바인딩 ============ */
-$('grow').onclick=()=>{const v=$('seed').value.trim();if(v){interrupt();VAR=0;render(v)}};
+$('grow').onclick=()=>{const v=$('seed').value.trim();if(v){interrupt();VAR=0;FORCE_KW=null;render(v)}};
 $('seed').addEventListener('keydown',e=>{if(e.key==='Enter')$('grow').click()});
 
 const GICON=['🕵️','💘','🛸','✨','⚡','😆'];
@@ -906,6 +1070,7 @@ $('ctxBtn').onclick=()=>{
   $('ctxBtn').textContent=p.hidden?'AI에 보낸 컨텍스트 보기':'컨텍스트 접기';
 };
 boot();
+detectCore();
 </script>
 </body>
 </html>
