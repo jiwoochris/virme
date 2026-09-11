@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { AudioDrive } from './MusicPanel'
 import { demoPersonalFeatures, type PersonalFeatures } from './personalData'
 import { buildStyleGanRequest, generateStyleGanFrame, getStyleGanHealth, type StyleGanHealth } from './styleGanClient'
 import type { VisualStateId } from './visualStates'
@@ -23,6 +24,7 @@ export function StyleGanLayer({
   mode,
   enabled,
   onStatus,
+  audioDrive,
 }: {
   state: VisualStateId
   intensity: number
@@ -30,11 +32,23 @@ export function StyleGanLayer({
   mode: VisualMode
   enabled: boolean
   onStatus: (status: ModelLayerStatus) => void
+  /** 기록의 음악을 재생하는 동안의 음량·박동. 잠재 루프의 재생 속도와 밝기를 흔든다 */
+  audioDrive?: AudioDrive | null
 }) {
   const [health, setHealth] = useState<StyleGanHealth>({ status: 'loading' })
   const [currentFrame, setCurrentFrame] = useState<string | null>(null)
   const [videoReady, setVideoReady] = useState(false)
   const variation = useRef(0)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const reactive = Boolean(audioDrive?.playing)
+
+  // 음량이 클수록 잠재 루프를 빨리 돌린다 (0.55~1.85배). 바뀐 폭이 작으면 건드리지 않아 끊김을 막는다
+  useEffect(() => {
+    const el = videoRef.current
+    if (!el) return
+    const rate = reactive ? Math.min(1.85, 0.55 + 1.3 * (audioDrive?.level ?? 0)) : 1
+    if (Math.abs(el.playbackRate - rate) > 0.05) el.playbackRate = rate
+  }, [reactive, audioDrive?.level])
   const features = useMemo(
     () => personalFeatures ?? demoPersonalFeatures(stateIndex[state] * 1.7, stateIndex[state]),
     [personalFeatures, state],
@@ -100,11 +114,14 @@ export function StyleGanLayer({
       data-class-count={mode.classes.length}
       data-display-mode="latent-loop-video"
       data-active={Boolean(enabled && (videoReady || currentFrame))}
+      data-effects={reactive ? 'audio-reactive' : 'none'}
+      style={{ '--audio-pulse': reactive ? (audioDrive?.pulse ?? 0).toFixed(3) : 0 } as React.CSSProperties}
       aria-hidden="true"
     >
       {enabled && (
         <video
           key={mode.id}
+          ref={videoRef}
           className="latent-loop-video"
           src={`${import.meta.env.BASE_URL}${mode.video}`}
           poster={mode.id === 'place' ? currentFrame ?? undefined : undefined}

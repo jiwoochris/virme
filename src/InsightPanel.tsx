@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { koDate, relabel, type NarrativeObject } from './narrative'
 
 /* 시각화 렌더러: 서사 오브젝트 + core 서버의 전체 정서 곡선·주제 묶음·관계 그래프·간극.
@@ -23,7 +23,8 @@ async function getJson<T>(path: string): Promise<T> {
   return r.json() as Promise<T>
 }
 
-export function InsightPanel({ narrative, active }: { narrative: NarrativeObject | null; active: boolean }) {
+// 비주얼 모드가 음악에 맞춰 초당 수십 번 다시 그려질 때 이 화면까지 다시 그리지 않게 memo 로 감싼다
+export const InsightPanel = memo(function InsightPanel({ narrative, active }: { narrative: NarrativeObject | null; active: boolean }) {
   const [core, setCore] = useState<Core | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'offline'>('loading')
   const keyword = narrative && narrative.evidence_grade !== '근거 부족' ? narrative.keyword : null
@@ -94,7 +95,7 @@ export function InsightPanel({ narrative, active }: { narrative: NarrativeObject
       </section>
     </div>
   )
-}
+})
 
 function Kpis({ narrative, core }: { narrative: NarrativeObject | null; core: Core }) {
   const first = core.series[0]?.date, last = core.series[core.series.length - 1]?.date

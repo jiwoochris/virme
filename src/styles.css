@@ -67,6 +67,9 @@ button { cursor: pointer; }
   display: flex;
   flex-direction: column;
   padding: 42px 30px 32px;
+  max-height: calc(100svh - 132px);
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .state-nav, .control-panel { padding: 38px 28px; border-right: 1px solid rgba(255,255,255,.1); }
@@ -303,3 +306,25 @@ button { cursor: pointer; }
 .narrative-chip { position: absolute; right: 24px; top: 24px; z-index: 7; padding: 7px 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(8,10,16,.72); color: #fff; font: 10px 'Space Mono', monospace; letter-spacing: .04em; }
 .narrative-chip span { color: var(--state-color); margin-right: 6px; }
 @media (max-width: 860px) { .insight { grid-template-columns: 1fr; } .insight-panel { min-height: calc(100svh - 104px); } }
+
+/* 기록의 음악 (비주얼 모드 왼쪽) */
+.music-panel { margin-top: 14px; padding: 12px 4px 4px; border-top: 1px solid rgba(255,255,255,.1); font-size: 11px; color: rgba(255,255,255,.72); }
+.music-head { display: flex; gap: 10px; align-items: baseline; }
+.music-head span { font: 8px 'Space Mono', monospace; letter-spacing: .12em; color: var(--state-color); }
+.music-head strong { font-size: 12px; color: #fff; font-weight: 600; }
+.music-meta { margin: 6px 0 4px; color: rgba(255,255,255,.55); }
+.music-note { margin: 8px 0 0; line-height: 1.6; color: rgba(255,255,255,.6); }
+.music-note.warn { color: #e8a37f; }
+.music-sections { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 6px; }
+.music-sections li { line-height: 1.45; }
+.music-sections b { color: #fff; font-weight: 600; margin-right: 4px; }
+.music-sections span { display: block; color: rgba(255,255,255,.5); font-size: 10.5px; }
+.music-button { width: 100%; margin-top: 8px; padding: 9px 10px; border: 1px solid color-mix(in srgb, var(--state-color) 55%, transparent); background: color-mix(in srgb, var(--state-color) 8%, transparent); color: #fff; font-size: 11.5px; cursor: pointer; }
+.music-button:disabled { opacity: .4; cursor: default; }
+.music-link { margin-top: 8px; padding: 0; border: 0; background: none; color: rgba(255,255,255,.5); font-size: 10.5px; text-decoration: underline; cursor: pointer; }
+.music-notes { margin: 6px 0 0; padding-left: 14px; color: rgba(255,255,255,.55); font-size: 10.5px; line-height: 1.55; }
+.music-panel audio { width: 100%; height: 32px; margin-top: 8px; }
+.stylegan-field[data-effects="audio-reactive"] .latent-loop-video { filter: brightness(calc(1 + var(--audio-pulse) * .4)) contrast(calc(1 + var(--audio-pulse) * .25)); transform: scale(calc(1 + var(--audio-pulse) * .018)); transition: filter 60ms linear, transform 60ms linear; }
+.music-video-layer { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: #050607; }
+.music-video-layer video { height: 100%; max-width: 100%; aspect-ratio: 1; object-fit: contain; }
+.music-video-layer button { position: absolute; right: 24px; bottom: 24px; padding: 7px 12px; border: 1px solid rgba(255,255,255,.2); background: rgba(8,10,16,.8); color: #fff; font-size: 11px; cursor: pointer; }

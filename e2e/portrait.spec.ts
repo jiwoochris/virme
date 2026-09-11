@@ -148,3 +148,10 @@ test('uses a continuous latent flow without waveform, orbit, or voxel graphics',
   await expect(page.getByTestId('stylegan-layer')).toHaveAttribute('data-renderer', 'stylegan2-ada')
   await expect(page.getByTestId('central-portrait')).toHaveCount(0)
 })
+
+test('explains how to get record music before a keyword is planted', async ({ page }) => {
+  await page.goto('/')
+  await openVisual(page)
+  await expect(page.locator('.music-panel')).toContainText('노벨 모드에서 키워드를 심으면')
+  await expect(page.getByTestId('stylegan-layer')).toHaveAttribute('data-effects', 'none')
+})

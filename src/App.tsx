@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { experienceModes, type ExperienceModeId } from './experienceModes'
 import { InsightPanel } from './InsightPanel'
+import { MusicPanel, type AudioDrive } from './MusicPanel'
 import { isNarrativeMessage, narrativeLabel, signalsToFeatures, type NarrativeObject } from './narrative'
 import { normalizePersonalData, type NormalizedPersonalData, type PersonalFeatures } from './personalData'
 import { StyleGanLayer, type ModelLayerStatus } from './StyleGanLayer'
@@ -19,6 +20,8 @@ export default function App() {
   const [narrative, setNarrative] = useState<NarrativeObject | null>(null)
   const [features, setFeatures] = useState<PersonalFeatures | null>(null)
   const previousSignals = useRef<NormalizedPersonalData | undefined>(undefined)
+  const [audioDrive, setAudioDrive] = useState<AudioDrive | null>(null)
+  const [musicVideo, setMusicVideo] = useState<string | null>(null)
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin || !isNarrativeMessage(event.data)) return
@@ -135,6 +138,7 @@ export default function App() {
             <span>PORTRAIT</span>
             <strong>{portraitVisible ? 'ON' : 'OFF'}</strong>
           </button>
+          <MusicPanel narrative={narrative} onDrive={setAudioDrive} onVideo={setMusicVideo} />
           <div className="single-example-meta">
             <span>LOOP</span><strong>12 SEC</strong>
             <span>MODEL</span><strong>{mode.model}</strong>
@@ -155,7 +159,14 @@ export default function App() {
             mode={mode}
             enabled={experienceMode === 'visual'}
             onStatus={handleModelStatus}
+            audioDrive={audioDrive}
           />
+          {musicVideo && experienceMode === 'visual' && (
+            <div className="music-video-layer">
+              <video src={musicVideo} controls autoPlay playsInline data-testid="music-video" />
+              <button type="button" onClick={() => setMusicVideo(null)}>영상 닫기</button>
+            </div>
+          )}
           {portraitVisible && (
             <figure className="portrait-anchor" data-testid="portrait-anchor">
               <div className="portrait-aura" aria-hidden="true" />

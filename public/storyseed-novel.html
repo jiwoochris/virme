@@ -831,6 +831,7 @@ function showError(kw,e){
 }
 
 async function renderAI(kw){
+  if(!getKey()&&SOURCE==='core'&&showCachedStory(kw,'API 키가 없어서'))return;
   if(!getKey()){
     $('cfg').hidden=false;
     $('paper').className='paper fade';
@@ -878,6 +879,7 @@ async function renderAI(kw){
 
   }catch(e){
     if(my!==GENSEQ)return;
+    if(SOURCE==='core'&&showCachedStory(kw,'이야기를 새로 짓지 못해서'))return;
     const g2=SOURCE==='core'?null:gather(kw);
     if(g2&&g2.ok&&g2.grade==='근거 부족'&&FORCE_KW!==kw){renderInsufficient(kw,g2)}
     else if(g2&&g2.ok){renderRule(kw,g2)}
@@ -960,6 +962,14 @@ async function renderCore(kw,my){
   $('paper').className='paper';
   $('paper').innerHTML=paperHTML(VX.unalias(v.title_html||VX.esc(st.title),g.people),tag,
     v.paragraphs_html.map(p=>`<p>${VX.unalias(p,g.people)}</p>`).join('')+VX.legend(v.stats,m));
+  VX.saveStory(kw,{html:$('paper').innerHTML,narrative_id:no.narrative_id});
+}
+function showCachedStory(kw,why){
+  const c=VX.loadStory(kw);if(!c)return false;
+  const d=new Date(c.saved);
+  $('paper').className='paper';
+  $('paper').innerHTML=c.html+`<div class="vx-legend">${why} ${d.getMonth()+1}월 ${d.getDate()}일 ${d.getHours()}시 ${String(d.getMinutes()).padStart(2,'0')}분에 만든 이야기를 보여 드립니다${c.narrative_id?` (서사 번호 #${esc(c.narrative_id)})`:''}.</div>`;
+  return true;
 }
 function sideFillCore(g){
   $('grid').classList.remove('solo');$('sidebox').hidden=false;

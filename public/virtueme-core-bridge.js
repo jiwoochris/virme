@@ -71,11 +71,37 @@
       '이랑': JO(who, '이랑', '랑'), '아': '', '야': '', '이야': JO(who, '이야', '야') }
     return who + (pt in fix ? fix[pt] : pt)
   }
+  /* 가린 표기가 LLM 답에 그대로 남았을 때: "(나)" 는 나로, "(누군가)" 는 그 사람으로 (조사는 받침에 맞춤) */
+  const MASK_RE = /\((나|누군가)\)(이가|이랑|이는|이도|이를|이야|이한테|가|이|은|는|을|를|랑|아|야|씨|님|의|도|만|한테)?/g
+  const SELF_FORM = { '이가': '내가', '가': '내가', '이': '나', '이는': '나는', '는': '나는', '은': '나는', '이를': '나를', '를': '나를',
+    '을': '나를', '이랑': '나랑', '랑': '나랑', '이도': '나도', '도': '나도', '이한테': '나한테', '한테': '나한테', '의': '나의', '만': '나만',
+    '이야': '나야', '아': '', '야': '', '씨': '', '님': '' }
+  function unmask (text) {
+    return String(text).replace(MASK_RE, (m, who, pt) => who === '나'
+      ? (pt ? (SELF_FORM[pt] ?? '나' + pt) : '나')
+      : pt === '님' || pt === '씨' ? '그 사람'
+        : withParticle('그 사람', pt && pt.startsWith('이') && pt.length > 1 ? pt.slice(1) : pt))
+  }
   function unalias (html, people) {
-    return String(html).replace(ALIAS_RE, (m, id, pt) => withParticle((people && people['지인' + id]) || '그 사람', pt))
+    return unmask(String(html).replace(ALIAS_RE, (m, id, pt) => withParticle((people && people['지인' + id]) || '그 사람', pt)))
   }
   function relabel (text, people) { /* 옆 패널·기록 팝업용: 관계가 붙은 가명만 관계로 */
     return String(text).replace(ALIAS_RE, (m, id, pt) => people && people['지인' + id] ? withParticle(people['지인' + id], pt) : m)
+  }
+
+  /* 발표 대비: 검사까지 끝난 이야기를 키워드별로 이 브라우저에 12편까지 남긴다.
+     네트워크나 키 문제로 새로 짓지 못하면 지난 이야기를 만든 날짜와 함께 보여 준다. */
+  const LS_STORY = 'vx_story_cache'
+  function saveStory (kw, entry) {
+    try {
+      const all = JSON.parse(localStorage.getItem(LS_STORY) || '{}')
+      all[kw] = { ...entry, saved: new Date().toISOString() }
+      Object.keys(all).sort((a, b) => all[b].saved.localeCompare(all[a].saved)).slice(12).forEach((k) => delete all[k])
+      localStorage.setItem(LS_STORY, JSON.stringify(all))
+    } catch (e) {}
+  }
+  function loadStory (kw) {
+    try { return JSON.parse(localStorage.getItem(LS_STORY) || '{}')[kw] || null } catch (e) { return null }
   }
 
   function mode () { try { return localStorage.getItem(LS_MODE) || 'blur' } catch (e) { return 'blur' } }
@@ -123,5 +149,5 @@
     window.addEventListener('scroll', hidePop, true)
   }
 
-  window.VX = { detect, call, fmtPending, unalias, relabel, mode, modeSelect, legend, badCount, bindRecordClicks, esc, JO }
+  window.VX = { detect, call, fmtPending, unalias, relabel, mode, modeSelect, legend, badCount, bindRecordClicks, esc, JO, saveStory, loadStory }
 })()
