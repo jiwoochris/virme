@@ -35,6 +35,7 @@ class VerifyBody(BaseModel):
     mode: str = Field(default="blur", pattern="^(plain|blur|rewrite)$")
     title: str | None = None
     extra_counts: list[int] | None = None
+    kind: str = Field(default="story", pattern="^(story|talk)$")
 
 
 class LabelBody(BaseModel):
@@ -117,7 +118,7 @@ def create_app(service: Service, warm: bool = False) -> FastAPI:
 
     @app.post("/verify")
     def verify(body: VerifyBody) -> dict[str, Any]:
-        return service.verify(body.paragraphs, body.evidence_ids, body.mode, body.title, body.extra_counts)
+        return service.verify(body.paragraphs, body.evidence_ids, body.mode, body.title, body.extra_counts, body.kind)
 
     @app.post("/talk/context")
     def talk_context(body: TalkBody) -> dict[str, Any]:

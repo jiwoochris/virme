@@ -3,7 +3,8 @@
 두 단계로 나눈다.
 
 1. generate: 같은 키워드·장르로 v1 프롬프트(Storyseed 원래 규칙)와 v2 프롬프트(기록 번호 앵커)로 이야기를 쓴다.
-2. score   : 저장한 이야기를 다시 채점한다. 이야기는 다시 쓰지 않으므로 검사기를 고친 뒤 몇 번이고 다시 잴 수 있다.
+   talk    : 대화(Talk) 모드도 같은 질문을 v1·v2 아바타 프롬프트로 물어 답을 모은다 (talk_v1, talk_v2).
+2. score   : 저장한 이야기·답을 다시 채점한다. 다시 쓰지 않으므로 검사기를 고친 뒤 몇 번이고 다시 잴 수 있다.
 
 채점 기준(정답)은 **판정 모델(claude-sonnet-4.5)이 근거 기록 목록을 보고 앵커마다 내린 판단**이다. 검사기 자신을
 기준으로 삼으면 순환이 되므로, 이 판단에 비춰 v1 화이트리스트와 v2 검사기가 각각 얼마나 맞게 판정했는지 잰다.
@@ -13,10 +14,13 @@
 - 날조율: 판정 모델이 "기록에 없다"고 본 앵커 비율 (v1 이야기 / v2 이야기)
 - 검사기 판정 정확도: v1 화이트리스트, v2 검사기가 판정 모델과 같은 판단을 낸 비율, 거짓 통과·거짓 탈락 수
 - 인용 정확도 (v2 이야기): 앵커의 ref 가 판정 모델이 고른 기록과 같은 비율
+- 짝 오류: 날조 앵커 가운데 값 하나하나는 어느 기록에든 있는데 조합이 틀린 것 ("7월 13일"도 "등산"도 기록에 있지만
+  7월 13일에 등산한 기록은 없음). v1 값 목록 대조가 구조적으로 못 잡는 종류다
 - 앵커 밖 날짜·시각: `<em>` 없이 쓴 날짜·시각 가운데 근거 기록에 없는 것 (편당)
 - 강등 뒤 남은 틀린 날짜·시각: 틀린 앵커를 plain·blur·rewrite 로 처리한 뒤 본문에 남은 수
 
     uv run python eval/grounding_eval.py generate            # 윤서연 + 합성 페르소나, 키워드 5개 × 장르 2개 × v1·v2
+    uv run python eval/grounding_eval.py talk                # 같은 두 사람에게 질문 5개 × v1·v2
     uv run python eval/grounding_eval.py score --rewrite     # 판정 모델 채점 + 강등 비교
 결과: eval/grounding_results.json (이야기 원문, 판정, 요약)
 """
@@ -42,6 +46,16 @@ from virtueme_core.service import Service  # noqa: E402
 from virtueme_core.verify import ANCHOR_RE, Verifier, check_anchor, parse_claims, verify_story  # noqa: E402
 
 KEYWORDS = {"seoyeon": ["러닝", "콩이", "엄마", "제주", "야근"], "synth": ["등산", "사람들", "휴식", "기록", "탐색"]}
+TALK_QUESTIONS = {
+    "seoyeon": ["요즘 러닝은 어때? 처음 뛴 날 기억나?", "콩이 처음 데려온 날 어땠어?", "6월에 많이 힘들었지?",
+                "제주 여행에서 뭐가 제일 좋았어?", "엄마랑은 요즘 어때?", "10km 대회 준비는 어떻게 했어?",
+                "회사 일은 요즘 좀 괜찮아?", "대학 친구들이랑은 자주 봐?", "요즘 제일 행복했던 날이 언제야?",
+                "주말엔 보통 뭐 하고 지내?"],
+    "synth": ["요즘 등산은 자주 가?", "쉬는 날엔 보통 뭐 해?", "사람들 만나는 건 어때?", "요즘 새로 시작한 거 있어?",
+              "밤에는 주로 뭐 해?", "최근에 제일 힘들었던 날은?", "아침엔 보통 뭐부터 해?", "요즘 기록하는 습관은 어때?",
+              "혼자 있는 시간은 어떻게 보내?", "요즘 제일 자주 하는 게 뭐야?"],
+}
+VERSIONS = ("v1", "v2", "v2b", "talk_v1", "talk_v2")
 WRITER = "anthropic/claude-sonnet-4.5"
 ORACLE = "anthropic/claude-sonnet-4.5"
 OUT = ROOT / "eval" / "grounding_results.json"
@@ -145,6 +159,36 @@ def generate(args) -> None:
     OUT.write_text(json.dumps({"rows": rows}, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
+def talk(args) -> None:
+    """대화 모드 답을 모은다. 아바타 기분은 첫 번째로 고정해 v1·v2 가 같은 조건에서 답하게 한다."""
+    rows: list[dict] = json.loads(OUT.read_text(encoding="utf-8"))["rows"] if OUT.exists() else []
+    done = {(r["profile"], r.get("question"), r.get("prompt_version")) for r in rows if r.get("kind") == "talk"}
+    for prof in args.profiles:
+        svc = Service(prof)
+        ctxs = {(q, v): svc.talk_context(q, None, v, mood=0) for q in TALK_QUESTIONS[prof] for v in args.versions
+                if (prof, q, v) not in done}  # 이미 모은 답은 다시 만들지 않는다
+
+        def run(item):
+            (q, v), ctx = item
+            raw = chat_text(ctx["system"], q, model=WRITER, temperature=0.9, max_tokens=800)
+            return {"profile": prof, "kind": "talk", "keyword": None, "question": q, "genre": None,
+                    "version": f"talk_{v}", "prompt_version": v, "raw": raw, "evidence_ids": ctx["evidence_ids"],
+                    "context_records": ctx["records"]}
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            rows += list(pool.map(run, ctxs.items()))
+        print(prof, len(ctxs), "개 답 생성")
+    data = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
+    OUT.write_text(json.dumps({**data, "rows": rows}, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def talk_result(row: dict) -> dict:
+    """대화 답을 채점할 때 v1 값 목록을 만들기 위한 결과 모양 (대화 맥락에 넣은 기록만)."""
+    return {"evidence_records": row["context_records"], "adjacent_records": [],
+            "narrative_object": {"keyword": "", "stats": {}, "grade_basis": {}, "top_terms": [], "top_tags": [],
+                                 "change_points": []}}
+
+
 def oracle(recs, anchors: list[dict]) -> list[dict]:
     if not anchors:
         return []
@@ -188,6 +232,9 @@ def score_row(svc: Service, row: dict, result: dict, rewrite: bool) -> dict:
         row["context_status"] = [a["status"] for a in vc["anchors"]]
     for a, st in zip(anchors, row["context_status"]):
         a["v2c_pass"] = st in ("ok", "ref_fixed", "unreferenced_ok")
+    for a in anchors:  # 짝 오류 후보: 앵커 속 값이 하나하나는 어느 기록에든 있다
+        claims = parse_claims(a["text"])
+        a["values_exist"] = bool(claims) and all(any(check_anchor(c.text, [f])[0] for f in ver.facts) for c in claims)
     row["anchors"] = anchors
     if row.get("scored") != SCORE_VERSION:
         for k in [k for k in row if k.startswith("residual_")]:
@@ -214,7 +261,7 @@ def confusion(anchors: list[dict], key: str) -> dict:
 
 def summarize(rows: list[dict]) -> dict:
     out = {}
-    for version in ("v1", "v2", "v2b"):
+    for version in VERSIONS:
         rs = [r for r in rows if r["version"] == version]
         a = [x for r in rs for x in r["anchors"]]
         if not rs:
@@ -224,7 +271,12 @@ def summarize(rows: list[dict]) -> dict:
              "v1_whitelist_vs_truth": confusion(a, "v1_pass"), "v2_checker_vs_truth": confusion(a, "v2_pass"),
              "v2_checker_context_vs_truth": confusion(a, "v2c_pass"),
              "loose_unsupported_per_story": round(mean(r["loose_unsupported"] for r in rs), 2)}
-        if version != "v1":
+        fab = [x for x in a if not x["truth"]]
+        pair = [x for x in fab if x.get("values_exist")]
+        d["pair_errors"] = {"count": len(pair), "share_of_fabricated": round(len(pair) / len(fab), 3) if fab else None,
+                            "v1_whitelist_passed": sum(1 for x in pair if x["v1_pass"]),
+                            "v2_context_caught": sum(1 for x in pair if not x["v2c_pass"])}
+        if not version.endswith("v1"):
             cited = [x for x in a if x["refs"] and x["truth_record"]]
             d["ref_matches_truth"] = round(mean(x["truth_record"] in x["refs"] for x in cited), 3) if cited else None
         for mode in ("plain", "blur", "rewrite"):
@@ -239,15 +291,16 @@ def score(args) -> None:
     rows = data["rows"]
     for prof in sorted({r["profile"] for r in rows}):
         svc = Service(prof)
-        results = {k: svc.query(k) for k in dict.fromkeys(r["keyword"] for r in rows if r["profile"] == prof)}
+        results = {k: svc.query(k) for k in dict.fromkeys(r["keyword"] for r in rows if r["profile"] == prof and r["keyword"])}
         svc.verify([], [])
         mine = [r for r in rows if r["profile"] == prof]
         for r in mine:  # 첫 실행 결과 파일에는 번호 목록이 없으므로 다시 만든다
-            if "evidence_ids" not in r:
+            if "evidence_ids" not in r and r["keyword"]:
                 r["evidence_ids"] = story.story_prompt(results[r["keyword"]], genre=r["genre"], version="v2",
                                                        seed=0)["evidence_ids"]
         with ThreadPoolExecutor(max_workers=4) as pool:
-            list(pool.map(lambda r: score_row(svc, r, results[r["keyword"]], args.rewrite), mine))
+            list(pool.map(lambda r: score_row(svc, r, results[r["keyword"]] if r["keyword"] else talk_result(r),
+                                              args.rewrite), mine))
         print(prof, json.dumps(summarize(mine), ensure_ascii=False))
     summary = summarize(rows)
     print("전체", json.dumps(summary, ensure_ascii=False, indent=1))
@@ -262,10 +315,13 @@ def main() -> None:
     g.add_argument("--genres", type=int, nargs="+", default=[0, 5])
     g.add_argument("--versions", nargs="+", default=["v1", "v2"])
     g.add_argument("--label", default=None, help="v2 로 만든 이야기를 이 이름으로 저장 (예: v2b)")
+    t = sub.add_parser("talk")
+    t.add_argument("--profiles", nargs="+", default=["seoyeon", "synth"])
+    t.add_argument("--versions", nargs="+", default=["v1", "v2"])
     s = sub.add_parser("score")
     s.add_argument("--rewrite", action="store_true")
     args = ap.parse_args()
-    generate(args) if args.cmd == "generate" else score(args)
+    {"generate": generate, "talk": talk, "score": score}[args.cmd](args)
 
 
 if __name__ == "__main__":

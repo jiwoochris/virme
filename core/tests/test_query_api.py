@@ -101,3 +101,19 @@ def test_label_tool_roundtrip(svc):
     again = client.get("/label/candidates", params={"keyword": "등산"}).json()
     assert next(x for x in again["items"] if x["id"] == rid)["label"] == 2
     assert client.get("/label/export").json()["labels"] == {"등산": {rid: 2}}
+
+
+def test_talk_verify_skips_context_check(svc, monkeypatch):
+    """대화 답은 규칙 검사만 한다 (문맥 검사가 대화에서는 정밀도·재현율을 둘 다 낮췄다)."""
+    from virtueme_core import service as service_mod
+    import virtueme_core.llm as llm
+
+    calls = []
+    monkeypatch.setattr(service_mod, "openrouter_key", lambda: "test")
+    monkeypatch.setattr(llm, "chat_json", lambda *a, **k: calls.append(a) or {"checks": []})
+    rec = svc.store.records()[0]
+    para = f'<em ref="1">{rec.dt.month}월 {rec.dt.day}일</em>에 있었던 일'
+    svc.verify([para], [rec.id], kind="talk")
+    assert calls == []
+    svc.verify([para], [rec.id], kind="story")
+    assert calls  # 이야기는 문맥 검사를 부른다

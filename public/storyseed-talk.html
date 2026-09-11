@@ -496,7 +496,7 @@ async function sendCore(v,bub){
     if(!full.trim())throw new Error('빈 응답');
     HIST.push({role:'assistant',content:full});
     const m=VX.mode();
-    const ver=await VX.call('/verify',{paragraphs:[full],evidence_ids:ctx.evidence_ids,mode:m});
+    const ver=await VX.call('/verify',{paragraphs:[full],evidence_ids:ctx.evidence_ids,mode:m,kind:'talk'});
     const bad=VX.badCount(ver.stats);
     bub.innerHTML=VX.unalias(ver.paragraphs_html[0],PEOPLE)+
       (bad?`<span class="vx-note">기록과 맞지 않는 값 ${bad}개를 ${m==='plain'?'강조 없이 두었습니다':m==='rewrite'?'고쳐 썼습니다':'흐리게 바꿨습니다'}</span>`:'');

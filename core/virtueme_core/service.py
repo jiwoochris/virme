@@ -80,14 +80,17 @@ class Service:
         return d.dates[0] if d else None
 
     def verify(self, paragraphs: list[str], evidence_ids: list[str], mode: str = "blur", title: str | None = None,
-               extra_counts: list[int] | None = None) -> dict[str, Any]:
+               extra_counts: list[int] | None = None, kind: str = "story") -> dict[str, Any]:
         recs = [r for r in (self.store.record(i) for i in evidence_ids) if r is not None]
         rewrite = context = None
         if openrouter_key():
             from .llm import chat_json, chat_text
 
-            # 규칙 검사를 통과한 앵커를 문장째로 한 번 더 판정한다 (날짜만 인용하고 다른 사건을 붙인 경우)
-            context = lambda system, text: chat_json(system, text, model=self.judge_model, max_tokens=1500)  # noqa: E731
+            # 이야기는 규칙 검사를 통과한 앵커를 문장째로 한 번 더 판정한다 (날짜만 인용하고 다른 사건을 붙인 경우).
+            # 대화 답에는 쓰지 않는다: eval/grounding_eval.py 에서 대화 20개 답의 정밀도·재현율이 규칙만 94.3%·82.5%,
+            # 문맥 검사를 더하면 92.6%·62.5% 로 둘 다 낮았다 (2026-09-11)
+            if kind == "story":
+                context = lambda system, text: chat_json(system, text, model=self.judge_model, max_tokens=1500)  # noqa: E731
             if mode == "rewrite":
                 rewrite = lambda system, text: chat_text(system, text, model=self.judge_model, temperature=0.4)  # noqa: E731
         return verify_story(paragraphs, recs, mode=mode, title=title, start=self._start(),
