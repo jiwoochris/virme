@@ -302,10 +302,36 @@ def trim_silence(x: np.ndarray, sr: int, thresh_db: float = -45.0, keep: float =
     return y
 
 
-def stitch(parts: list[tuple[np.ndarray, int]], crossfade: float = CROSSFADE_SEC,
-           sr: int = SAMPLE_RATE) -> tuple[np.ndarray, list[tuple[float, float]]]:
+MIX_VERSION = "mix2"  # 잇는 방식을 바꾸면 올린다. 캐시한 곡은 remix() 로 구간 음원에서 다시 잇는다
+GAIN_PER_ENERGY_DB = 10.0
+GAIN_LIMIT_DB = 4.0
+
+
+def section_gains(music_plan: dict[str, Any]) -> list[float]:
+    """구간마다 더할 음량(dB). 음악 모델은 구간마다 비슷한 음량으로 만들어서(eval/music_eval.py) 셈여림 계획이 소리에
+    남지 않는다. 그래서 구간 음량을 먼저 같게 맞춘 뒤, 곡 평균 에너지보다 높은 구간은 키우고 낮은 구간은 줄인다 (±4dB)."""
+    energy = [float(s.get("energy", 0.3)) for s in music_plan.get("sections", [])]
+    if not energy:
+        return []
+    mean = sum(energy) / len(energy)
+    return [round(float(np.clip(GAIN_PER_ENERGY_DB * (e - mean), -GAIN_LIMIT_DB, GAIN_LIMIT_DB)), 2) for e in energy]
+
+
+def _rms_db(x: np.ndarray) -> float:
+    """무음·꼬리를 뺀 RMS (dBFS). 20ms 창 가운데 가장 큰 곳보다 40dB 이상 작은 창은 뺀다."""
+    mono = x.mean(axis=0)
+    hop = SAMPLE_RATE // 50
+    n = max(1, len(mono) // hop)
+    rms = np.sqrt(np.mean(mono[: n * hop].reshape(n, hop) ** 2, axis=1)) + 1e-9
+    db = 20 * np.log10(rms)
+    return float(db[db > db.max() - 40].mean())
+
+
+def stitch(parts: list[tuple[np.ndarray, int]], crossfade: float = CROSSFADE_SEC, sr: int = SAMPLE_RATE,
+           gains_db: list[float] | None = None) -> tuple[np.ndarray, list[tuple[float, float]]]:
     """구간 음원의 앞뒤 무음을 자르고 등전력 크로스페이드로 잇는다. 최대 음량은 -1 dBFS.
 
+    gains_db 를 주면 구간 음량을 먼저 같은 RMS 로 맞춘 뒤 구간마다 그만큼 더한다 (셈여림 계획).
     반환: (음원 [2, 샘플], 구간마다 실제 (시작 초, 끝 초)). 크로스페이드 동안은 두 구간이 겹친다.
     """
     clips = []
@@ -314,6 +340,10 @@ def stitch(parts: list[tuple[np.ndarray, int]], crossfade: float = CROSSFADE_SEC
         if x.shape[0] == 1:
             x = np.repeat(x, 2, axis=0)
         clips.append(trim_silence(x[:2], sr))
+    if gains_db:
+        levels = [_rms_db(c) for c in clips]
+        ref = float(np.mean(levels))
+        clips = [c * np.float32(10 ** ((ref - lv + g) / 20)) for c, lv, g in zip(clips, levels, gains_db)]
     out = clips[0]
     bounds = [(0.0, out.shape[1] / sr)]
     n_fade = int(crossfade * sr)
@@ -427,17 +457,56 @@ def make(root: Path, music_plan: dict[str, Any], client: AceStepClient | None = 
         parts.append(read_wav(data))
     with _LOCK:
         _JOBS[mid] = {"state": "running", "stage": "구간 연결 중", "done": n, "total": n, "elapsed": round(time.time() - t0, 1)}
-    audio, bounds = stitch(parts)
+    _mix(d, music_plan, parts, extra={"generation_seconds": round(time.time() - t0, 1)})
+    with _LOCK:
+        _JOBS.pop(mid, None)
+    return status(root, mid)
+
+
+def _mix(d: Path, music_plan: dict[str, Any], parts: list[tuple[np.ndarray, int]], extra: dict[str, Any] | None = None) -> None:
+    """구간 음원을 이어 music.wav·m4a·features.json 을 쓴다. 구간마다 만든 소리를 다시 재서(audio_check) 함께 남긴다."""
+    from .audio_check import check_section
+
+    gains = section_gains(music_plan)
+    audio, bounds = stitch(parts, gains_db=gains)
     write_wav(d / "music.wav", audio)
     to_m4a(d / "music.wav")
     feats = features(audio)
     feats["duration"] = round(audio.shape[1] / SAMPLE_RATE, 2)
-    feats["sections"] = [{"index": i, "start_sec": a, "end_sec": b} for i, (a, b) in enumerate(bounds)]
-    feats["generation_seconds"] = round(time.time() - t0, 1)
+    feats["mix"] = MIX_VERSION
+    feats["sections"] = []
+    for i, ((a, b), sec, (x, sr)) in enumerate(zip(bounds, music_plan["sections"], parts)):
+        # 음악 모델이 만든 구간 음원 그대로(잇기 전) 템포·조성을 재고, 음량은 이은 뒤 구간에서 잰다
+        chk = check_section(x, sr, music_plan["bpm"], sec["keyscale"])
+        seg = audio[:, int(a * SAMPLE_RATE): int(b * SAMPLE_RATE)]
+        feats["sections"].append({"index": i, "start_sec": a, "end_sec": b, "gain_db": gains[i] if gains else 0.0,
+                                  "measured": {"bpm": chk["bpm"], "octave": chk["octave"], "key": chk["key"]["key"],
+                                               "key_match": chk["key_match"], "model_rms_db": chk["rms_db"],
+                                               "rms_db": round(_rms_db(seg), 2) if seg.size else None}})
+    feats.update(extra or {})
     (d / "features.json").write_text(json.dumps(feats), encoding="utf-8")
-    with _LOCK:
-        _JOBS.pop(mid, None)
-    return status(root, mid)
+
+
+def remix(root: Path, music_id: str) -> dict[str, Any]:
+    """캐시한 곡을 구간 음원(part*.wav)에서 지금 방식으로 다시 잇는다. 음악 모델은 다시 부르지 않는다.
+    예전 소리가 들어 있는 오디오 반응 영상은 지운다 (virtueme demo --video 가 다시 만든다)."""
+    d = job_dir(root, music_id)
+    feats_path = d / "features.json"
+    if not feats_path.exists():
+        return {"music_id": music_id, "remixed": False, "reason": "아직 만들지 않은 곡"}
+    old = json.loads(feats_path.read_text(encoding="utf-8"))
+    if old.get("mix") == MIX_VERSION:
+        return {"music_id": music_id, "remixed": False, "reason": "이미 지금 방식"}
+    plan_ = json.loads((d / "plan.json").read_text(encoding="utf-8"))
+    parts = [read_wav((d / f"part{i}.wav").read_bytes()) for i in range(len(plan_["sections"]))]
+    _mix(d, plan_, parts, extra={k: old[k] for k in ("generation_seconds",) if k in old})
+    removed = []
+    for name in VIDEO_FILES.values():
+        for p in (d / name, d / name.replace(".mp4", ".json")):
+            if p.exists():
+                p.unlink()
+                removed.append(p.name)
+    return {"music_id": music_id, "remixed": True, "removed_videos": [n for n in removed if n.endswith(".mp4")]}
 
 
 def start(root: Path, music_plan: dict[str, Any], client: AceStepClient | None = None) -> dict[str, Any]:

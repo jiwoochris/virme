@@ -146,6 +146,16 @@ def cmd_demo(args) -> int:
                 continue
         st = music.make(svc.music_root, plan, svc.acestep,
                         on_progress=lambda x: print(f"    {x['stage']} {x['done'] + 1}/{x['total']}", flush=True))
+        # 예전 방식으로 이은 곡은 구간 음원에서 다시 잇는다 (예전 소리가 든 영상은 지워지고 아래에서 다시 만든다)
+        rm = music.remix(svc.music_root, plan["music_id"])
+        if rm["remixed"]:
+            print(f"    구간 음량을 계획대로 맞춰 다시 이음 ({music.MIX_VERSION}), 지운 영상: {', '.join(rm['removed_videos']) or '없음'}")
+        feats = json.loads((d / "features.json").read_text(encoding="utf-8"))
+        for s in feats.get("sections", []):
+            m = s.get("measured")
+            if m:
+                print(f"    구간 {s['index'] + 1}: 계획 {plan['sections'][s['index']]['keyscale']} {plan['bpm']} BPM"
+                      f" → 측정 {m['key']} ({m['key_match']}) {m['bpm']} BPM, 음량 {m['rms_db']} dB ({s['gain_db']:+} dB)")
         print(f"    음악: {d / st['audio']}")
         ready.append((kw, d))
     todo = [(kw, d, mode) for kw, d in ready for mode in (args.video_modes if args.video else [])

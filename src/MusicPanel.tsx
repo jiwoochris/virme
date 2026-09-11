@@ -11,7 +11,13 @@ export type MusicSection = {
   valence: number; arousal: number; start_sec: number; end_sec: number
 }
 export type MusicPlan = { music_id: string; narrative_id: string; keyword: string; bpm: number; time_signature: number; band: string; genre: string; sections: MusicSection[]; notes: string[] }
-type Features = { fps: number; frames: number; rms: number[]; onset: number[]; duration?: number; sections?: { index: number; start_sec: number; end_sec: number }[] }
+/* 만든 소리를 다시 잰 값 (core/virtueme_core/audio_check.py). key_match: exact 같음 · relative 나란한조 · mode 장단조만 같음 · other 다름 */
+type Measured = { bpm: number; octave: number; key: string; key_match: 'exact' | 'relative' | 'mode' | 'other'; rms_db: number | null }
+type Features = {
+  fps: number; frames: number; rms: number[]; onset: number[]; duration?: number
+  sections?: { index: number; start_sec: number; end_sec: number; gain_db?: number; measured?: Measured }[]
+}
+const KEY_MATCH: Record<Measured['key_match'], string> = { exact: '계획과 같음', relative: '나란한조', mode: '장단조만 같음', other: '계획과 다름' }
 type Status = { music_id: string; state: 'ready' | 'running' | 'missing' | 'error' | 'unavailable'; stage?: string; done?: number; total?: number; error?: string; plan?: MusicPlan; audio?: string; video?: boolean; videos?: string[] }
 const VIDEO_LABEL: Record<string, [string, string]> = { place: ['장소', 'video.mp4'], object: ['사물', 'video-object.mp4'], situation: ['상황', 'video-situation.mp4'] }
 export type AudioDrive = { level: number; pulse: number; playing: boolean }
@@ -146,7 +152,20 @@ export function MusicPanel({ narrative, onDrive, onVideo }: {
       {plan && (
         <button type="button" className="music-link" onClick={() => setShowNotes((v) => !v)}>{showNotes ? '매핑 접기' : '정서 → 음악 매핑 보기'}</button>
       )}
-      {showNotes && plan && <ul className="music-notes">{plan.notes.map((n) => <li key={n}>{n}</li>)}</ul>}
+      {showNotes && plan && (
+        <ul className="music-notes">
+          {plan.notes.map((n) => <li key={n}>{n}</li>)}
+          {real?.some((r) => r.measured) && (
+            <li>
+              만든 소리를 다시 재 보면:{' '}
+              {real.map((r, i) => r.measured && (
+                <span key={r.index}>{i ? ' / ' : ''}{sections[i]?.name ?? i + 1} {r.measured.key}({KEY_MATCH[r.measured.key_match]}) {Math.round(r.measured.bpm)} BPM{r.gain_db ? `, 구간 음량 ${r.gain_db > 0 ? '+' : ''}${r.gain_db}dB 맞춤` : ''}</span>
+              ))}
+              . 음악 모델은 조성·템포를 느슨하게 따르고 셈여림은 따르지 않아서, 구간 음량은 잇는 단계에서 계획대로 맞춥니다.
+            </li>
+          )}
+        </ul>
+      )}
     </div>
   )
 }

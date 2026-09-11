@@ -118,3 +118,61 @@ def test_music_api_plan_and_unavailable_server(svc, monkeypatch):
     assert client.get(f"/music/{p['music_id']}").json()["state"] == "missing"
     assert client.get(f"/music/{p['music_id']}/music.m4a").status_code == 404
     assert client.get("/music/zzz/music.m4a").status_code == 422
+
+
+def chord_with_clicks(tonic_midi, minor, bpm, sec=12, sr=48000):
+    """으뜸화음 → 버금딸림화음 → 딸림화음 → 으뜸화음, 박마다 짧은 잡음 클릭."""
+    rng = np.random.default_rng(0)
+    t = np.arange(int(sr * sec)) / sr
+    third = 3 if minor else 4
+    prog = [(0, third, 7), (5, 5 + third, 12), (7, 11, 14), (0, third, 7)]
+    y = np.zeros_like(t)
+    seg = len(t) // 4
+    for k, chord in enumerate(prog):
+        for iv in chord:
+            y[k * seg:(k + 1) * seg] += 0.2 * np.sin(2 * np.pi * 440 * 2 ** ((tonic_midi + iv - 69) / 12) * t[k * seg:(k + 1) * seg])
+    for beat in np.arange(0, sec, 60 / bpm):
+        i, n = int(beat * sr), int(0.03 * sr)
+        n = min(n, len(y) - i)
+        y[i:i + n] += 0.8 * rng.standard_normal(n) * np.exp(-np.arange(n) / (0.005 * sr))
+    return np.stack([y, y]).astype(np.float32)
+
+
+def test_audio_check_hears_tempo_and_key():
+    from virtueme_core import audio_check as ac
+
+    for tonic, minor, bpm, key in ((60, False, 100, "C major"), (64, True, 85, "E minor"), (67, False, 120, "G major")):
+        got = ac.check_section(chord_with_clicks(tonic, minor, bpm), 48000, bpm, key)
+        assert abs(got["bpm"] - bpm) < 2 and got["key"]["key"] == key and got["key_match"] == "exact"
+    assert ac.key_match("G major", {"tonic": "E", "mode": "minor"}) == "relative"
+    assert ac.key_match("B♭ major", {"tonic": "A#", "mode": "major"}) == "exact"
+
+
+def test_stitch_follows_planned_section_loudness():
+    """음악 모델이 구간마다 비슷한 음량으로 만들어도, 계획 에너지대로 구간 음량을 맞춰 잇는다."""
+    p = {"sections": [{"energy": 0.6}, {"energy": 0.2}, {"energy": 0.4}]}
+    gains = music.section_gains(p)
+    assert gains == [2.0, -2.0, 0.0]
+    parts = [(tone(6, freq=220 + 60 * i) * (0.9 if i == 1 else 0.3), 48000) for i in range(3)]  # 계획과 반대로 가운데가 큼
+    out, bounds = music.stitch(parts, crossfade=1.0, gains_db=gains)
+    lv = [music._rms_db(out[:, int((a + 1) * 48000): int((b - 1) * 48000)]) for a, b in bounds]
+    assert lv[0] > lv[2] > lv[1] and abs((lv[0] - lv[1]) - 4.0) < 0.6
+
+
+def test_remix_rebuilds_cached_song_and_drops_stale_videos(tmp_path):
+    class Fake:
+        def generate(self, section, bpm, ts):
+            return wav_bytes(tone(section["duration"] * 0.2, freq=220 + 50 * section["index"], tail=0.5))
+
+    p = music.plan(narrative([0.2] * 30))
+    music.make(tmp_path, p, Fake())
+    d = tmp_path / p["music_id"]
+    feats = json.loads((d / "features.json").read_text())
+    assert feats["mix"] == music.MIX_VERSION and "measured" in feats["sections"][0]
+    assert music.remix(tmp_path, p["music_id"])["remixed"] is False  # 이미 지금 방식
+    feats["mix"] = "old"
+    (d / "features.json").write_text(json.dumps(feats))
+    (d / "video.mp4").write_bytes(b"x")
+    got = music.remix(tmp_path, p["music_id"])
+    assert got["remixed"] and got["removed_videos"] == ["video.mp4"] and not (d / "video.mp4").exists()
+    assert json.loads((d / "features.json").read_text())["mix"] == music.MIX_VERSION

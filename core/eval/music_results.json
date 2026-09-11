@@ -1,0 +1,189 @@
+{
+ "summary": {
+  "songs": 3,
+  "sections": 9,
+  "tempo_within_5pct": 6,
+  "tempo_metrical_relation": 2,
+  "tempo_other": 1,
+  "key": {
+   "exact": 3,
+   "relative": 1,
+   "mode": 3,
+   "other": 2
+  },
+  "mode_agrees": 6,
+  "energy_vs_loudness_model": -0.25,
+  "energy_vs_loudness_mixed": 0.883,
+  "energy_vs_onset_density": -0.483
+ },
+ "songs": [
+  {
+   "profile": "seoyeon",
+   "music_id": "46d9e6056895",
+   "keyword": "외로움",
+   "bpm": 85,
+   "sections": [
+    {
+     "name": "도입",
+     "planned_key": "E minor",
+     "planned_energy": 0.552,
+     "mood": "down",
+     "bpm": 85.0,
+     "tempo_relation": "같음",
+     "key": "E minor",
+     "key_r": 0.839,
+     "key_match": "exact",
+     "onsets_per_sec": 1.0,
+     "centroid_hz": 571.4,
+     "rms_db_model": -28.92,
+     "rms_db_mixed": -29.6,
+     "gain_db": 1.86
+    },
+    {
+     "name": "전개",
+     "planned_key": "E minor",
+     "planned_energy": 0.144,
+     "mood": "down",
+     "bpm": 84.6,
+     "tempo_relation": "같음",
+     "key": "A minor",
+     "key_r": 0.874,
+     "key_match": "mode",
+     "onsets_per_sec": 2.3,
+     "centroid_hz": 473.0,
+     "rms_db_model": -25.48,
+     "rms_db_mixed": -33.26,
+     "gain_db": -2.22
+    },
+    {
+     "name": "마무리",
+     "planned_key": "G major",
+     "planned_energy": 0.401,
+     "mood": "calm",
+     "bpm": 113.1,
+     "tempo_relation": null,
+     "key": "D major",
+     "key_r": 0.606,
+     "key_match": "mode",
+     "onsets_per_sec": 2.09,
+     "centroid_hz": 634.8,
+     "rms_db_model": -28.41,
+     "rms_db_mixed": -31.37,
+     "gain_db": 0.35
+    }
+   ]
+  },
+  {
+   "profile": "seoyeon",
+   "music_id": "eb24d84f3018",
+   "keyword": "러닝",
+   "bpm": 109,
+   "sections": [
+    {
+     "name": "도입",
+     "planned_key": "G major",
+     "planned_energy": 0.432,
+     "mood": "calm",
+     "bpm": 105.1,
+     "tempo_relation": "같음",
+     "key": "D major",
+     "key_r": 0.855,
+     "key_match": "mode",
+     "onsets_per_sec": 2.05,
+     "centroid_hz": 2006.4,
+     "rms_db_model": -30.12,
+     "rms_db_mixed": -30.7,
+     "gain_db": 0.74
+    },
+    {
+     "name": "전개",
+     "planned_key": "G major",
+     "planned_energy": 0.274,
+     "mood": "calm",
+     "bpm": 71.7,
+     "tempo_relation": "2/3",
+     "key": "E minor",
+     "key_r": 0.608,
+     "key_match": "relative",
+     "onsets_per_sec": 2.95,
+     "centroid_hz": 1177.6,
+     "rms_db_model": -26.76,
+     "rms_db_mixed": -32.3,
+     "gain_db": -0.84
+    },
+    {
+     "name": "마무리",
+     "planned_key": "G major",
+     "planned_energy": 0.369,
+     "mood": "calm",
+     "bpm": 105.9,
+     "tempo_relation": "같음",
+     "key": "G major",
+     "key_r": 0.685,
+     "key_match": "exact",
+     "onsets_per_sec": 2.27,
+     "centroid_hz": 756.1,
+     "rms_db_model": -25.47,
+     "rms_db_mixed": -31.02,
+     "gain_db": 0.11
+    }
+   ]
+  },
+  {
+   "profile": "seoyeon",
+   "music_id": "f68529a0a48f",
+   "keyword": "콩이",
+   "bpm": 106,
+   "sections": [
+    {
+     "name": "도입",
+     "planned_key": "F major",
+     "planned_energy": 0.622,
+     "mood": "calm",
+     "bpm": 105.9,
+     "tempo_relation": "같음",
+     "key": "F major",
+     "key_r": 0.942,
+     "key_match": "exact",
+     "onsets_per_sec": 1.86,
+     "centroid_hz": 1226.6,
+     "rms_db_model": -22.71,
+     "rms_db_mixed": -22.67,
+     "gain_db": 2.54
+    },
+    {
+     "name": "전개",
+     "planned_key": "F major",
+     "planned_energy": 0.255,
+     "mood": "calm",
+     "bpm": 70.5,
+     "tempo_relation": "2/3",
+     "key": "A minor",
+     "key_r": 0.79,
+     "key_match": "other",
+     "onsets_per_sec": 3.05,
+     "centroid_hz": 999.7,
+     "rms_db_model": -24.1,
+     "rms_db_mixed": -24.24,
+     "gain_db": -1.13
+    },
+    {
+     "name": "마무리",
+     "planned_key": "F major",
+     "planned_energy": 0.226,
+     "mood": "calm",
+     "bpm": 105.8,
+     "tempo_relation": "같음",
+     "key": "A minor",
+     "key_r": 0.827,
+     "key_match": "other",
+     "onsets_per_sec": 1.59,
+     "centroid_hz": 836.5,
+     "rms_db_model": -25.49,
+     "rms_db_mixed": -26.32,
+     "gain_db": -1.42
+    }
+   ]
+  }
+ ]
+}
