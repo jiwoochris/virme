@@ -37,7 +37,7 @@
 <body>
 <main>
   <h1>내 기록 넣기</h1>
-  <p class="sub">이 화면은 이 컴퓨터(127.0.0.1)에서만 열립니다. 올린 파일과 실명은 이 컴퓨터의 프로필 폴더에만 남고, 밖(OpenRouter)으로 나가는 것은 가명·가리기를 거친 문장뿐입니다.</p>
+  <p class="sub">이 화면은 core 서버를 켠 컴퓨터에서 열고, 다른 컴퓨터에서는 서버를 켤 때 나온 토큰이 있어야 열립니다. 올린 파일과 실명은 이 컴퓨터의 프로필 폴더에만 남고, 밖(OpenRouter)으로 나가는 것은 가명·가리기를 거친 문장뿐입니다.</p>
   <div class="status" id="status">프로필 상태를 불러오는 중</div>
 
   <h2>1. 기록 파일 올리기</h2>
@@ -90,6 +90,13 @@
 </main>
 <script>
 "use strict";
+// 다른 컴퓨터에서 ?token= 을 붙여 열었으면 모든 요청에 같은 토큰을 붙인다
+(() => {
+  const token = new URLSearchParams(location.search).get('token');
+  if (!token) return;
+  const orig = window.fetch.bind(window);
+  window.fetch = (url, init = {}) => orig(url, { ...init, headers: { ...(init.headers || {}), 'X-Virtueme-Token': token } });
+})();
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 

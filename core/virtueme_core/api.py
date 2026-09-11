@@ -1,9 +1,12 @@
 """로컬 HTTP API. 기본 주소 http://127.0.0.1:8767 (Vite 개발 서버는 /api/core 로 프록시).
 
 응답에 들어가는 텍스트는 전부 가려진 것이다. 좌표·원본 파일 경로는 내보내지 않는다.
+다른 컴퓨터에서도 접속하게 열면(`serve --host 0.0.0.0`) 이 컴퓨터가 아닌 곳에서 오는 요청은 토큰이 있어야 받는다.
+기록 넣기 화면은 원래 이름을 보여 주기 때문이다.
 """
 from __future__ import annotations
 
+import hmac
 import os
 import shutil
 import threading
@@ -13,7 +16,8 @@ from typing import Any
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi import Path as PathParam
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import Request
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from .service import Service
@@ -68,8 +72,22 @@ class TalkBody(BaseModel):
     mood: int | None = Field(default=None, ge=0, le=4)
 
 
-def create_app(service: Service, warm: bool = False) -> FastAPI:
+LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+
+
+def create_app(service: Service, warm: bool = False, token: str | None = None) -> FastAPI:
     app = FastAPI(title="Virtueme core", version="0.1.0")
+
+    if token:
+        @app.middleware("http")
+        async def remote_guard(request: Request, call_next):
+            client = request.client.host if request.client else ""
+            if client not in LOOPBACK:
+                given = request.headers.get("x-virtueme-token") or request.query_params.get("token") or ""
+                if not hmac.compare_digest(given, token):
+                    return JSONResponse({"detail": "다른 컴퓨터에서 접속할 때는 토큰이 필요합니다 (서버를 켤 때 화면에 나온 값)"},
+                                        status_code=401)
+            return await call_next(request)
     app.add_middleware(
         CORSMiddleware,
         allow_origin_regex=r"^(https?://(localhost|127\.0\.0\.1)(:\d+)?|null)$",

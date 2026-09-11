@@ -46,6 +46,13 @@
 </main>
 <script>
 "use strict";
+// 다른 컴퓨터에서 ?token= 을 붙여 열었으면 모든 요청에 같은 토큰을 붙인다
+(() => {
+  const token = new URLSearchParams(location.search).get('token');
+  if (!token) return;
+  const orig = window.fetch.bind(window);
+  window.fetch = (url, init = {}) => orig(url, { ...init, headers: { ...(init.headers || {}), 'X-Virtueme-Token': token } });
+})();
 const $ = (id) => document.getElementById(id);
 let DATA = null, POS = 0;
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

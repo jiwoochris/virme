@@ -61,3 +61,14 @@ def test_safe_extract_blocks_path_traversal(tmp_path):
         assert "폴더 밖" in str(err)
     else:
         raise AssertionError("경로 탈출을 막지 못했습니다")
+
+
+def test_remote_requests_need_token_but_local_ones_do_not(svc):
+    app = create_app(svc, token="s3cret")
+    local = TestClient(app, client=("127.0.0.1", 50000))
+    remote = TestClient(app, client=("192.168.0.20", 50000))
+    assert local.get("/health").status_code == 200
+    assert remote.get("/people/local").status_code == 401
+    assert remote.get("/people/local", headers={"X-Virtueme-Token": "wrong"}).status_code == 401
+    assert remote.get("/people/local", headers={"X-Virtueme-Token": "s3cret"}).status_code == 200
+    assert remote.get("/health", params={"token": "s3cret"}).status_code == 200

@@ -95,7 +95,16 @@ def cmd_serve(args) -> int:
     from .api import create_app
 
     svc = _svc(args)
-    uvicorn.run(create_app(svc, warm=True), host=args.host, port=args.port, log_level="info")
+    token = args.token
+    if args.host not in ("127.0.0.1", "localhost", "::1") and not token:
+        import secrets
+
+        token = secrets.token_urlsafe(12)
+    if token:
+        print(f"다른 컴퓨터에서 접속하려면 토큰이 필요합니다: {token}\n"
+              f"  예: http://<이 컴퓨터 주소>:{args.port}/import?token={token}\n"
+              "  기록 넣기 화면은 원래 이름·번호를 보여 주므로, 토큰은 기록 주인에게만 알려 주세요.")
+    uvicorn.run(create_app(svc, warm=True, token=token), host=args.host, port=args.port, log_level="info")
     return 0
 
 
@@ -212,6 +221,7 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("serve", help="로컬 API 서버")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8767)
+    p.add_argument("--token", default=None, help="다른 컴퓨터에서 올 때 요구할 토큰 (--host 를 바깥으로 열면 없을 때 새로 만든다)")
     p.set_defaults(func=cmd_serve)
 
     p = sub.add_parser("demo", help="발표용 키워드의 음악·오디오 반응 영상 미리 만들기")
