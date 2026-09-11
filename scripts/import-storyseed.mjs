@@ -15,7 +15,7 @@ const outputBySource = new Map([
 const publicHint = '공개 버전에는 내장 키가 없습니다. 직접 입력한 키는 이 브라우저의 <em>localStorage</em>에만 저장됩니다. &nbsp;<span id="keyState">—</span>'
 
 for (const [source, output] of outputBySource) {
-  // storyseed-novel.html 에는 core 연결 코드(VIRTUEME CORE BRIDGE)가 들어 있다. 원본으로 덮어쓰면 사라지므로 막는다.
+  // 노벨·Talk 두 파일에는 core 연결 코드(VIRTUEME CORE BRIDGE)가 들어 있다. 원본으로 덮어쓰면 사라지므로 막는다.
   const current = await readFile(resolve(output), 'utf8').catch(() => '')
   if (current.includes('VIRTUEME CORE BRIDGE') && process.env.STORYSEED_FORCE !== '1') {
     throw new Error(`${output} 에 core 연결 코드가 있어 덮어쓰지 않습니다. 원본 변경분을 손으로 합치거나, 지워도 되면 STORYSEED_FORCE=1 로 실행하세요.`)

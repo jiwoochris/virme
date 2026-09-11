@@ -4,9 +4,9 @@ async function openVisual(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: /VISUAL 비주얼/ }).click()
 }
 
-test('selects novel, talk, and visual inside one page', async ({ page }) => {
+test('selects novel, talk, insight, and visual inside one page', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('.experience-nav button')).toHaveCount(3)
+  await expect(page.locator('.experience-nav button')).toHaveCount(4)
   await expect(page.locator('main')).toHaveAttribute('data-experience-mode', 'novel')
   await expect(page.getByTestId('novel-mode')).toBeVisible()
   await expect(page.frameLocator('iframe[title="Storyseed 노벨 모드"]').getByRole('heading', { name: 'Storyseed' })).toBeVisible()
@@ -16,9 +16,32 @@ test('selects novel, talk, and visual inside one page', async ({ page }) => {
   await expect(page.getByTestId('talk-mode')).toBeVisible()
   await expect(page.frameLocator('iframe[title="Storyseed 채팅 모드"]').getByRole('heading', { name: 'Storyseed Talk' })).toBeVisible()
 
+  await page.getByRole('button', { name: /INSIGHT 데이터/ }).click()
+  await expect(page.locator('main')).toHaveAttribute('data-experience-mode', 'insight')
+  // core 서버가 켜져 있으면 차트, 꺼져 있으면 안내가 보인다
+  await expect(page.getByTestId('insight-mode').locator('.insight, .insight-empty').first()).toBeVisible()
+
   await openVisual(page)
   await expect(page.locator('main')).toHaveAttribute('data-experience-mode', 'visual')
   await expect(page.getByTestId('visual-mode')).toBeVisible()
+})
+
+test('shares one narrative object across the header and the visual mode', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByTestId('narrative-chip')).toHaveCount(0)
+  await page.evaluate(() => {
+    window.postMessage({
+      type: 'virtueme:narrative',
+      narrative: {
+        schema: 'virtueme.narrative/1', narrative_id: 'e2e0001', keyword: '러닝', evidence_grade: '강한 근거',
+        grade_basis: { strong_records: 9, strong_days: 6, active_days: 80 }, data_scope: { records: 700, date_range: null },
+        signals: { stability: 0.6, novelty: 0.3, conflict: 0.2, uncertainty: 0.4, possibility: 0.5, activity: 0.7, confidence: 0.8 },
+      },
+    }, window.location.origin)
+  })
+  await expect(page.locator('.live-status')).toContainText('러닝 · 강한 근거 · #e2e0001')
+  await openVisual(page)
+  await expect(page.getByTestId('narrative-chip')).toContainText('#e2e0001')
 })
 
 test('retains Storyseed interactions and state while switching modes', async ({ page }) => {
@@ -40,11 +63,11 @@ test('retains Storyseed interactions and state while switching modes', async ({ 
   await expect(novel.locator('.stitle')).toHaveText('키가 필요합니다')
 })
 
-test('keeps all three experience choices available on mobile', async ({ page }) => {
+test('keeps all four experience choices available on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   const choices = page.locator('.experience-nav button')
-  await expect(choices).toHaveCount(3)
+  await expect(choices).toHaveCount(4)
   await expect(choices.first()).toBeInViewport()
   await expect(choices.last()).toBeInViewport()
   await expect(page.getByTestId('novel-mode')).toBeVisible()

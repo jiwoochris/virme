@@ -1,5 +1,8 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { experienceModes, type ExperienceModeId } from './experienceModes'
+import { InsightPanel } from './InsightPanel'
+import { isNarrativeMessage, narrativeLabel, signalsToFeatures, type NarrativeObject } from './narrative'
+import { normalizePersonalData, type NormalizedPersonalData, type PersonalFeatures } from './personalData'
 import { StyleGanLayer, type ModelLayerStatus } from './StyleGanLayer'
 import { portraitAsset, visualStates } from './visualStates'
 import { visualModes, type VisualModeId } from './visualModes'
@@ -12,6 +15,21 @@ export default function App() {
   const mode = visualModes.find((candidate) => candidate.id === modeId) ?? visualModes[0]
   const [modelStatus, setModelStatus] = useState<ModelLayerStatus>({ status: 'loading', active: false })
   const [portraitVisible, setPortraitVisible] = useState(false)
+  // 노벨 모드(iframe)가 core 서버에서 받은 서사 오브젝트. 시각화·비주얼 모드가 같은 값을 쓴다
+  const [narrative, setNarrative] = useState<NarrativeObject | null>(null)
+  const [features, setFeatures] = useState<PersonalFeatures | null>(null)
+  const previousSignals = useRef<NormalizedPersonalData | undefined>(undefined)
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || !isNarrativeMessage(event.data)) return
+      const next = event.data.narrative
+      setNarrative(next)
+      setFeatures(signalsToFeatures(next.signals, previousSignals.current))
+      previousSignals.current = normalizePersonalData(next.signals)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
   const handleModelStatus = useCallback((status: ModelLayerStatus) => setModelStatus(status), [])
   const backendLabel = mode.id === 'place' && modelStatus.active
     ? `${modelStatus.model ?? 'STYLEGAN2'} LATENT STRUCTURE · ${(modelStatus.device ?? 'MAC').toUpperCase()}`
@@ -61,7 +79,7 @@ export default function App() {
           ))}
         </nav>
         <div className="live-status">
-          <i /> {experienceMode === 'visual' ? `PORTRAIT ${portraitVisible ? 'ON' : 'OFF'}` : `${experienceMode.toUpperCase()} MODE`}
+          <i /> {narrative ? narrativeLabel(narrative) : experienceMode === 'visual' ? `PORTRAIT ${portraitVisible ? 'ON' : 'OFF'}` : `${experienceMode.toUpperCase()} MODE`}
         </div>
       </header>
 
@@ -79,6 +97,10 @@ export default function App() {
           title="Storyseed 채팅 모드"
           sandbox="allow-scripts allow-same-origin allow-forms"
         />
+      </section>
+
+      <section className="insight-panel" data-testid="insight-mode" hidden={experienceMode !== 'insight'}>
+        <InsightPanel narrative={narrative} active={experienceMode === 'insight'} />
       </section>
 
       <section className="visual-panel" data-testid="visual-mode" hidden={experienceMode !== 'visual'}>
@@ -129,7 +151,7 @@ export default function App() {
           <StyleGanLayer
             state={state.id}
             intensity={0.86}
-            personalFeatures={null}
+            personalFeatures={features}
             mode={mode}
             enabled={experienceMode === 'visual'}
             onStatus={handleModelStatus}
@@ -157,6 +179,11 @@ export default function App() {
           </div>
           <p className="state-description">{mode.description} 초상은 선택적으로 겹쳐 볼 수 있습니다.</p>
           <div className="model-chip">{backendLabel}</div>
+          {narrative && (
+            <div className="narrative-chip" data-testid="narrative-chip">
+              <span>DATA</span> {narrativeLabel(narrative)}
+            </div>
+          )}
         </div>
       </section>
 

@@ -1,4 +1,4 @@
-export type ExperienceModeId = 'novel' | 'talk' | 'visual'
+export type ExperienceModeId = 'novel' | 'talk' | 'insight' | 'visual'
 
 export type ExperienceMode = {
   id: ExperienceModeId
@@ -27,8 +27,15 @@ export const experienceModes: ExperienceMode[] = [
     document: 'storyseed-talk.html',
   },
   {
-    id: 'visual',
+    id: 'insight',
     index: '03',
+    label: 'INSIGHT',
+    koLabel: '데이터',
+    description: '기록의 흐름을 봅니다.',
+  },
+  {
+    id: 'visual',
+    index: '04',
     label: 'VISUAL',
     koLabel: '비주얼',
     description: '기록의 잠재공간을 봅니다.',

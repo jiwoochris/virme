@@ -219,6 +219,7 @@ button:focus-visible{outline:2px solid rgba(255,61,154,.5);outline-offset:2px}
 
 </div>
 
+<script src="virtueme-core-bridge.js"></script>
 <script>
 "use strict";
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -601,7 +602,6 @@ function gather(kw){
 
 /* ============ AI 집필 — 컨텍스트 구성과 프롬프트 ============ */
 function buildContext(g){
-  if(g.core)return buildContextCore(g);
   const nq={status:'ok',grade:g.grade==='근거 부족'?'약한 근거':g.grade,
     strong:g.S,weak:g.q.weak||[],adjacent:g.q.adjacent||[],
     days:new Set(g.S.map(e=>e.d)).size,span:g.span,
@@ -643,7 +643,7 @@ function writerSystem(gi){
 5. 장르: ${GENRES[gi][1]}
 6. 분량 8~12단락. 사람 작가처럼 리듬 있는 문장으로. 줄표(—)와 하이픈, 잦은 말줄임표 금지. 신파 금지.
 7. 기록에서 가져온 흔적(활동, N일째, 시각, 횟수)을 쓸 때만 <em>…</em>으로 감싸라. 이야기 전체에 두세 번이면 충분하다. <em> 안의 값은 취재 노트에 실제로 있는 값과 정확히 일치해야 한다. 노트에 없는 날짜·시각·횟수는 <em> 없이 쓰거나 아예 쓰지 마라. 지어낸 부분에는 절대 쓰지 마라. 그 외 HTML·마크다운 금지.
-8. 출력 형식: 첫 줄에 "TITLE: 제목" / 빈 줄 / 본문 단락(단락 사이 빈 줄).`+(SOURCE==='core'?CORE_RULE:'');
+8. 출력 형식: 첫 줄에 "TITLE: 제목" / 빈 줄 / 본문 단락(단락 사이 빈 줄).`;
 }
 const SPARKS=[
  '화자를 엉뚱한 존재로 바꿔라: 주인공의 고양이, 냉장고, AI 스피커, 베란다 화분 같은 것의 시점에서 주인공을 관찰하며 쓴다.',
@@ -666,7 +666,6 @@ function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g
 function fmt(s){return esc(s.replace(/\*\*(.+?)\*\*/g,'$1').replace(/^#+\s*/gm,'')).replace(/&lt;em&gt;/g,'<em>').replace(/&lt;\/em&gt;/g,'</em>')}
 let EM_ALLOW=null;
 function emWhitelist(g){
-  if(g.core)return emWhitelistCore(g);
   const S=new Set(), num=n=>{S.add(n+'일째');S.add(n+'일');S.add(n+'시');S.add(n+'회');S.add(n+'번');S.add(n+'개')};
   g.S.forEach(e=>{S.add(e.tag);num(e.d+1);num(Math.round(e.h));S.add(e.h.toFixed(1)+'시')});
   g.top.forEach(([t,c])=>{S.add(t);num(c)});
@@ -843,12 +842,9 @@ async function renderAI(kw){
   const my=++GENSEQ;
   BUSY=true;
   try{
+    if(SOURCE==='core'){await renderCore(kw,my);return}
     let g;
-    if(SOURCE==='core'){
-      showThinking(`‘${kw}’${JO(kw,'과','와')} 이어지는 기록을 찾는 중 — 이 컴퓨터 안에서 검색하고, 가린 후보만 판정 모델에 묻습니다`);
-      g=await coreGather(kw);
-      if(my!==GENSEQ)return;
-    }else{
+    {
       if(!KW[kw]){
         showThinking(`‘${kw}’의 의미 좌표를 잡는 중 — 모델이 다섯 활동 그룹과의 관련도만 평가합니다`);
         await mapKeyword(kw);
@@ -870,15 +866,14 @@ async function renderAI(kw){
       const st=parseStory(txt);
       $('paper').className='paper';
       $('paper').innerHTML=paperHTML(fmt(st.title)||'…',tag,
-        st.paras.map((p,i)=>`<p>${verifyEm(g.core?unalias(fmt(p),g.people):fmt(p),EM_ALLOW)}${i===st.paras.length-1?'<span class="cursor"></span>':''}</p>`).join('')||'<p><span class="cursor"></span></p>');
+        st.paras.map((p,i)=>`<p>${verifyEm(fmt(p),EM_ALLOW)}${i===st.paras.length-1?'<span class="cursor"></span>':''}</p>`).join('')||'<p><span class="cursor"></span></p>');
     });
     if(my!==GENSEQ)return;
     const st=parseStory(full);
     if(!st.paras.length)throw new Error('모델이 빈 응답을 반환했습니다');
     $('paper').className='paper';
-    const un=h=>g.core?unalias(h,g.people):h;
-    $('paper').innerHTML=paperHTML(un(fmt(st.title)),tag,
-      st.paras.map(p=>`<p>${verifyEm(un(fmt(p)),EM_ALLOW)}</p>`).join(''));
+    $('paper').innerHTML=paperHTML(fmt(st.title),tag,
+      st.paras.map(p=>`<p>${verifyEm(fmt(p),EM_ALLOW)}</p>`).join(''));
 
 
   }catch(e){
@@ -904,35 +899,13 @@ function render(kw){
 
 /* ============ VIRTUEME CORE BRIDGE: 내 기록 (로컬 API, core/) ============
    core 서버(uv run virtueme serve)가 켜져 있으면 "내 기록"을 고를 수 있다. 서버가 없으면 이 줄은 숨고
-   화면은 원래 Storyseed 와 같다. 서버 응답의 텍스트는 이미 가명·개인정보 가리기를 거친 것이다. */
-const CORE_BASES=['/api/core','http://127.0.0.1:8767'];
-let CORE=null,SOURCE='persona',FORCE_KW=null;
+   화면은 원래 Storyseed 와 같다. 공통 코드는 virtueme-core-bridge.js, 근거 계약 v2 검증은 core/verify.py. */
+let CORE=null,SOURCE='persona',FORCE_KW=null,CURPEOPLE={};
 const SRC_COLOR={'카카오톡':'#F5D34B','인스타그램':'#F26AA0','사진':'#5CE8D5','활동 기록':'#8A6BF2'};
-const CORE_RULE=`
-9. 취재 노트의 evidence_records 는 실제 메시지·게시물·사진 기록이다. 기록 속 "지인A" 같은 표기는 가명이다. 이야기에서는 가명 표기를 절대 쓰지 말고, people 에 관계가 적힌 사람은 그 관계(예: 회사 동기)로, 관계가 없는 사람은 "친구"나 "그 사람"처럼 부른다. 엄마처럼 관계로 적힌 사람은 그대로 불러도 된다.
-10. <em> 안에 넣을 수 있는 값은 기록의 날짜(예: 7월 5일), 요일, 시각(예: 오후 9시), 횟수, 기록에 실제로 나온 낱말뿐이다.`;
-const ALIAS_RE=/지인([A-Z]{1,2})(이가|이랑|에게|한테|이야|가|이|은|는|을|를|와|과|아|야|랑|의|도|만)?/g;
-/* 가명 표기가 이야기에 남으면 관계어나 "그 사람"으로 바꾸고 조사를 맞춘다 */
-function unalias(html,people){
-  return html.replace(ALIAS_RE,(m,id,pt)=>{
-    const who=(people&&people['지인'+id])||'그 사람';
-    if(!pt)return who;
-    const fix={'가':JO(who,'이','가'),'이':JO(who,'이','가'),'이가':JO(who,'이','가'),'은':JO(who,'은','는'),'는':JO(who,'은','는'),
-      '을':JO(who,'을','를'),'를':JO(who,'을','를'),'와':JO(who,'과','와'),'과':JO(who,'과','와'),'랑':JO(who,'이랑','랑'),
-      '이랑':JO(who,'이랑','랑'),'아':'','야':'','이야':JO(who,'이야','야')};
-    return who+(pt in fix?fix[pt]:pt);
-  });
-}
 async function detectCore(){
-  for(const b of CORE_BASES){
-    try{
-      const r=await fetch(b+'/health',{signal:AbortSignal.timeout(1500)});
-      if(!r.ok)continue;
-      const h=await r.json();
-      if(h&&h.built){CORE={base:b,health:h};break}
-    }catch(e){}
-  }
+  CORE=window.VX?await VX.detect():null;
   renderSources();
+  if(CORE)VX.bindRecordClicks($('paper'),()=>CURPEOPLE);
 }
 function renderSources(){
   if(!CORE){$('srcRow').hidden=true;return}
@@ -947,56 +920,46 @@ function renderSources(){
   $('srcNote').textContent=SOURCE==='core'
     ?`로컬 기록 ${h.records}건 · ${(dr[0]||'').slice(0,10)} ~ ${(dr[1]||'').slice(0,10)}`
     :`${ME?ME.name:''} · 합성 90일 기록`;
+  const old=$('srcRow').querySelector('.vx-mode');if(old)old.remove();
+  if(SOURCE==='core')$('srcRow').appendChild(VX.modeSelect());
 }
-async function coreGather(kw){
-  const r=await fetch(CORE.base+'/query',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({keyword:kw}),signal:AbortSignal.timeout(180000)});
-  if(!r.ok){let m='';try{m=(await r.json()).detail||''}catch(e){}
-    throw new Error(`로컬 기록 서버 오류 (HTTP ${r.status})${m?' — '+m:''}`)}
-  const res=await r.json();
-  const no=res.narrative_object;
-  return {ok:true,core:true,kw,grade:no.evidence_grade,no,recs:res.evidence_records||[],adj:res.adjacent_records||[],
-    people:res.people||{}};
-}
-function fmtKo(iso){const [,m,d]=String(iso).split('-').map(Number);return `${m}월 ${d}일`}
-function buildContextCore(g){
-  const no=g.no,st=no.stats||{},em=no.emotion||{};
-  return {
-    keyword:no.keyword,evidence_grade:no.evidence_grade,
-    summary:{distinct_days:st.distinct_days,first_date:st.first_date?fmtKo(st.first_date):undefined,
-      last_date:st.last_date?fmtKo(st.last_date):undefined,time_band:st.time_band,
-      peak_date:st.peak_date?fmtKo(st.peak_date):undefined,sources:st.sources,
-      top_terms:(no.top_terms||[]).map(t=>t.term),photo_tags:(no.top_tags||[]).map(t=>t.tag),
-      mood:{mean:em.mean,baseline:em.baseline,min:em.min,max:em.max},
-      turning_points:(no.change_points||[]).map(c=>({date:fmtKo(c.date),direction:c.direction,near_evidence:c.near_evidence}))},
-    evidence_records:g.recs.map(r=>({date:r.date_ko,weekday:r.weekday+'요일',time:r.time,source:r.source,
-      with:r.room||undefined,author:r.author,text:r.text||undefined,photo:r.photo_tags?r.photo_tags.join(', '):undefined})),
-    nearby_records:g.adj.slice(0,8).map(r=>({date:r.date_ko,time:r.time,author:r.author,text:r.text||undefined})),
-    people:Object.fromEntries(Object.entries(g.people||{}).map(([a,r])=>[a,r||'관계 모름 — 친구나 그 사람으로 부를 것']))
-  };
-}
-function emWhitelistCore(g){
-  const S=new Set(),add=v=>{if(v!=null&&String(v).trim())S.add(String(v).trim())};
-  const num=n=>{if(n==null)return;['일','번','회','개','건','명','주','달'].forEach(u=>add(n+u))};
-  g.recs.concat(g.adj).forEach(r=>{
-    add(r.date_ko);
-    const [,mm,dd]=String(r.date||'').split('-').map(Number);
-    if(mm){add(mm+'월');add(dd+'일')}
-    add(r.weekday+'요일');add(r.time);
-    const h=r.hour;
-    if(h!=null){const h12=h%12||12;[h+'시',h12+'시',(h<12?'오전 ':'오후 ')+h12+'시',(h<12?'아침 ':'저녁 ')+h12+'시',
-      '새벽 '+h12+'시','밤 '+h12+'시'].forEach(add)}
-    (r.photo_tags||[]).forEach(add);
-    (String(r.text||'').match(/\d+(?:\.\d+)?\s?(?:km|킬로|분|시간|개|번|회|잔|명|층|kg)/g)||[])
-      .forEach(x=>{add(x);add(x.replace(/\s/g,''))});
+async function renderCore(kw,my){
+  showThinking(`‘${kw}’${JO(kw,'과','와')} 이어지는 기록을 찾는 중 — 이 컴퓨터 안에서 검색하고, 가린 후보만 판정 모델에 묻습니다`);
+  const res=await VX.call('/story/prompt',{keyword:kw,genre:GENRE<0?null:GENRE,variation:VAR});
+  if(my!==GENSEQ)return;
+  const q=res.query,no=q.narrative_object;
+  const g={ok:true,core:true,kw,grade:no.evidence_grade,no,recs:q.evidence_records||[],adj:q.adjacent_records||[],
+    people:q.people||{},prompt:res.prompt};
+  CURPEOPLE=g.people;
+  // 앱(부모 창)의 시각화·비주얼 모드가 같은 서사 오브젝트를 쓰도록 알린다
+  try{if(window.parent!==window)window.parent.postMessage({type:'virtueme:narrative',narrative:no,people:g.people},location.origin)}catch(e){}
+  if(g.grade==='근거 부족'&&FORCE_KW!==kw){renderInsufficient(kw,g);return}
+  sideFillCore(g);
+  LASTCTX=g.prompt.user;$('ctxPre').textContent=g.prompt.system+'\n\n'+g.prompt.user;
+  const gi=g.prompt.genre;
+  const tag=`${GICON[gi]} ${GENRES[gi][0]} · ${esc(kw)}`;
+  showThinking(`오늘의 장르는 ${GICON[gi]} ${GENRES[gi][0]} — 이야기가 자라는 중`);
+  const full=await chatStream(g.prompt.system,g.prompt.user,VAR>0?1.0:0.9,(txt)=>{
+    if(my!==GENSEQ)return;
+    const st=parseStory(txt);
+    $('paper').className='paper';
+    $('paper').innerHTML=paperHTML(VX.esc(st.title)||'…',tag,
+      st.paras.map((p,i)=>`<p>${VX.unalias(VX.fmtPending(p),g.people)}${i===st.paras.length-1?'<span class="cursor"></span>':''}</p>`).join('')||'<p><span class="cursor"></span></p>');
   });
-  const no=g.no,st=no.stats||{},b=no.grade_basis||{};
-  (no.top_terms||[]).forEach(t=>add(t.term));(no.top_tags||[]).forEach(t=>add(t.tag));
-  [st.distinct_days,st.span_days,st.peak_count,b.strong_records,b.strong_days].forEach(num);
-  [st.first_date,st.last_date,st.peak_date].forEach(d=>{if(d)add(fmtKo(d))});
-  (no.change_points||[]).forEach(c=>add(fmtKo(c.date)));
-  add(no.keyword);
-  return S;
+  if(my!==GENSEQ)return;
+  const st=parseStory(full);
+  if(!st.paras.length)throw new Error('모델이 빈 응답을 반환했습니다');
+  const m=VX.mode();
+  $('paper').innerHTML=paperHTML(VX.esc(st.title),tag,
+    st.paras.map(p=>`<p>${VX.unalias(VX.fmtPending(p),g.people)}</p>`).join('')+
+    `<div class="vx-legend">이야기 속 값을 인용한 기록과 대조하는 중${m==='rewrite'?' · 맞지 않는 문장은 다시 쓰는 중':''}</div>`);
+  const st2=no.stats||{},b=no.grade_basis||{};
+  const v=await VX.call('/verify',{paragraphs:st.paras,title:st.title,evidence_ids:g.prompt.evidence_ids,mode:m,
+    extra_counts:[st2.distinct_days,b.strong_records].filter(x=>x!=null)});
+  if(my!==GENSEQ)return;
+  $('paper').className='paper';
+  $('paper').innerHTML=paperHTML(VX.unalias(v.title_html||VX.esc(st.title),g.people),tag,
+    v.paragraphs_html.map(p=>`<p>${VX.unalias(p,g.people)}</p>`).join('')+VX.legend(v.stats,m));
 }
 function sideFillCore(g){
   $('grid').classList.remove('solo');$('sidebox').hidden=false;
@@ -1004,12 +967,13 @@ function sideFillCore(g){
   $('gbadge').innerHTML=`<span class="gradepill g${gi}">${g.grade}</span>`;
   const show=g.recs.filter((_,i,arr)=>arr.length<=14||i%Math.ceil(arr.length/14)===0);
   $('recs').innerHTML=show.length?show.map(r=>
-    `<li><i style="background:${SRC_COLOR[r.source]||'#9BA0B0'}"></i>${esc((r.text||('사진 · '+(r.photo_tags||[]).join(', '))).replace(/\n/g,' / ').replace(ALIAS_RE,(m,id,pt)=>(g.people['지인'+id]||'지인'+id)+(pt||'')).slice(0,40))}
+    `<li><i style="background:${SRC_COLOR[r.source]||'#9BA0B0'}"></i>${esc(VX.relabel((r.text||('사진 · '+(r.photo_tags||[]).join(', '))).replace(/\n/g,' / '),g.people).slice(0,40))}
       <span class="d">${r.date_ko} · ${r.time}</span></li>`).join('')
     :'<li style="color:var(--dim)">—</li>';
   const b=g.no.grade_basis||{};
   $('meta').innerHTML=`강한 근거 <em>${b.strong_records||0}건</em> · 약한 근거 <em>${b.weak_records||0}건</em> · 기록이 있는 ${b.active_days||0}일 가운데 <em>${b.strong_days||0}일</em>`+
-    (b.method?`<br>${esc(b.method)}${b.judge_model?' · '+esc(b.judge_model.split('/').pop()):''}`:'');
+    (b.method?`<br>${esc(b.method)}${b.judge_model?' · '+esc(b.judge_model.split('/').pop()):''}`:'')+
+    (g.no.narrative_id?`<br>서사 번호 #${esc(g.no.narrative_id)} · 데이터·비주얼 모드도 같은 번호를 씁니다`:'');
   $('ctxBtn').hidden=false;$('ctxPre').hidden=true;$('ctxBtn').textContent='AI에 보낸 컨텍스트 보기';
 }
 function renderInsufficient(kw,g){

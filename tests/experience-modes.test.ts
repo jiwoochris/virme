@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { experienceModes } from '../src/experienceModes'
 
 describe('integrated experience modes', () => {
-  it('offers novel, talk, and visual in one ordered selector', () => {
-    expect(experienceModes.map((mode) => mode.id)).toEqual(['novel', 'talk', 'visual'])
-    expect(experienceModes.map((mode) => mode.koLabel)).toEqual(['노벨', '채팅', '비주얼'])
+  it('offers novel, talk, insight, and visual in one ordered selector', () => {
+    expect(experienceModes.map((mode) => mode.id)).toEqual(['novel', 'talk', 'insight', 'visual'])
+    expect(experienceModes.map((mode) => mode.koLabel)).toEqual(['노벨', '채팅', '데이터', '비주얼'])
   })
 
   it('routes both Storyseed modes to local public documents', () => {

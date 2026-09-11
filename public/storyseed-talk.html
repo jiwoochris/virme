@@ -109,6 +109,14 @@ button:focus-visible{outline:2px solid rgba(255,61,154,.5);outline-offset:2px}
 .foot{text-align:center;margin:14px 0 0;font-size:11px;color:var(--dim)}
 .foot em{font-style:normal;color:var(--gold)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ── 기록 출처: 합성 페르소나 / 내 기록 (virtueme core) ── */
+.srcrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:7px;margin:4px auto 0;max-width:760px}
+.tlab{font-size:11.5px;font-weight:700;letter-spacing:.05em;color:var(--mut);margin-right:4px}
+#srcBtns button{font-size:12px;padding:7px 13px;color:var(--sub);border-color:var(--line);background:rgba(255,255,255,.035)}
+#srcBtns button:hover{color:var(--ink);border-color:rgba(255,255,255,.35)}
+#srcBtns button.on{border-color:rgba(255,255,255,.5);color:var(--ink);background:rgba(255,255,255,.1);font-weight:700}
+.srcnote{font-size:11px;color:var(--dim);font-family:var(--mono);letter-spacing:.02em;margin-left:4px}
+.vx-note{display:block;margin-top:6px;font-size:11px;color:var(--dim)}
 </style>
 </head>
 <body style="background:#0E0F16;color:#F2F3F7">
@@ -130,6 +138,12 @@ button:focus-visible{outline:2px solid rgba(255,61,154,.5);outline-offset:2px}
   <div class="cfghint">공개 버전에는 내장 키가 없습니다. 직접 입력한 키는 이 브라우저의 <em>localStorage</em>에만 저장됩니다. &nbsp;<span id="keyState">—</span></div>
 </div>
 
+<div class="srcrow" id="srcRow" hidden>
+  <span class="tlab">기록</span>
+  <span id="srcBtns" style="display:contents"></span>
+  <span class="srcnote" id="srcNote"></span>
+</div>
+
 <div class="chat">
   <div class="msgs" id="msgs"></div>
   <div class="starters" id="starters">
@@ -142,10 +156,11 @@ button:focus-visible{outline:2px solid rgba(255,61,154,.5);outline-offset:2px}
     <button id="sendBtn">보내기</button>
   </div>
 </div>
-<p class="foot"><em>금색 글자</em>는 실제 기록에서 온 값입니다</p>
+<p class="foot" id="foot"><em>금색 글자</em>는 실제 기록에서 온 값입니다</p>
 
 </div>
 
+<script src="virtueme-core-bridge.js"></script>
 <script>
 "use strict";
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -383,6 +398,7 @@ async function send(text){
   HIST.push({role:'user',content:v});
   BUSY=true;$('sendBtn').disabled=true;
   const bub=typingBubble();
+  if(SOURCE==='core'){await sendCore(v,bub);return}
   try{
     if(!getKey())throw new Error('키가 없습니다. ⚙에서 설정해 주세요.');
     if(CTRL){try{CTRL.abort()}catch(e){}}
@@ -418,6 +434,80 @@ async function send(text){
   }
 }
 
+/* ── VIRTUEME CORE BRIDGE: 내 기록으로 대화 (근거 계약 v2) ──
+   질문마다 core 가 가까운 기록을 골라 번호를 붙여 주고, 답이 끝나면 core/verify.py 가 앵커를 대조한다. */
+let CORE=null,SOURCE='persona',CORE_GREETING='',PEOPLE={};
+async function detectCore(){
+  CORE=window.VX?await VX.detect():null;
+  renderSources();
+  if(CORE)VX.bindRecordClicks($('msgs'),()=>PEOPLE);
+}
+function renderSources(){
+  if(!CORE){$('srcRow').hidden=true;return}
+  $('srcRow').hidden=false;
+  $('srcBtns').innerHTML=[['persona','합성 페르소나'],['core','내 기록']]
+    .map(([k,l])=>`<button data-s="${k}" class="${SOURCE===k?'on':''}">${l}</button>`).join('');
+  $('srcBtns').querySelectorAll('button').forEach(b=>b.onclick=()=>switchSource(b.dataset.s));
+  const h=CORE.health,dr=h.date_range||[];
+  $('srcNote').textContent=SOURCE==='core'?`로컬 기록 ${h.records}건 · ${(dr[0]||'').slice(0,10)} ~ ${(dr[1]||'').slice(0,10)}`:`${ME?ME.name:''} · 합성 90일 기록`;
+  const old=$('srcRow').querySelector('.vx-mode');if(old)old.remove();
+  if(SOURCE==='core')$('srcRow').appendChild(VX.modeSelect());
+  $('foot').innerHTML=SOURCE==='core'
+    ?'<em>금색 글자</em>는 인용한 기록과 대조를 통과한 값입니다. 누르면 그 기록을 보여 줍니다'
+    :'<em>금색 글자</em>는 실제 기록에서 온 값입니다';
+}
+async function switchSource(src){
+  if(BUSY||src===SOURCE)return;
+  SOURCE=src;HIST=[];$('msgs').innerHTML='';$('starters').style.display='';
+  renderSources();
+  if(SOURCE==='core'){
+    try{CORE_GREETING=(await VX.call('/talk/greeting')).greeting}catch(e){CORE_GREETING='왔네. 기록 서버가 잠깐 말을 안 듣는데, 그래도 말 걸어 봐.'}
+    addMsg('ai',esc(CORE_GREETING),true);
+  }else addMsg('ai',fmt(greeting()),true);
+}
+async function sendCore(v,bub){
+  try{
+    if(!getKey())throw new Error('키가 없습니다. ⚙에서 설정해 주세요.');
+    const ctx=await VX.call('/talk/context',{message:v,history:HIST.filter(h=>h.role==='user').slice(-3,-1).map(h=>h.content),
+      version:'v2',mood:Math.max(0,MOODS.indexOf(MOOD))});
+    PEOPLE=ctx.people||{};
+    if(CTRL){try{CTRL.abort()}catch(e){}}
+    CTRL=new AbortController();
+    const timer=setTimeout(()=>{try{CTRL.abort()}catch(e){}},90000);
+    let full='';
+    try{
+      const res=await orFetch({model:getModel(),stream:true,temperature:1.0,max_tokens:500,
+        messages:[{role:'system',content:ctx.system},{role:'assistant',content:CORE_GREETING},...HIST.slice(-14)]},CTRL.signal);
+      const rd=res.body.getReader(),dec=new TextDecoder();let buf='';
+      while(true){
+        const {done,value}=await rd.read(); if(done)break;
+        buf+=dec.decode(value,{stream:true});
+        const lines=buf.split('\n'); buf=lines.pop();
+        for(const ln of lines){
+          const s=ln.trim();
+          if(!s.startsWith('data:'))continue;
+          const d=s.slice(5).trim();
+          if(d==='[DONE]')continue;
+          try{const j=JSON.parse(d);const t=j.choices&&j.choices[0]&&j.choices[0].delta&&j.choices[0].delta.content;
+            if(t){full+=t;bub.innerHTML=VX.unalias(VX.fmtPending(full),PEOPLE);$('msgs').scrollTop=$('msgs').scrollHeight}}catch(e){}
+        }
+      }
+    }finally{clearTimeout(timer)}
+    if(!full.trim())throw new Error('빈 응답');
+    HIST.push({role:'assistant',content:full});
+    const m=VX.mode();
+    const ver=await VX.call('/verify',{paragraphs:[full],evidence_ids:ctx.evidence_ids,mode:m});
+    const bad=VX.badCount(ver.stats);
+    bub.innerHTML=VX.unalias(ver.paragraphs_html[0],PEOPLE)+
+      (bad?`<span class="vx-note">기록과 맞지 않는 값 ${bad}개를 ${m==='plain'?'강조 없이 두었습니다':m==='rewrite'?'고쳐 썼습니다':'흐리게 바꿨습니다'}</span>`:'');
+    $('msgs').scrollTop=$('msgs').scrollHeight;
+  }catch(e){
+    bub.innerHTML=esc('…연결이 잘 안 되네. 네트워크나 기록 서버 확인하고 다시 말 걸어줘.');
+  }finally{
+    BUSY=false;$('sendBtn').disabled=false;$('ipt').focus();
+  }
+}
+
 /* ── 바인딩 ── */
 $('sendBtn').onclick=()=>send();
 $('ipt').addEventListener('keydown',e=>{if(e.key==='Enter')send()});
@@ -443,6 +533,7 @@ $('saveCfg').onclick=()=>{
 refreshKeyState();
 boot();
 addMsg('ai',fmt(greeting()),true);
+detectCore();
 </script>
 </body>
 </html>
