@@ -6,13 +6,13 @@ from __future__ import annotations
 
 import os
 import threading
+from pathlib import Path
 from typing import Any
 
-from pathlib import Path
-
 from fastapi import FastAPI, HTTPException
+from fastapi import Path as PathParam
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 from .service import Service
@@ -42,6 +42,10 @@ class LabelBody(BaseModel):
     record_id: str = Field(pattern=r"^r[0-9a-f]{11}$")
     label: int = Field(ge=0, le=2)
     labeler: str = Field(default="", max_length=40)
+
+
+class MusicBody(QueryBody):
+    total_sec: int = Field(default=60, ge=20, le=180)
 
 
 class TalkBody(BaseModel):
@@ -162,6 +166,34 @@ def create_app(service: Service, warm: bool = False) -> FastAPI:
     @app.get("/label/export")
     def label_export() -> dict[str, Any]:
         return {"labels": service.store.labels()}
+
+    @app.post("/music/plan")
+    def music_plan(body: MusicBody) -> dict[str, Any]:
+        _ready()
+        try:
+            return service.music_plan(body.keyword, body.total_sec)
+        except ValueError as err:
+            raise HTTPException(400, str(err)) from err
+
+    @app.post("/music")
+    def music_start(body: MusicBody) -> dict[str, Any]:
+        _ready()
+        try:
+            return service.music_start(body.keyword, body.total_sec)
+        except ValueError as err:
+            raise HTTPException(400, str(err)) from err
+
+    @app.get("/music/{music_id}")
+    def music_status(music_id: str = PathParam(pattern=r"^[0-9a-f]{12}$")) -> dict[str, Any]:
+        return service.music_status(music_id)
+
+    @app.get("/music/{music_id}/{name}")
+    def music_file(music_id: str = PathParam(pattern=r"^[0-9a-f]{12}$"),
+                   name: str = PathParam(pattern=r"^(music\.m4a|music\.wav|features\.json|plan\.json|video\.mp4)$")):
+        got = service.music_file(music_id, name)
+        if not got:
+            raise HTTPException(404, "아직 만들지 않았습니다")
+        return FileResponse(got)
 
     @app.get("/records/{rid}")
     def record(rid: str) -> dict[str, Any]:

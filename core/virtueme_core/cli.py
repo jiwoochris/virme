@@ -6,6 +6,7 @@
     uv run virtueme -p 서연 build
     uv run virtueme -p 서연 query 혼자
     uv run virtueme -p 서연 serve
+    uv run virtueme -p 서연 demo 러닝 콩이 외로움 --video   # 발표용 키워드의 음악·영상을 미리 만든다
 """
 from __future__ import annotations
 
@@ -125,6 +126,41 @@ def cmd_serve(args) -> int:
     return 0
 
 
+def cmd_demo(args) -> int:
+    """발표용 키워드마다 검색 결과(판정 캐시)·음악·오디오 반응 영상을 미리 만들어 둔다. 이미 있으면 건너뛴다."""
+    import subprocess
+
+    from . import music
+
+    svc = _svc(args)
+    if not svc.acestep.health():
+        print(f"ACE-Step 서버({svc.acestep.base})가 꺼져 있습니다. acestep 폴더에서 uv run acestep-api 로 켜 주세요 (README 시연 준비).")
+        return 1
+    virme = Path(__file__).resolve().parents[2]
+    team_py = virme / ".venv" / "bin" / "python"
+    for kw in args.keywords:
+        no = svc.query(kw)["narrative_object"]
+        if no["evidence_grade"] == "근거 부족":
+            print(f"- {kw}: 근거 부족이라 음악을 만들지 않습니다")
+            continue
+        plan = music.plan(no, args.seconds)
+        print(f"- {kw}: #{no['narrative_id']} 음악 {plan['music_id']} ({len(plan['sections'])}구간, {plan['bpm']} BPM)")
+        st = music.make(svc.music_root, plan, svc.acestep,
+                        on_progress=lambda x: print(f"    {x['stage']} {x['done'] + 1}/{x['total']}", flush=True))
+        d = music.job_dir(svc.music_root, plan["music_id"])
+        print(f"    음악: {d / st['audio']}")
+        if args.video and not (d / "video.mp4").exists():
+            if not team_py.exists():
+                print("    영상: 팀 모델 환경이 없습니다. virme 에서 bun run model:setup 을 먼저 실행하세요.")
+                continue
+            subprocess.run([str(team_py), str(virme / "scripts" / "render-audio-reactive.py"), "--music-dir", str(d)],
+                           cwd=virme, env={**__import__("os").environ, "PYTHONPATH": str(virme / "model_service"),
+                                           "PYTORCH_ENABLE_MPS_FALLBACK": "1"}, check=True)
+        if (d / "video.mp4").exists():
+            print(f"    영상: {d / 'video.mp4'}")
+    return 0
+
+
 def cmd_people(args) -> int:
     svc = _svc(args, fake=True)
     if args.keep:
@@ -189,6 +225,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8767)
     p.set_defaults(func=cmd_serve)
+
+    p = sub.add_parser("demo", help="발표용 키워드의 음악·오디오 반응 영상 미리 만들기")
+    p.add_argument("keywords", nargs="+")
+    p.add_argument("--seconds", type=int, default=60, help="음악 길이(초)")
+    p.add_argument("--video", action="store_true", help="팀 StyleGAN 환경으로 오디오 반응 영상도 만든다")
+    p.set_defaults(func=cmd_demo)
 
     p = sub.add_parser("people", help="가명 대응표 (로컬에서만 확인), 관계 붙이기")
     p.add_argument("--relation", action="append", metavar="가명=관계",

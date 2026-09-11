@@ -1,13 +1,14 @@
 """프로필 하나를 여는 진입점. CLI 와 API 가 같이 쓴다."""
 from __future__ import annotations
 
+import os
 import threading
+from datetime import date
+from pathlib import Path
 from typing import Any
 
-from datetime import date
-
-from . import clusters, entities, narrative, patterns, story
-from .config import JUDGE_MODEL, LLM_MODEL, SETTINGS, Settings, openrouter_key, profile_db_path
+from . import clusters, entities, music, narrative, patterns, story
+from .config import DATA_DIR, JUDGE_MODEL, LLM_MODEL, SETTINGS, Settings, openrouter_key, profile_db_path
 from .embed import HashEmbedder, TextEmbedder, VisionEmbedder
 from .privacy import Masker
 from .query import QueryEngine
@@ -30,6 +31,9 @@ class Service:
         self.judge_model = judge_model
         self._engine: QueryEngine | None = None
         self._lock = threading.Lock()
+        # 음악은 로컬 ACE-Step 서버가 만든다. 결과는 프로필별 캐시 폴더에 남아 발표 때 다시 쓴다
+        self.music_root = Path(os.environ.get("VIRTUEME_MUSIC_DIR", DATA_DIR / "music")) / profile
+        self.acestep = music.AceStepClient(os.environ.get("VIRTUEME_ACESTEP_URL", music.ACESTEP_URL))
 
     @property
     def engine(self) -> QueryEngine:
@@ -142,6 +146,26 @@ class Service:
     def gaps(self) -> dict[str, Any]:
         # 습관 단정과 그날 일을 가르는 일은 지시를 잘 따르는 판정 모델에 맡긴다
         return {"gaps": entities.find_gaps(self.store, self.engine, model=self.judge_model), "people": self.store.relations()}
+
+    # ---------- 음악 (3단계) ----------
+    def music_plan(self, keyword: str, total_sec: int = 60) -> dict[str, Any]:
+        no = self.query(keyword)["narrative_object"]
+        return music.plan(no, total_sec)
+
+    def music_start(self, keyword: str, total_sec: int = 60) -> dict[str, Any]:
+        p = self.music_plan(keyword, total_sec)
+        st = music.status(self.music_root, p["music_id"])
+        if st["state"] != "ready" and not self.acestep.health():
+            return {**st, "plan": p, "state": "unavailable",
+                    "error": "ACE-Step 서버가 꺼져 있습니다. acestep 폴더에서 uv run acestep-api 로 켜 주세요 (core/README.md 시연 준비)."}
+        return {**music.start(self.music_root, p, self.acestep), "plan": p}
+
+    def music_status(self, music_id: str) -> dict[str, Any]:
+        return music.status(self.music_root, music_id)
+
+    def music_file(self, music_id: str, name: str) -> Path | None:
+        path = music.job_dir(self.music_root, music_id) / name
+        return path if path.exists() else None
 
     # ---------- 사람이 붙이는 정답 (평가용) ----------
     def label_candidates(self, keyword: str, n: int = 80) -> dict[str, Any]:

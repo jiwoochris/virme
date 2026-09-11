@@ -2,32 +2,12 @@
 import json
 from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 
 from virtueme_core import narrative
 from virtueme_core.api import create_app
-from virtueme_core.build import build
-from virtueme_core.ingest import kakao, synthetic
-from virtueme_core.privacy import Pseudonymizer
-from virtueme_core.service import Service
-from virtueme_core.store import Store
 
 FIX = Path(__file__).parent / "fixtures"
-
-
-@pytest.fixture()
-def svc(tmp_path, monkeypatch):
-    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    store = Store(tmp_path / "t.db")
-    _, recs = synthetic.synthetic_dataset()
-    store.upsert_records(recs)
-    parsed = kakao.parse_kakao_file(FIX / "kakao_pc.txt")
-    krecs, _ = kakao.to_records(parsed, "윤서연", Pseudonymizer(store))
-    store.upsert_records(krecs)
-    s = Service("test", fake_models=True, store=store)
-    build(s.store, s.text, s.vision, emotion_backend="truth", log=lambda *_: None, cluster=False, extract_entities=False, pii=False)
-    return s
 
 
 def test_strong_keyword_builds_valid_object(svc):
