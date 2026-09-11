@@ -33,6 +33,12 @@ def _extract_json(text: str) -> Any:
     raise ValueError(f"JSON 을 찾지 못했습니다: {text[:200]!r}")
 
 
+def chat_text(system: str, user: str, model: str | None = None, temperature: float = 0.7, max_tokens: int = 1200,
+              retries: int = 2, timeout: float = 120.0) -> str:
+    """JSON 이 아닌 글 응답 (문단 다시 쓰기 등)."""
+    return _chat(system, user, model, temperature, max_tokens, retries, timeout, parse=False)
+
+
 def chat_json(
     system: str,
     user: str,
@@ -42,6 +48,11 @@ def chat_json(
     retries: int = 2,
     timeout: float = 90.0,
 ) -> Any:
+    return _chat(system, user, model, temperature, max_tokens, retries, timeout, parse=True)
+
+
+def _chat(system: str, user: str, model: str | None, temperature: float, max_tokens: int, retries: int,
+          timeout: float, parse: bool) -> Any:
     key = openrouter_key()
     if not key:
         raise LLMUnavailable("OPENROUTER_API_KEY 가 없습니다")
@@ -64,7 +75,7 @@ def chat_json(
                 raise httpx.HTTPStatusError(f"HTTP {res.status_code}", request=res.request, response=res)
             res.raise_for_status()
             content = res.json()["choices"][0]["message"]["content"] or ""
-            return _extract_json(content)
+            return _extract_json(content) if parse else content.strip()
         except (httpx.HTTPError, ValueError, KeyError) as err:
             last = err
             time.sleep(1.5 * (attempt + 1))
