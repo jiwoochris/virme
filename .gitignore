@@ -12,3 +12,4 @@ models/*.pkl
 model_service/__pycache__/
 model_service/tests/__pycache__/
 generated/
+scripts/__pycache__/
