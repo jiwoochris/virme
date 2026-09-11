@@ -3,7 +3,8 @@
 카카오톡·인스타그램·사진 기록을 한 형식으로 모으고, 키워드를 넣으면 관련 기록을 찾아 근거 등급을 매긴 뒤
 서사 오브젝트(JSON)로 돌려주는 로컬 파이썬 패키지입니다. Storyseed 노벨·대화 화면은 이 패키지의 로컬 API 에
 연결되면 합성 페르소나 대신 **내 기록**으로 이야기를 쓰고, 이야기 속 사실 주장을 기록과 대조합니다(근거 계약 v2).
-같은 서사 오브젝트를 비주얼 모드와 인사이트(시각화) 화면이 함께 읽습니다.
+같은 서사 오브젝트를 비주얼 모드와 인사이트(시각화) 화면이 함께 읽고, 정서 곡선으로 음악(ACE-Step 1.5)과
+그 음악에 맞춰 움직이는 잠재공간 영상을 만듭니다.
 
 모든 계산은 이 컴퓨터에서 합니다. 밖으로 나가는 것은 가명·개인정보 가리기를 거친 텍스트 일부뿐이며,
 사진 파일과 GPS 좌표는 나가지 않습니다.
@@ -73,6 +74,8 @@ bun run dev      # 또는 npm run dev. Vite 가 /api/core 를 8767 로 넘긴다
 | 서사 오브젝트 | `narrative.py` | `virtueme.narrative/1` JSON, 근거 기록 목록, 주제·기분·혼자/함께 비율, 비주얼 신호 7개 | `schema/narrative.v1.schema.json` |
 | 이야기 프롬프트 | `story.py` | 번호 붙인 취재 노트와 근거 계약 v2 집필 규칙. 노벨과 대화가 같은 함수를 씀 | Storyseed 원문 프롬프트 (`prompts_storyseed.py`) |
 | 근거 검사 | `verify.py` | `<em ref>` 앵커의 날짜·요일·시각·횟수·낱말을 기록과 대조, 문맥 검사, 강등 | OpenRouter (문맥 검사 claude-haiku-4.5) |
+| 음악 | `music.py` | 정서 곡선을 구간으로 나눠 BPM·조성·편성을 정하고, 구간마다 생성해 무음을 자르고 크로스페이드로 이음. 프레임별 음량·온셋 | ACE-Step 1.5 (MIT, 로컬 서버), ffmpeg |
+| 오디오 반응 영상 | `../scripts/render-audio-reactive.py` | 음량으로 잠재공간 이동 속도, 온셋으로 윤곽 박동, 구간 분위기로 색을 정해 팀 StyleGAN2 로 렌더 | 팀 모델 환경 (`bun run model:setup`) |
 | API·CLI | `api.py`, `cli.py` | 로컬 HTTP API, 명령줄 | FastAPI |
 
 변화점·주기·코사인 유사도는 AI 모델이 아니라 통계·알고리즘 기법입니다. 발표에서 구분해서 설명합니다.
@@ -121,6 +124,9 @@ bun run dev      # 또는 npm run dev. Vite 가 /api/core 를 8767 로 넘긴다
 | `GET /graph?keyword=` | 개체·관계 그래프 (노드·엣지, 근거 기록 수) |
 | `GET /gaps` | 자기 서술과 기록 비율이 어긋나는 곳 |
 | `GET /label` | 정답 라벨 붙이는 화면 (`/label/candidates`, `POST /label`, `/label/export`) |
+| `POST /music/plan` `{"keyword"}` | 음악 계획: 구간별 날짜·조성·분위기·설명, BPM, 매핑 설명 (만들지는 않음) |
+| `POST /music` `{"keyword"}` | 음악 만들기 시작(캐시가 있으면 바로 ready). ACE-Step 서버가 꺼져 있으면 `unavailable` |
+| `GET /music/{id}` · `/music/{id}/music.m4a` · `features.json` · `video.mp4` | 진행 상태와 결과 파일 |
 
 응답의 텍스트는 가려진 것이고, 좌표와 원본 파일 경로는 들어 있지 않습니다.
 
@@ -158,6 +164,46 @@ claude-sonnet-4.5 가 앵커마다 기록과 맞는지 판정한 값을 정답�
 - 걸러진 앵커를 강조만 벗기면 틀린 날짜가 본문에 12건 남고, `blur`·`rewrite` 로는 0건입니다.
 - 다시 돌리기: `uv run python eval/grounding_eval.py generate --versions v1 v2` 후 `... score --rewrite`
 
+### 정서 → 음악 매핑
+
+| 음악 값 | 정하는 방법 |
+|---|---|
+| 구간 | 근거 기간의 정서 곡선을 변화점에서 자름. 변화점이 없으면 기간을 셋(도입·전개·마무리)으로 |
+| BPM | 62 + 60 × 근거 기록 날의 평균 각성도 + 45 × 활동량 신호 (60~140) |
+| 조성 | 서사 번호로 으뜸음을 고름. 정서가가 -0.05 이하인 구간은 나란한조(단조), 0.05 이상은 장조 |
+| 분위기 | 정서가·각성도 사분면: 밝고 힘찬 / 따뜻하고 잔잔한 / 긴장된 / 쓸쓸하고 느린 |
+| 셈여림 | 구간 각성도 + 근거가 몰린 정도. 근거가 몰린 구간(예: 10km 완주 주간)이 세게 들림 |
+| 편성 | 근거 기록이 대부분 혼자면 피아노 독주, 함께가 많으면 현악·타악 합주 |
+| 장르 바탕 | 안정 신호가 높으면 앰비언트, 새로움이 높으면 로파이 전자음, 그 밖에는 시네마틱 |
+
+숫자는 전부 `music.py` 가 정하고, 음악 모델에는 그 값과 영어 설명(예: `instrumental lo-fi electronic, solo piano,
+warm, gentle, hopeful, moderate groove, gentle intro, 108 bpm, no vocals`)만 넘깁니다. 같은 서사 번호면 같은 계획과 시드가
+나오므로 같은 음악이 다시 만들어집니다. 비주얼 모드의 "정서 → 음악 매핑 보기"가 이 근거를 문장으로 보여 줍니다.
+
+## 시연 준비 (음악·영상 미리 만들기)
+
+음악 한 곡(3구간, 약 53초)은 M4 맥에서 약 4분, 오디오 반응 영상(512px, 24fps)은 약 7분 걸립니다. 발표 전에 키워드마다
+미리 만들어 두면, 발표 때는 ACE-Step 서버 없이 캐시에서 바로 재생합니다.
+
+```bash
+# 1) ACE-Step 1.5 (virme 와 같은 폴더에 두는 것을 기준으로 적음, 모델 약 9.4GB)
+git clone https://github.com/ace-step/ACE-Step-1.5.git ../../acestep && cd ../../acestep
+uv sync && uv run acestep-download
+# 127.0.0.1:8001. 가사·계획용 LM 은 쓰지 않으므로 끈다 (start_api_server_macos.sh 는 이 값을 auto 로 덮어씀)
+ACESTEP_LM_BACKEND=mlx ACESTEP_INIT_LLM=false uv run acestep-api --host 127.0.0.1 --port 8001
+
+# 2) 팀 StyleGAN 환경 (영상용, virme 폴더에서 한 번)
+bun run model:setup
+
+# 3) 발표용 키워드 미리 만들기 (core 폴더)
+uv run virtueme -p seoyeon demo 러닝 콩이 외로움 --video
+```
+
+- 결과는 `$VIRTUEME_DATA/music/<프로필>/<음악 번호>/` 에 `music.m4a`, `features.json`, `video.mp4` 로 남습니다.
+- 비주얼 모드 왼쪽의 "기록의 음악"에서 재생하면 잠재 루프 영상이 음량에 맞춰 빨라지고 온셋마다 밝아집니다.
+  "오디오 반응 영상 보기"는 미리 렌더한 영상을 소리와 함께 보여 줍니다.
+- ACE-Step 서버가 꺼져 있고 캐시도 없으면 화면에 켜는 방법을 안내합니다. 이야기·대화·인사이트는 음악 없이도 동작합니다.
+
 ## 설정 (환경 변수)
 
 | 변수 | 기본값 | 뜻 |
@@ -168,11 +214,13 @@ claude-sonnet-4.5 가 앵커마다 기록과 맞는지 판정한 값을 정답�
 | `VIRTUEME_JUDGE_MODEL` | `anthropic/claude-haiku-4.5` | 근거 판정 |
 | `VIRTUEME_TEXT_MODEL` / `VIRTUEME_VISION_MODEL` | `BAAI/bge-m3` / `google/siglip2-base-patch16-224` | 임베딩 |
 | `VIRTUEME_TZ` | `Asia/Seoul` | 시간대가 없는 기록의 시간대 |
+| `VIRTUEME_ACESTEP_URL` | `http://127.0.0.1:8001` | ACE-Step REST 서버 |
+| `VIRTUEME_MUSIC_DIR` | `$VIRTUEME_DATA/music` | 음악·영상 캐시 |
 
 ## 테스트
 
 ```bash
-uv run pytest -q     # 41개. 모델을 내려받지 않는 해시 임베더로 돈다
+uv run pytest -q     # 47개. 모델을 내려받지 않는 해시 임베더와 가짜 음악 서버로 돈다
 ```
 
 ## 알려진 한계
