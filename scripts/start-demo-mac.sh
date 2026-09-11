@@ -33,8 +33,10 @@ cleanup() {
     pkill -TERM -P $pid 2>/dev/null || true   # uv run·npm exec 가 띄운 실제 서버(자식)부터
     kill $pid 2>/dev/null || true
   done
+  pids=()
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'cleanup; exit 0' INT TERM   # Ctrl+C 로 끝내는 것은 정상 종료로 본다
 
 up() { curl -s -o /dev/null "$1" }
 
