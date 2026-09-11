@@ -498,14 +498,29 @@ async function sendCore(v,bub){
     const m=VX.mode();
     const ver=await VX.call('/verify',{paragraphs:[full],evidence_ids:ctx.evidence_ids,mode:m,kind:'talk'});
     const bad=VX.badCount(ver.stats);
-    bub.innerHTML=VX.unalias(ver.paragraphs_html[0],PEOPLE)+
-      (bad?`<span class="vx-note">기록과 맞지 않는 값 ${bad}개를 ${m==='plain'?'강조 없이 두었습니다':m==='rewrite'?'고쳐 썼습니다':'흐리게 바꿨습니다'}</span>`:'');
+    const note=bad?`<span class="vx-note">기록과 맞지 않는 값 ${bad}개를 ${m==='plain'?'강조 없이 두었습니다':m==='rewrite'?'고쳐 썼습니다':'흐리게 바꿨습니다'}</span>`:'';
+    bub.innerHTML=VX.unalias(ver.paragraphs_html[0],PEOPLE)+note;
+    // 발표 대비: 검사까지 끝난 답을 질문별로 남겨 두고, 연결이 끊기면 이 답을 보여 준다
+    VX.saveTalk(v,{html:ver.paragraphs_html[0],raw:full,note,people:PEOPLE});
     $('msgs').scrollTop=$('msgs').scrollHeight;
   }catch(e){
-    bub.innerHTML=esc('…연결이 잘 안 되네. 네트워크나 기록 서버 확인하고 다시 말 걸어줘.');
+    if(!showCachedTalk(v,bub,e))bub.innerHTML=esc('…연결이 잘 안 되네. 네트워크나 기록 서버 확인하고 다시 말 걸어줘.');
   }finally{
     BUSY=false;$('sendBtn').disabled=false;$('ipt').focus();
   }
+}
+
+function showCachedTalk(q,bub,err){
+  const c=VX.loadTalk(q);if(!c)return false;
+  const d=new Date(c.saved);
+  const why=/키가 없습니다/.test(String(err&&err.message))?'API 키가 없어서':'새로 답하지 못해서';
+  PEOPLE=c.people||PEOPLE;
+  bub.innerHTML=VX.unalias(c.html,PEOPLE)+(c.note||'')+
+    `<span class="vx-note">${why} ${d.getMonth()+1}월 ${d.getDate()}일 ${d.getHours()}시 ${String(d.getMinutes()).padStart(2,'0')}분에 같은 질문에 했던 답을 보여 줍니다</span>`;
+  if(HIST.length&&HIST[HIST.length-1].role==='assistant')HIST.pop();
+  HIST.push({role:'assistant',content:c.raw||''});
+  $('msgs').scrollTop=$('msgs').scrollHeight;
+  return true;
 }
 
 /* ── 바인딩 ── */

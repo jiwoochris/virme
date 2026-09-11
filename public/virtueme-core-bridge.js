@@ -7,6 +7,7 @@
   const MODES = [['blur', '틀린 값은 흐리게'], ['plain', '강조만 빼기'], ['rewrite', '문장 다시 쓰기']]
   const LS_MODE = 'vx_mode'
   let base = null
+  let dataId = null // core 의 기록 묶음 식별자. 기록을 지우면 바뀌어서, 지운 기록으로 만든 이야기·답은 다시 보여 주지 않는다
 
   const css = `
 .vx{font-style:normal;color:var(--gold);cursor:pointer;border-bottom:1px dotted rgba(217,179,106,.45)}
@@ -34,7 +35,7 @@
         const r = await fetch(b + '/health', { signal: AbortSignal.timeout(1500) })
         if (!r.ok) continue
         const h = await r.json()
-        if (h && h.built) { base = b; return { base: b, health: h } }
+        if (h && h.built) { base = b; dataId = h.data_id || null; return { base: b, health: h } }
       } catch (e) {}
     }
     return null
@@ -89,20 +90,31 @@
     return String(text).replace(ALIAS_RE, (m, id, pt) => people && people['지인' + id] ? withParticle(people['지인' + id], pt) : m)
   }
 
-  /* 발표 대비: 검사까지 끝난 이야기를 키워드별로 이 브라우저에 12편까지 남긴다.
-     네트워크나 키 문제로 새로 짓지 못하면 지난 이야기를 만든 날짜와 함께 보여 준다. */
-  const LS_STORY = 'vx_story_cache'
-  function saveStory (kw, entry) {
-    try {
-      const all = JSON.parse(localStorage.getItem(LS_STORY) || '{}')
-      all[kw] = { ...entry, saved: new Date().toISOString() }
-      Object.keys(all).sort((a, b) => all[b].saved.localeCompare(all[a].saved)).slice(12).forEach((k) => delete all[k])
-      localStorage.setItem(LS_STORY, JSON.stringify(all))
-    } catch (e) {}
+  /* 발표 대비: 검사까지 끝난 이야기(키워드별 12편)와 대화 답(질문별 40개)을 이 브라우저에 남긴다.
+     네트워크나 키 문제로 새로 만들지 못하면 지난 것을 만든 날짜와 함께 보여 준다.
+     저장할 때의 기록 묶음(data_id)과 지금 core 의 기록 묶음이 다르면(기록을 지우거나 새로 넣음) 쓰지 않는다. */
+  function makeCache (lsKey, limit, norm) {
+    const read = () => { try { return JSON.parse(localStorage.getItem(lsKey) || '{}') } catch (e) { return {} } }
+    return {
+      save (key, entry) {
+        try {
+          const all = read()
+          all[norm(key)] = { ...entry, data_id: dataId, saved: new Date().toISOString() }
+          Object.keys(all).sort((a, b) => all[b].saved.localeCompare(all[a].saved)).slice(limit).forEach((k) => delete all[k])
+          localStorage.setItem(lsKey, JSON.stringify(all))
+        } catch (e) {}
+      },
+      load (key) {
+        const got = read()[norm(key)] || null
+        return got && got.data_id && dataId && got.data_id !== dataId ? null : got
+      },
+    }
   }
-  function loadStory (kw) {
-    try { return JSON.parse(localStorage.getItem(LS_STORY) || '{}')[kw] || null } catch (e) { return null }
-  }
+  const storyCache = makeCache('vx_story_cache', 12, (k) => String(k).trim())
+  /* 질문은 띄어쓰기·끝 문장부호를 무시하고 맞춘다 ("처음 뛴 날 기억나?" = "처음 뛴 날 기억나") */
+  const talkCache = makeCache('vx_talk_cache', 40, (q) => String(q).replace(/\s+/g, '').replace(/[?!.~…]+$/, ''))
+  const saveStory = storyCache.save, loadStory = storyCache.load
+  const saveTalk = talkCache.save, loadTalk = talkCache.load
 
   function mode () { try { return localStorage.getItem(LS_MODE) || 'blur' } catch (e) { return 'blur' } }
   function modeSelect () {
@@ -149,5 +161,6 @@
     window.addEventListener('scroll', hidePop, true)
   }
 
-  window.VX = { detect, call, fmtPending, unalias, relabel, mode, modeSelect, legend, badCount, bindRecordClicks, esc, JO, saveStory, loadStory }
+  window.VX = { detect, call, fmtPending, unalias, relabel, mode, modeSelect, legend, badCount, bindRecordClicks, esc, JO, saveStory, loadStory,
+    saveTalk, loadTalk }
 })()
