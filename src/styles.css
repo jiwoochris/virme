@@ -305,7 +305,16 @@ button { cursor: pointer; }
 .gap-tag.gap-match { border-color: rgba(57,135,229,.7); }
 .narrative-chip { position: absolute; right: 24px; top: 24px; z-index: 7; padding: 7px 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(8,10,16,.72); color: #fff; font: 10px 'Space Mono', monospace; letter-spacing: .04em; }
 .narrative-chip span { color: var(--state-color); margin-right: 6px; }
-@media (max-width: 860px) { .insight { grid-template-columns: 1fr; } .insight-panel { min-height: calc(100svh - 104px); } }
+@media (max-width: 860px) {
+  .insight { grid-template-columns: 1fr; }
+  .insight-panel { min-height: calc(100svh - 104px); }
+  /* 좁은 화면에서는 정서 곡선을 줄이지 않고 옆으로 밀어 보게 한다 (눈금 글자가 4px 까지 작아지는 것을 막음) */
+  .chart-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .chart-wrap > .chart { min-width: 640px; }
+  /* 모드가 넷이라 번호를 빼고 이름이 한 줄에 들어가게 한다 */
+  .experience-nav button { padding: 0 4px; gap: 4px; white-space: nowrap; }
+  .experience-nav button > span { display: none; }
+}
 
 /* 기록의 음악 (비주얼 모드 왼쪽) */
 .music-panel { margin-top: 14px; padding: 12px 4px 4px; border-top: 1px solid rgba(255,255,255,.1); font-size: 11px; color: rgba(255,255,255,.72); }
