@@ -15,6 +15,7 @@ signals (비주얼 모드가 받는 7개 값, 모두 0..1)
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from collections import Counter
@@ -24,6 +25,7 @@ from typing import Any
 
 import numpy as np
 
+from . import clusters as clustering
 from . import patterns
 from .config import SCHEMA_DIR, SETTINGS
 from .privacy import Masker
@@ -120,8 +122,12 @@ def build(engine: QueryEngine, res: QueryResult, masker: Masker | None = None,
     profile_cps = patterns.change_points(d.valence, d.dates) if d else []
     scope_ids = {r.id for r in res.scope}
     own_vals = [engine.emotions[i][0] for i in scope_ids if i in engine.emotions]
+    # 세 화면(이야기·시각화·비주얼)이 같은 결과를 보고 있는지 확인하는 번호. 같은 키워드·같은 근거면 같은 번호가 나온다
+    nid = hashlib.sha1("|".join([str(engine.store.path.name), res.keyword, res.grade,
+                                 *sorted(s.record.id for s in res.strong)]).encode("utf-8")).hexdigest()[:8]
     base: dict[str, Any] = {
         "schema": SCHEMA_ID,
+        "narrative_id": nid,
         "keyword": res.keyword,
         "evidence_grade": res.grade,
         "grade_basis": res.basis,
@@ -201,7 +207,7 @@ def build(engine: QueryEngine, res: QueryResult, masker: Masker | None = None,
             "lag_days": per.get("lag_days"), "strength": per.get("strength"),
             "weekday_peak": per.get("weekday_peak"), "weekly_strength": global_per.get("weekly_strength"),
         },
-        "clusters": [],
+        **clustering.summarize(engine.store, [s.record.id for s in ev]),
         "signals": _signals(engine, res, ev, vals),
     })
     # LLM 에 넘길 근거: 관련도 상위 2/3 + 나머지에서 시간 순으로 고르게 1/3

@@ -29,7 +29,9 @@ EMO_SYSTEM = """너는 개인 기록의 정서를 채점한다. 기록마다 두
 감정 단서가 없는 사실 서술(예: "택배 도착")은 v 0, a 0.3 근처로 둔다.
 활동 이름만 있는 기록(예: "등산", "낮잠")은 그 활동이 보통 주는 느낌으로 약하게 매긴다(|v| 0.3 이하).
 반어·농담(ㅋㅋ, ㅠㅠ)은 문맥으로 판단한다.
-JSON 하나만 출력한다: {"scores":[{"i":번호,"v":실수,"a":실수}]}"""
+- s (함께 여부): 기록 속 일을 다른 사람과 함께 했으면 1, 혼자 했으면 0, 알 수 없으면 null.
+  대화방에 올린 말이라는 사실만으로 1 로 보지 않는다. "혼자 편의점 도시락" 은 0, "크루랑 뛰었다" 는 1.
+JSON 하나만 출력한다: {"scores":[{"i":번호,"v":실수,"a":실수,"s":1}]}"""
 
 POS = ["정말 행복하다", "기분이 너무 좋다", "신나고 즐겁다", "뿌듯하고 고맙다", "설레고 기대된다", "마음이 편안하고 따뜻하다"]
 NEG = ["너무 우울하고 슬프다", "힘들고 지친다", "짜증 나고 화가 난다", "외롭고 쓸쓸하다", "불안하고 걱정된다", "속상하고 서운하다"]
@@ -49,45 +51,56 @@ def _clip(x: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, float(x)))
 
 
+EMO_VERSION = "emo2"  # 채점 문구를 바꾸면 올린다 (예전 캐시를 쓰지 않게)
+
+
 def _key(model: str, text: str) -> str:
-    return f"emo:{model}:{hashlib.sha1(text.encode('utf-8')).hexdigest()[:20]}"
+    return f"{EMO_VERSION}:{model}:{hashlib.sha1(text.encode('utf-8')).hexdigest()[:20]}"
 
 
-def llm_scores(store: Store, texts: list[str], model: str = LLM_MODEL) -> list[tuple[float, float]]:
-    """텍스트 목록을 채점한다. 캐시에 있는 문장은 다시 보내지 않는다."""
-    results: dict[int, tuple[float, float]] = {}
+def _social(x) -> int | None:
+    if x in (0, 1):
+        return int(x)
+    if isinstance(x, str) and x.strip() in ("0", "1"):
+        return int(x.strip())
+    return None
+
+
+def llm_scores(store: Store, texts: list[str], model: str = LLM_MODEL) -> list[tuple[float, float, int | None]]:
+    """텍스트 목록을 채점한다: (정서가, 각성도, 함께 여부). 캐시에 있는 문장은 다시 보내지 않는다."""
+    results: dict[int, tuple[float, float, int | None]] = {}
     todo: list[int] = []
     for i, t in enumerate(texts):
         hit = store.cache_get(_key(model, t))
         if hit:
-            results[i] = (hit[0], hit[1])
+            results[i] = (hit[0], hit[1], hit[2] if len(hit) > 2 else None)
         else:
             todo.append(i)
 
-    def run(batch: list[int]) -> dict[int, tuple[float, float]]:
+    def run(batch: list[int]) -> dict[int, tuple[float, float, int | None]]:
         lines = "\n".join(f"{j}. {texts[i][:200].replace(chr(10), ' / ')}" for j, i in enumerate(batch))
         data = chat_json(EMO_SYSTEM, f"기록 {len(batch)}건:\n{lines}", model=model, max_tokens=60 * len(batch) + 200)
-        got: dict[int, tuple[float, float]] = {}
+        got: dict[int, tuple[float, float, int | None]] = {}
         for item in data.get("scores", []) if isinstance(data, dict) else data:
             j = int(item.get("i", -1))
             if 0 <= j < len(batch):
-                got[batch[j]] = (_clip(item.get("v", 0), -1, 1), _clip(item.get("a", 0.3), 0, 1))
+                got[batch[j]] = (_clip(item.get("v", 0), -1, 1), _clip(item.get("a", 0.3), 0, 1), _social(item.get("s")))
         return got
 
     batches = [todo[k : k + BATCH] for k in range(0, len(todo), BATCH)]
     with ThreadPoolExecutor(max_workers=4) as pool:
         for got in pool.map(run, batches):
-            for i, (v, a) in got.items():
-                results[i] = (v, a)
-                store.cache_put(_key(model, texts[i]), [v, a])
+            for i, (v, a, so) in got.items():
+                results[i] = (v, a, so)
+                store.cache_put(_key(model, texts[i]), [v, a, so])
     missing = [i for i in range(len(texts)) if i not in results]
     if missing:
         # 응답에서 빠진 문장은 한 번 더 작은 묶음으로 요청한다
         for got in map(run, [missing[k : k + 10] for k in range(0, len(missing), 10)]):
-            for i, (v, a) in got.items():
-                results[i] = (v, a)
-                store.cache_put(_key(model, texts[i]), [v, a])
-    return [results.get(i, (0.0, 0.3)) for i in range(len(texts))]
+            for i, (v, a, so) in got.items():
+                results[i] = (v, a, so)
+                store.cache_put(_key(model, texts[i]), [v, a, so])
+    return [results.get(i, (0.0, 0.3, None)) for i in range(len(texts))]
 
 
 class AnchorScorer:
@@ -139,8 +152,16 @@ def score_all(
 ) -> dict[str, Any]:
     """정서가 없는 기록을 채점해 저장한다. backend: auto | llm | anchor | truth."""
     done = store.emotions()
-    records = [r for r in store.records() if force or r.id not in done]
     masker = Masker.from_store(store)
+    stale: set[str] = set()
+    if backend in ("auto", "llm") and openrouter_key():
+        # 예전 채점 문구로만 채점된 기록(함께 여부 없음)은 새 문구로 다시 채점한다
+        for r in store.records():
+            t = text_for_emotion(r)
+            if r.id in done and done[r.id][2].startswith("llm") and t and \
+                    store.cache_get(_key(model, masker.mask(t) or "")) is None:
+                stale.add(r.id)
+    records = [r for r in store.records() if force or r.id not in done or r.id in stale]
     rows: list[tuple[str, float, float, str, str | None]] = []
     stats = {"llm": 0, "anchor": 0, "siglip": 0, "truth": 0, "skipped": 0}
 
@@ -156,14 +177,14 @@ def score_all(
         return stats
 
     text_recs = [r for r in records if text_for_emotion(r)]
-    text_scores: dict[str, tuple[float, float]] = {}
+    text_scores: dict[str, tuple[float, ...]] = {}
     use_llm = backend in ("auto", "llm") and openrouter_key()
     if backend == "llm" and not use_llm:
         raise LLMUnavailable("--emotion llm 에는 OPENROUTER_API_KEY 가 필요합니다")
     if text_recs and use_llm:
         texts = [masker.mask(text_for_emotion(r)) or "" for r in text_recs]
-        for r, (v, a) in zip(text_recs, llm_scores(store, texts, model=model)):
-            text_scores[r.id] = (v, a)
+        for r, sc in zip(text_recs, llm_scores(store, texts, model=model)):
+            text_scores[r.id] = sc
         stats["llm"] = len(text_recs)
         tag = ("llm", model)
     elif text_recs:
@@ -193,10 +214,11 @@ def score_all(
 
     for r in records:
         t, i = text_scores.get(r.id), img_scores.get(r.id)
+        so = t[2] if t and len(t) > 2 else None
         if t and i:
-            rows.append((r.id, 0.7 * t[0] + 0.3 * i[0], 0.7 * t[1] + 0.3 * i[1], tag[0] + "+siglip", tag[1]))
+            rows.append((r.id, 0.7 * t[0] + 0.3 * i[0], 0.7 * t[1] + 0.3 * i[1], tag[0] + "+siglip", tag[1], so))
         elif t:
-            rows.append((r.id, t[0], t[1], tag[0], tag[1]))
+            rows.append((r.id, t[0], t[1], tag[0], tag[1], so))
         elif i:
             rows.append((r.id, i[0], i[1], "siglip", vision.name if vision else None))
         else:

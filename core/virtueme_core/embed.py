@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import threading
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -57,6 +58,10 @@ def device() -> str:
     return "cpu"
 
 
+# MPS 는 두 스레드가 동시에 추론하면 프로세스가 죽는다(2026-09-11 API 서버에서 확인). 모델 올리기와 추론을 한 잠금으로 묶는다
+_GPU_LOCK = threading.RLock()
+
+
 def _normalize(m: np.ndarray) -> np.ndarray:
     m = np.asarray(m, dtype=np.float32)
     n = np.linalg.norm(m, axis=1, keepdims=True)
@@ -79,20 +84,26 @@ class TextEmbedder:
     def __init__(self, model: str = TEXT_MODEL):
         self.name = model
         self._model = None
+        self._lock = _GPU_LOCK
 
     def _load(self):
-        if self._model is None:
-            from sentence_transformers import SentenceTransformer
+        # API 서버는 시작할 때 다른 스레드에서 모델을 미리 올린다. 첫 요청과 겹쳐도 한 번만 올린다
+        with self._lock:
+            if self._model is None:
+                from sentence_transformers import SentenceTransformer
 
-            self._model = SentenceTransformer(self.name, device=device())
-            self._model.max_seq_length = 256
+                m = SentenceTransformer(self.name, device=device())
+                m.max_seq_length = 256
+                self._model = m
         return self._model
 
     def encode(self, texts: Sequence[str], batch_size: int = 16) -> np.ndarray:
         if not texts:
             return np.zeros((0, 1024), dtype=np.float32)
-        m = self._load()
-        return _normalize(m.encode(list(texts), batch_size=batch_size, normalize_embeddings=True, show_progress_bar=False))
+        with self._lock:
+            m = self._load()
+            return _normalize(m.encode(list(texts), batch_size=batch_size, normalize_embeddings=True,
+                                       show_progress_bar=False))
 
 
 class VisionEmbedder:
@@ -102,15 +113,18 @@ class VisionEmbedder:
         self.name = model
         self._model = None
         self._proc = None
+        self._lock = _GPU_LOCK
 
     def _load(self):
-        if self._model is None:
-            import torch
-            from transformers import AutoModel, AutoProcessor
+        with self._lock:
+            if self._model is None:
+                import torch
+                from transformers import AutoModel, AutoProcessor
 
-            dtype = torch.float16 if device() != "cpu" else torch.float32
-            self._model = AutoModel.from_pretrained(self.name, dtype=dtype).to(device()).eval()
-            self._proc = AutoProcessor.from_pretrained(self.name)
+                dtype = torch.float16 if device() != "cpu" else torch.float32
+                model = AutoModel.from_pretrained(self.name, dtype=dtype).to(device()).eval()
+                self._proc = AutoProcessor.from_pretrained(self.name)
+                self._model = model
         return self._model, self._proc
 
     @staticmethod
@@ -122,7 +136,7 @@ class VisionEmbedder:
 
         model, proc = self._load()
         out = []
-        with torch.no_grad():
+        with self._lock, torch.no_grad():
             for i in range(0, len(texts), 64):
                 inp = proc(text=list(texts[i : i + 64]), padding="max_length", max_length=64, truncation=True,
                            return_tensors="pt").to(device())
@@ -134,7 +148,7 @@ class VisionEmbedder:
 
         model, proc = self._load()
         out = []
-        with torch.no_grad():
+        with self._lock, torch.no_grad():
             for i in range(0, len(paths), batch_size):
                 imgs = [load_image(p) for p in paths[i : i + batch_size]]
                 inp = proc(images=imgs, return_tensors="pt").to(device())

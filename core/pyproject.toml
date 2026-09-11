@@ -21,6 +21,11 @@ dependencies = [
     "sentence-transformers>=3.0",
     "sentencepiece>=0.2",
     "protobuf>=4.25",
+    "bertopic>=0.17",
+    "umap-learn>=0.5",
+    "networkx>=3.2",
+    "scikit-learn>=1.4",
+    "gliner>=0.2.29",
 ]
 
 [dependency-groups]

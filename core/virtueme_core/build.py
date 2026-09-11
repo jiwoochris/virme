@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from . import emotion
+from . import clusters, emotion, entities
 from .embed import zero_shot_tags
 from .query import embed_text
 from .records import Record
@@ -21,8 +21,17 @@ def build(
     vision_embedder=None,
     emotion_backend: str = "auto",
     log: Callable[[str], None] = print,
+    cluster: bool = True,
+    extract_entities: bool = True,
+    pii: bool = True,
 ) -> dict[str, Any]:
     report: dict[str, Any] = {}
+
+    # 0) 본문에만 나오는 제3자 이름 가리기 (임베딩보다 먼저)
+    if pii:
+        from . import pii as pii_mod
+
+        report["pii"] = pii_mod.run(store, log=log)
     records = store.records()
 
     # 1) 사진: SigLIP 벡터와 자동 태그
@@ -57,7 +66,17 @@ def build(
         store.put_vectors("text", text_embedder.name, [r.id for r, _ in todo2], vecs)
     report["text"] = len(todo2)
 
-    # 4) 정서
+    # 4) 정서 (함께 여부 포함)
     log("정서 채점")
     report["emotion"] = emotion.score_all(store, text_embedder, vision_embedder, backend=emotion_backend)
+
+    # 5) 묶기: 주제(BERTopic) · 기분 · 함께 여부
+    if cluster:
+        log("기록 묶기 (BERTopic)")
+        report["clusters"] = clusters.build_all(store)
+
+    # 6) 개체·관계 (LLM, 키가 있을 때)
+    if extract_entities:
+        log("개체·관계 추출")
+        report["entities"] = entities.extract(store)
     return report

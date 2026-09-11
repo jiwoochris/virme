@@ -346,6 +346,16 @@ class QueryEngine:
         return QueryResult(keyword, expansions, strong, weak, adjacent, grade, basis,
                            [s.record for s in scope], scored)
 
+    def retrieve(self, text: str, k: int = 16) -> list[Record]:
+        """대화 한 턴에 쓸 가까운 기록. 확장·판정 없이 텍스트 공간 z 점수 순 (응답이 빨라야 하므로)."""
+        if "text" not in self.spaces or not text.strip():
+            return []
+        idx, _ = self.spaces["text"]
+        z = self._z("text", self.text.encode([text]))[0]
+        order = np.argsort(-z)[: k * 2]
+        out = [self.records[idx[i]] for i in order if z[i] > 1.0]
+        return out[:k]
+
     def _adjacent(self, strong: list[Scored], taken: set[str]) -> list[Record]:
         """강한 근거와 같은 대화방에서 앞뒤로 오간 기록, 같은 외출에서 찍은 사진."""
         win = timedelta(minutes=self.settings.relevance.adjacent_minutes)

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from collections.abc import Iterable, Iterator
 from datetime import datetime, timezone
 from pathlib import Path
@@ -53,7 +54,47 @@ CREATE TABLE IF NOT EXISTS emotions (
     valence REAL NOT NULL,        -- -1 (부정) .. 1 (긍정)
     arousal REAL NOT NULL,        -- 0 (차분) .. 1 (격앙·들뜸)
     backend TEXT NOT NULL,        -- llm | anchor | siglip | truth
-    model TEXT
+    model TEXT,
+    social INTEGER                -- 1 누군가와 함께, 0 혼자, NULL 알 수 없음 (LLM 채점일 때만)
+);
+
+CREATE TABLE IF NOT EXISTS clusters (
+    record_id TEXT NOT NULL,
+    axis TEXT NOT NULL,           -- topic | mood | social
+    cluster TEXT NOT NULL,
+    PRIMARY KEY (record_id, axis)
+);
+
+CREATE TABLE IF NOT EXISTS cluster_info (
+    axis TEXT NOT NULL,
+    cluster TEXT NOT NULL,
+    label TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    keywords TEXT NOT NULL DEFAULT '[]',
+    PRIMARY KEY (axis, cluster)
+);
+
+CREATE TABLE IF NOT EXISTS entities (
+    record_id TEXT NOT NULL,
+    type TEXT NOT NULL,           -- person | place | activity | food | object | animal | event | org
+    name TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS entities_name ON entities(type, name);
+
+CREATE TABLE IF NOT EXISTS relations (
+    record_id TEXT NOT NULL,
+    s TEXT NOT NULL,
+    p TEXT NOT NULL,
+    o TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS labels (
+    keyword TEXT NOT NULL,
+    record_id TEXT NOT NULL,
+    label INTEGER NOT NULL,       -- 2 직접, 1 간접, 0 무관 (사람이 붙인 정답)
+    labeler TEXT NOT NULL DEFAULT '',
+    labeled_at TEXT NOT NULL,
+    PRIMARY KEY (keyword, record_id, labeler)
 );
 
 CREATE TABLE IF NOT EXISTS people (
@@ -83,20 +124,37 @@ _JSON_FIELDS = ("media", "participants", "tags", "meta")
 
 
 class Store:
+    """스레드마다 연결을 따로 연다. API 서버는 요청을 스레드 풀에서 처리하므로 연결 하나를 나눠 쓰면
+    커서 상태가 섞여 엉뚱한 행을 읽는다 (2026-09-11 평가 스크립트에서 실제로 겪음)."""
+
     def __init__(self, path: Path | str):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(self.path, check_same_thread=False)
-        self.conn.row_factory = sqlite3.Row
-        self.conn.execute("PRAGMA journal_mode=WAL")
+        self._local = threading.local()
         self.conn.executescript(SCHEMA_SQL)
-        cols = {r[1] for r in self.conn.execute("PRAGMA table_info(people)")}
-        if "relation" not in cols:  # 예전 DB 이전
-            with self.conn:
-                self.conn.execute("ALTER TABLE people ADD COLUMN relation TEXT")
+        # 예전 DB 이전
+        for table, col, ddl in (("people", "relation", "TEXT"), ("emotions", "social", "INTEGER")):
+            cols = {r[1] for r in self.conn.execute(f"PRAGMA table_info({table})")}
+            if col not in cols:
+                with self.conn:
+                    self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
+
+    @property
+    def conn(self) -> sqlite3.Connection:
+        c = getattr(self._local, "conn", None)
+        if c is None:
+            c = sqlite3.connect(self.path, timeout=30, check_same_thread=False)
+            c.row_factory = sqlite3.Row
+            c.execute("PRAGMA journal_mode=WAL")
+            c.execute("PRAGMA busy_timeout=30000")
+            self._local.conn = c
+        return c
 
     def close(self) -> None:
-        self.conn.close()
+        c = getattr(self._local, "conn", None)
+        if c is not None:
+            c.close()
+            self._local.conn = None
 
     # ---------- records ----------
     def upsert_records(self, records: Iterable[Record]) -> int:
@@ -110,7 +168,7 @@ class Store:
             rows.append(d)
         if not rows:
             return 0
-        # 본문·태그·사진이 바뀐 기록은 예전에 계산한 벡터와 정서를 지운다 (다시 build 하면 새로 계산)
+        # 본문·태그·사진이 바뀐 기록은 예전에 계산한 벡터·정서·개체를 지운다 (다시 build 하면 새로 계산)
         changed = []
         for d in rows:
             old = self.conn.execute("SELECT text, tags, media FROM records WHERE id=?", (d["id"],)).fetchone()
@@ -118,8 +176,9 @@ class Store:
                 changed.append((d["id"],))
         if changed:
             with self.conn:
-                self.conn.executemany("DELETE FROM vectors WHERE record_id=?", changed)
-                self.conn.executemany("DELETE FROM emotions WHERE record_id=?", changed)
+                for table in ("vectors", "emotions", "entities", "relations"):
+                    self.conn.executemany(f"DELETE FROM {table} WHERE record_id=?", changed)
+                self.conn.executemany("DELETE FROM cache WHERE key=?", [(f"entdone:{rid}",) for (rid,) in changed])
         cols = list(rows[0].keys())
         sql = (
             f"INSERT INTO records ({','.join(cols)}) VALUES ({','.join(':' + c for c in cols)}) "
@@ -196,12 +255,51 @@ class Store:
         return row[0] if row else None
 
     # ---------- emotions ----------
-    def put_emotions(self, rows: Iterable[tuple[str, float, float, str, str | None]]) -> None:
+    def put_emotions(self, rows: Iterable[tuple]) -> None:
+        """행: (기록 ID, 정서가, 각성도, 방식, 모델[, 함께 여부])."""
+        rows = [tuple(r) + (None,) * (6 - len(r)) for r in rows]
         with self.conn:
             self.conn.executemany(
-                "INSERT OR REPLACE INTO emotions (record_id, valence, arousal, backend, model) VALUES (?,?,?,?,?)",
-                list(rows),
+                "INSERT OR REPLACE INTO emotions (record_id, valence, arousal, backend, model, social) VALUES (?,?,?,?,?,?)",
+                rows,
             )
+
+    def social(self) -> dict[str, int | None]:
+        return {r[0]: r[1] for r in self.conn.execute("SELECT record_id, social FROM emotions")}
+
+    # ---------- clusters ----------
+    def put_clusters(self, axis: str, assign: dict[str, str], info: list[tuple[str, str, int, list[str]]]) -> None:
+        with self.conn:
+            self.conn.execute("DELETE FROM clusters WHERE axis=?", (axis,))
+            self.conn.execute("DELETE FROM cluster_info WHERE axis=?", (axis,))
+            self.conn.executemany("INSERT INTO clusters (record_id, axis, cluster) VALUES (?,?,?)",
+                                  [(rid, axis, c) for rid, c in assign.items()])
+            self.conn.executemany("INSERT INTO cluster_info (axis, cluster, label, size, keywords) VALUES (?,?,?,?,?)",
+                                  [(axis, c, label, size, json.dumps(kw, ensure_ascii=False)) for c, label, size, kw in info])
+
+    def clusters(self, axis: str) -> tuple[dict[str, str], dict[str, dict[str, Any]]]:
+        assign = {r[0]: r[1] for r in self.conn.execute("SELECT record_id, cluster FROM clusters WHERE axis=?", (axis,))}
+        info = {r[0]: {"label": r[1], "size": r[2], "keywords": json.loads(r[3])}
+                for r in self.conn.execute("SELECT cluster, label, size, keywords FROM cluster_info WHERE axis=?", (axis,))}
+        return assign, info
+
+    # ---------- entities ----------
+    def put_entities(self, rid: str, ents: list[tuple[str, str]], rels: list[tuple[str, str, str]]) -> None:
+        with self.conn:
+            self.conn.execute("DELETE FROM entities WHERE record_id=?", (rid,))
+            self.conn.execute("DELETE FROM relations WHERE record_id=?", (rid,))
+            self.conn.executemany("INSERT INTO entities (record_id, type, name) VALUES (?,?,?)", [(rid, t, n) for t, n in ents])
+            self.conn.executemany("INSERT INTO relations (record_id, s, p, o) VALUES (?,?,?,?)", [(rid, *x) for x in rels])
+
+    def entity_rows(self) -> list[tuple[str, str, str]]:
+        return [tuple(r) for r in self.conn.execute("SELECT record_id, type, name FROM entities")]
+
+    def relation_rows(self) -> list[tuple[str, str, str, str]]:
+        return [tuple(r) for r in self.conn.execute("SELECT record_id, s, p, o FROM relations")]
+
+    def entity_done(self) -> set[str]:
+        return {r[0] for r in self.conn.execute("SELECT DISTINCT record_id FROM entities")} | {
+            r[0] for r in self.conn.execute("SELECT key FROM cache WHERE key LIKE 'entdone:%'")}
 
     def emotions(self) -> dict[str, tuple[float, float, str]]:
         return {
@@ -235,6 +333,22 @@ class Store:
 
     def self_names(self) -> list[str]:
         return [r[0] for r in self.conn.execute("SELECT name FROM people WHERE is_self=1")]
+
+    # ---------- labels (사람이 붙인 정답) ----------
+    def put_label(self, keyword: str, rid: str, label: int, labeler: str = "") -> None:
+        with self.conn:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO labels (keyword, record_id, label, labeler, labeled_at) VALUES (?,?,?,?,?)",
+                (keyword, rid, int(label), labeler, datetime.now(timezone.utc).isoformat()),
+            )
+
+    def labels(self, keyword: str | None = None) -> dict[str, dict[str, int]]:
+        """키워드 → {기록 ID: 라벨}. 여러 사람이 붙였으면 가장 최근 값."""
+        sql = "SELECT keyword, record_id, label FROM labels" + (" WHERE keyword=?" if keyword else "") + " ORDER BY labeled_at"
+        out: dict[str, dict[str, int]] = {}
+        for k, rid, lab in self.conn.execute(sql, (keyword,) if keyword else ()):
+            out.setdefault(k, {})[rid] = lab
+        return out
 
     # ---------- cache ----------
     def cache_get(self, key: str) -> Any | None:

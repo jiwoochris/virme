@@ -80,7 +80,8 @@ def cmd_build(args) -> int:
     from .build import build
 
     svc = _svc(args)
-    report = build(svc.store, svc.text, None if args.no_vision else svc.vision, emotion_backend=args.emotion)
+    report = build(svc.store, svc.text, None if args.no_vision else svc.vision, emotion_backend=args.emotion,
+                   cluster=not args.no_cluster, extract_entities=not args.no_entities, pii=not args.no_pii)
     print(json.dumps(report, ensure_ascii=False))
     return 0
 
@@ -126,6 +127,10 @@ def cmd_serve(args) -> int:
 
 def cmd_people(args) -> int:
     svc = _svc(args, fake=True)
+    if args.keep:
+        keep = sorted(set(svc.store.cache_get("pii_keep") or []) | set(args.keep))
+        svc.store.cache_put("pii_keep", keep)
+        print("이름 가리기 예외:", ", ".join(keep))
     for item in args.relation or []:
         alias, _, relation = item.partition("=")
         n = svc.store.set_relation(alias.strip(), relation.strip() or None)
@@ -165,6 +170,9 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("build", help="임베딩·정서 계산")
     p.add_argument("--emotion", default="auto", choices=["auto", "llm", "anchor", "truth"])
     p.add_argument("--no-vision", action="store_true")
+    p.add_argument("--no-cluster", action="store_true", help="BERTopic 묶기 건너뛰기")
+    p.add_argument("--no-entities", action="store_true", help="개체·관계 추출 건너뛰기")
+    p.add_argument("--no-pii", action="store_true", help="제3자 이름 가리기(GLiNER) 건너뛰기")
     p.set_defaults(func=cmd_build)
 
     p = sub.add_parser("status", help="프로필 요약")
@@ -185,6 +193,8 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("people", help="가명 대응표 (로컬에서만 확인), 관계 붙이기")
     p.add_argument("--relation", action="append", metavar="가명=관계",
                    help="예: --relation '지인D=회사 동기'. 이야기에서 가명 대신 이 관계로 부른다. 실명은 쓰지 말 것")
+    p.add_argument("--keep", action="append", metavar="이름",
+                   help="제3자 이름 가리기에서 빼 둘 낱말 (예: 반려동물 이름이 사람으로 잡힐 때)")
     p.set_defaults(func=cmd_people)
 
     p = sub.add_parser("reset", help="프로필 DB 삭제")

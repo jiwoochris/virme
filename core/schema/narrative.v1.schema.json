@@ -4,143 +4,501 @@
   "title": "Virtueme 서사 오브젝트 v1",
   "description": "키워드 하나에 대한 근거 등급과 파생 값. 이야기·시각화·아트웍 렌더러가 공통으로 읽는다. 원문 텍스트와 사진은 담지 않는다.",
   "type": "object",
-  "required": ["schema", "keyword", "evidence_grade", "grade_basis", "data_scope", "evidence", "signals"],
+  "required": [
+    "schema",
+    "keyword",
+    "evidence_grade",
+    "grade_basis",
+    "data_scope",
+    "evidence",
+    "signals",
+    "narrative_id"
+  ],
   "properties": {
-    "schema": {"const": "virtueme.narrative/1"},
-    "keyword": {"type": "string", "minLength": 1},
-    "evidence_grade": {"enum": ["강한 근거", "약한 근거", "근거 부족"]},
-    "message": {"type": "string"},
+    "schema": {
+      "const": "virtueme.narrative/1"
+    },
+    "keyword": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_grade": {
+      "enum": [
+        "강한 근거",
+        "약한 근거",
+        "근거 부족"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
     "grade_basis": {
       "type": "object",
-      "required": ["strong_records", "strong_days", "active_days", "strong_day_share", "thresholds"],
+      "required": [
+        "strong_records",
+        "strong_days",
+        "active_days",
+        "strong_day_share",
+        "thresholds"
+      ],
       "properties": {
-        "strong_records": {"type": "integer", "minimum": 0},
-        "weak_records": {"type": "integer", "minimum": 0},
-        "strong_days": {"type": "integer", "minimum": 0},
-        "active_days": {"type": "integer", "minimum": 0},
-        "strong_day_share": {"type": "number", "minimum": 0, "maximum": 1},
-        "scope": {"type": "string"},
-        "thresholds": {"type": "object"},
-        "expanded": {"type": "boolean"}
+        "strong_records": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "weak_records": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "strong_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "active_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "strong_day_share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "scope": {
+          "type": "string"
+        },
+        "thresholds": {
+          "type": "object"
+        },
+        "expanded": {
+          "type": "boolean"
+        }
       }
     },
     "data_scope": {
       "type": "object",
-      "required": ["records", "self_records", "date_range", "sources"],
+      "required": [
+        "records",
+        "self_records",
+        "date_range",
+        "sources"
+      ],
       "properties": {
-        "records": {"type": "integer"},
-        "self_records": {"type": "integer"},
-        "date_range": {"type": ["array", "null"], "items": {"type": "string", "format": "date"}},
-        "sources": {"type": "object", "additionalProperties": {"type": "integer"}}
+        "records": {
+          "type": "integer"
+        },
+        "self_records": {
+          "type": "integer"
+        },
+        "date_range": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "sources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
       }
     },
     "expansions": {
       "type": "object",
       "properties": {
-        "forms": {"type": "array", "items": {"type": "string"}},
-        "situations": {"type": "array", "items": {"type": "string"}}
+        "forms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "situations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "evidence": {
       "type": "object",
-      "required": ["strong", "weak", "adjacent"],
+      "required": [
+        "strong",
+        "weak",
+        "adjacent"
+      ],
       "properties": {
-        "strong": {"$ref": "#/$defs/ids"},
-        "weak": {"$ref": "#/$defs/ids"},
-        "adjacent": {"$ref": "#/$defs/ids"}
+        "strong": {
+          "$ref": "#/$defs/ids"
+        },
+        "weak": {
+          "$ref": "#/$defs/ids"
+        },
+        "adjacent": {
+          "$ref": "#/$defs/ids"
+        }
       }
     },
     "stats": {
       "type": "object",
-      "required": ["distinct_days", "span_days", "first_date", "last_date", "coverage_pct", "time_center"],
+      "required": [
+        "distinct_days",
+        "span_days",
+        "first_date",
+        "last_date",
+        "coverage_pct",
+        "time_center"
+      ],
       "properties": {
-        "distinct_days": {"type": "integer", "minimum": 0},
-        "span_days": {"type": "integer", "minimum": 0},
-        "first_date": {"type": "string", "format": "date"},
-        "last_date": {"type": "string", "format": "date"},
-        "coverage_pct": {"type": "number", "minimum": 0, "maximum": 100},
-        "time_center": {"type": ["number", "null"]},
-        "time_band": {"type": "string"},
-        "peak_date": {"type": "string", "format": "date"},
-        "peak_count": {"type": "integer"},
-        "sources": {"type": "object"}
+        "distinct_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "first_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "last_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "coverage_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "time_center": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "time_band": {
+          "type": "string"
+        },
+        "peak_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "peak_count": {
+          "type": "integer"
+        },
+        "sources": {
+          "type": "object"
+        }
       }
     },
-    "top_terms": {"type": "array", "items": {"type": "object", "required": ["term", "count"]}},
-    "top_tags": {"type": "array", "items": {"type": "object", "required": ["tag", "count"]}},
+    "top_terms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "term",
+          "count"
+        ]
+      }
+    },
+    "top_tags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "tag",
+          "count"
+        ]
+      }
+    },
     "emotion": {
       "type": "object",
-      "required": ["series", "mean", "baseline"],
+      "required": [
+        "series",
+        "mean",
+        "baseline"
+      ],
       "properties": {
         "series": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["date", "valence", "arousal", "sparse"],
+            "required": [
+              "date",
+              "valence",
+              "arousal",
+              "sparse"
+            ],
             "properties": {
-              "date": {"type": "string", "format": "date"},
-              "valence": {"type": "number", "minimum": -1, "maximum": 1},
-              "arousal": {"type": "number", "minimum": 0, "maximum": 1},
-              "evidence": {"type": "integer", "minimum": 0},
-              "sparse": {"type": "boolean"}
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "valence": {
+                "type": "number",
+                "minimum": -1,
+                "maximum": 1
+              },
+              "arousal": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "evidence": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sparse": {
+                "type": "boolean"
+              }
             }
           }
         },
-        "mean": {"type": ["number", "null"]},
-        "min": {"type": ["number", "null"]},
-        "max": {"type": ["number", "null"]},
-        "baseline": {"type": ["number", "null"]}
+        "mean": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "baseline": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
       }
     },
     "change_points": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["date", "direction", "delta"],
+        "required": [
+          "date",
+          "direction",
+          "delta"
+        ],
         "properties": {
-          "date": {"type": "string", "format": "date"},
-          "direction": {"enum": ["상승", "하강"]},
-          "delta": {"type": "number", "minimum": 0},
-          "before": {"type": "number"},
-          "after": {"type": "number"},
-          "near_evidence": {"type": "boolean"}
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "direction": {
+            "enum": [
+              "상승",
+              "하강"
+            ]
+          },
+          "delta": {
+            "type": "number",
+            "minimum": 0
+          },
+          "before": {
+            "type": "number"
+          },
+          "after": {
+            "type": "number"
+          },
+          "near_evidence": {
+            "type": "boolean"
+          }
         }
       }
     },
     "periodicity": {
       "type": "object",
       "properties": {
-        "lag_days": {"type": ["integer", "null"]},
-        "strength": {"type": ["number", "null"]},
-        "weekday_peak": {"type": ["string", "null"]},
-        "weekly_strength": {"type": ["number", "null"]}
+        "lag_days": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "strength": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "weekday_peak": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "weekly_strength": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
       }
     },
-    "clusters": {"type": "array", "items": {"type": "object", "required": ["id", "label", "share"]}},
+    "clusters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "share"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "axis": {
+            "enum": [
+              "topic",
+              "mood",
+              "social"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "share": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "size": {
+            "type": "integer"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
     "signals": {
       "type": "object",
-      "required": ["stability", "novelty", "conflict", "uncertainty", "possibility", "activity", "confidence"],
+      "required": [
+        "stability",
+        "novelty",
+        "conflict",
+        "uncertainty",
+        "possibility",
+        "activity",
+        "confidence"
+      ],
       "additionalProperties": false,
       "properties": {
-        "stability": {"$ref": "#/$defs/unit"},
-        "novelty": {"$ref": "#/$defs/unit"},
-        "conflict": {"$ref": "#/$defs/unit"},
-        "uncertainty": {"$ref": "#/$defs/unit"},
-        "possibility": {"$ref": "#/$defs/unit"},
-        "activity": {"$ref": "#/$defs/unit"},
-        "confidence": {"$ref": "#/$defs/unit"}
+        "stability": {
+          "$ref": "#/$defs/unit"
+        },
+        "novelty": {
+          "$ref": "#/$defs/unit"
+        },
+        "conflict": {
+          "$ref": "#/$defs/unit"
+        },
+        "uncertainty": {
+          "$ref": "#/$defs/unit"
+        },
+        "possibility": {
+          "$ref": "#/$defs/unit"
+        },
+        "activity": {
+          "$ref": "#/$defs/unit"
+        },
+        "confidence": {
+          "$ref": "#/$defs/unit"
+        }
       }
+    },
+    "mood_mix": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "evidence": {
+            "type": "number"
+          },
+          "all": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "social_mix": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "evidence": {
+            "type": "number"
+          },
+          "all": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "narrative_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}$",
+      "description": "같은 키워드·같은 근거면 같은 값. 세 화면이 같은 결과를 보는지 확인용"
     }
   },
   "allOf": [
     {
-      "if": {"properties": {"evidence_grade": {"const": "근거 부족"}}},
-      "then": {"required": ["message"]},
-      "else": {"required": ["stats", "top_terms", "top_tags", "emotion", "change_points", "periodicity", "clusters"]}
+      "if": {
+        "properties": {
+          "evidence_grade": {
+            "const": "근거 부족"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "message"
+        ]
+      },
+      "else": {
+        "required": [
+          "stats",
+          "top_terms",
+          "top_tags",
+          "emotion",
+          "change_points",
+          "periodicity",
+          "clusters"
+        ]
+      }
     }
   ],
   "$defs": {
-    "ids": {"type": "array", "items": {"type": "string", "pattern": "^r[0-9a-f]{11}$"}},
-    "unit": {"type": "number", "minimum": 0, "maximum": 1}
+    "ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^r[0-9a-f]{11}$"
+      }
+    },
+    "unit": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
   }
 }
