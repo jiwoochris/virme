@@ -32,6 +32,15 @@
   td.names { color: var(--sub); }
   td input { width: 100%; }
   .note { margin-top: 26px; color: var(--mut); font-size: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+  button.danger { border-color: var(--warn); color: var(--warn); }
+  #delConfirm { min-width: 320px; }
+  .ob { border-bottom: 1px solid var(--line); padding: 9px 2px; font-size: 13px; }
+  .ob .meta { color: var(--mut); font-size: 12px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .ob .meta b { color: var(--sub); font-weight: 500; }
+  .ob .flag { color: var(--warn); }
+  .ob .pre { color: var(--sub); font-size: 12px; white-space: pre-wrap; margin: 4px 0 0; }
+  .ob pre { max-height: 320px; overflow: auto; background: #0b0c11; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: 12px/1.6 ui-monospace, Menlo, monospace; color: var(--sub); white-space: pre-wrap; }
+  .ob button { padding: 3px 8px; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -86,6 +95,23 @@
     <tbody id="people"><tr><td colspan="5" class="names">불러오는 중</td></tr></tbody>
   </table>
 
+  <h2>4. 밖으로 나간 글</h2>
+  <p class="sub">core 가 OpenRouter 로 보낸 요청과, 이야기·대화용으로 브라우저에 넘겨 브라우저가 보낸 프롬프트를 모두 이 컴퓨터에 남깁니다 (30일 보관). 보내기 직전에 가명표의 실명과 전화번호 같은 값이 남아 있는지 한 번 더 찾아 바꾸고, 바꾼 일이 있으면 아래에 표시합니다.</p>
+  <div class="status" id="obSummary">불러오는 중</div>
+  <table id="obPurpose" hidden>
+    <thead><tr><th>용도</th><th>보낸 곳</th><th>요청</th><th>글자</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div id="obRecent"></div>
+
+  <h2>5. 내 기록 지우기</h2>
+  <p class="sub">이 프로필의 기록, 가명표, 계산 결과, 정답 라벨, 올린 파일, 음악·영상, 전송 로그를 모두 지웁니다. 되돌릴 수 없습니다. 웹 앱에 저장해 둔 이야기와 대화 답도 지운 기록의 것이면 더 이상 보여 주지 않습니다.</p>
+  <div class="opts">
+    <input type="text" id="delConfirm" placeholder="확인을 위해 프로필 이름을 적어 주세요" autocomplete="off">
+    <button class="danger" id="delBtn">모두 지우기</button>
+  </div>
+  <p class="out" id="delOut"></p>
+
   <p class="note">다 넣었으면 웹 앱(<a href="http://127.0.0.1:5173" style="color:var(--acc)">127.0.0.1:5173</a>)의 노벨·대화에서 "내 기록"을 고르고, INSIGHT 에서 흐름을 확인합니다.</p>
 </main>
 <script>
@@ -106,6 +132,7 @@ async function refreshStatus() {
     const dr = h.date_range || [];
     $('#status').textContent = `프로필 ${h.profile} · 기록 ${h.records}건` + (h.records ? ` · ${String(dr[0] || '').slice(0, 10)} ~ ${String(dr[1] || '').slice(0, 10)}` : '') +
       ` · ${h.built ? '처리 완료' : '아직 처리 전'}` + (h.models && h.models.llm ? '' : ' · OpenRouter 키 없음 (LLM 단계는 로컬 계산으로 대체)');
+    $('#delConfirm').placeholder = `확인을 위해 프로필 이름(${h.profile})을 적어 주세요`;
   } catch (e) { $('#status').textContent = 'core 서버에 연결하지 못했습니다'; }
 }
 
@@ -162,7 +189,56 @@ async function loadPeople() {
   });
 }
 
-refreshStatus(); loadPeople(); pollBuild();
+const CHANNEL = { core: 'core → OpenRouter', browser: '브라우저 → OpenRouter' };
+const num = (n) => Number(n || 0).toLocaleString('ko-KR');
+async function loadOutbound() {
+  const d = await (await fetch('outbound?days=7')).json();
+  $('#obSummary').innerHTML = d.requests
+    ? `최근 ${d.days}일 요청 ${num(d.requests)}건 · 글자 ${num(d.chars)}자 · ` +
+      (d.guarded_requests ? `<span style="color:var(--warn)">마지막 검사에서 값을 바꿔 보낸 요청 ${d.guarded_requests}건 (${esc(d.guarded_kinds.join(', '))})</span>`
+                          : '마지막 검사에서 바꾼 값 없음')
+    : `최근 ${d.days}일 동안 밖으로 나간 글이 없습니다`;
+  const tb = $('#obPurpose tbody');
+  $('#obPurpose').hidden = !d.by_purpose.length;
+  tb.innerHTML = d.by_purpose.map((g) => `<tr><td>${esc(g.purpose)}</td><td class="names">${CHANNEL[g.channel] || esc(g.channel)}</td>` +
+    `<td>${num(g.requests)}</td><td>${num(g.chars)}</td></tr>`).join('');
+  $('#obRecent').innerHTML = d.recent.map((e) => `<div class="ob" data-id="${esc(e.id)}">
+      <div class="meta"><b>${esc(e.ts.replace('T', ' '))}</b><span>${esc(e.purpose)}</span><span>${CHANNEL[e.channel] || ''}</span>
+        <span>${num(e.chars)}자</span>${e.guarded.length ? `<span class="flag">바꿔 보냄: ${esc(e.guarded.join(', '))}</span>` : ''}
+        <button>전체 보기</button></div>
+      <p class="pre">${esc(e.preview)}</p></div>`).join('');
+  document.querySelectorAll('#obRecent .ob').forEach((row) => {
+    $('button', row).onclick = async () => {
+      const old = $('pre', row);
+      if (old) { old.remove(); return; }
+      const it = await (await fetch('outbound/item?id=' + encodeURIComponent(row.dataset.id))).json();
+      const pre = document.createElement('pre');
+      pre.textContent = `[지시문]\n${it.system || ''}\n\n[보낸 글]\n${it.user || '(없음: 사용자가 친 말만 브라우저가 붙여 보냄)'}` +
+        (it.truncated ? '\n\n(로그에는 앞 40,000자만 남겼습니다)' : '');
+      row.appendChild(pre);
+    };
+  });
+}
+
+$('#delBtn').onclick = async () => {
+  const out = $('#delOut');
+  out.className = 'out';
+  const confirmName = $('#delConfirm').value.trim();
+  if (!confirmName) { out.className = 'out err'; out.textContent = '확인란에 프로필 이름을 적어 주세요'; return; }
+  $('#delBtn').disabled = true;
+  try {
+    const r = await fetch('profile/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: confirmName }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || ('HTTP ' + r.status));
+    out.textContent = `기록 ${num(d.records)}건과 가명 ${num(d.people)}개를 지웠습니다` + (d.folders.length ? ` (${d.folders.join(', ')} 폴더 포함)` : '');
+    $('#delConfirm').value = '';
+    refreshStatus(); loadPeople(); loadOutbound();
+  } catch (e) { out.className = 'out err'; out.textContent = String(e.message || e); }
+  finally { $('#delBtn').disabled = false; }
+};
+
+refreshStatus(); loadPeople(); pollBuild(); loadOutbound();
 </script>
 </body>
 </html>

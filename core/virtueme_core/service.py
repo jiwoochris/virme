@@ -2,16 +2,19 @@
 from __future__ import annotations
 
 import os
+import shutil
 import threading
 import time
+import uuid
 from collections import Counter
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from . import clusters, entities, importer, music, narrative, patterns, story
+from . import clusters, entities, importer, llm, music, narrative, patterns, story
 from .config import DATA_DIR, JUDGE_MODEL, LLM_MODEL, SETTINGS, Settings, openrouter_key, profile_db_path
 from .embed import HashEmbedder, TextEmbedder, VisionEmbedder
+from .outbound import Outbound
 from .privacy import Masker
 from .query import QueryEngine
 from .store import Store
@@ -38,6 +41,9 @@ class Service:
         self.acestep = music.AceStepClient(os.environ.get("VIRTUEME_ACESTEP_URL", music.ACESTEP_URL))
         self.upload_root = DATA_DIR / "uploads" / profile
         self._build: dict[str, Any] = {"state": "idle"}
+        # 밖으로 나가는 글은 모두 여기서 마지막 검사를 거치고 로그에 남는다 (core 직접 호출과 브라우저에 넘기는 프롬프트)
+        self.outbound = Outbound(DATA_DIR / "outbound" / profile, self.store)
+        llm.set_outbound(self.outbound)
 
     @property
     def engine(self) -> QueryEngine:
@@ -62,7 +68,16 @@ class Service:
                        "llm": self.llm_model if openrouter_key() else None,
                        "judge": self.judge_model if openrouter_key() and self.settings.use_judge else None},
             "built": bool(s["vectors"].get("text")),
+            "data_id": self.data_id() if s["records"] else None,
         }
+
+    def data_id(self) -> str:
+        """이 기록 묶음의 식별자. 기록을 모두 지우면 바뀌므로, 브라우저에 저장한 이야기·대화 답이 지운 기록의 것이면 쓰지 않는다."""
+        got = self.store.cache_get("data_id")
+        if not got:
+            got = uuid.uuid4().hex[:12]
+            self.store.cache_put("data_id", got)
+        return got
 
     def query(self, keyword: str, include_others: bool | None = None) -> dict[str, Any]:
         eng = self.engine
@@ -77,7 +92,10 @@ class Service:
     def story_prompt(self, keyword: str, genre: int | None = None, version: str = "v2", variation: int = 0,
                      include_others: bool | None = None) -> dict[str, Any]:
         result = self.query(keyword, include_others=include_others)
-        return {"query": result, "prompt": story.story_prompt(result, genre, version, variation)}
+        prompt = story.story_prompt(result, genre, version, variation)
+        # 이 프롬프트는 브라우저가 OpenRouter 로 보낸다. 넘기기 전에 마지막 검사를 거치고 로그에 남긴다
+        prompt["system"], prompt["user"] = self.outbound.send("browser", prompt["system"], prompt["user"], purpose="이야기 집필")
+        return {"query": result, "prompt": prompt}
 
     def _start(self) -> date | None:
         d = self.engine.daily
@@ -131,6 +149,8 @@ class Service:
         views = [narrative.record_view(r, masker) for r in recs]
         people = narrative.people_in(self.store, views)
         prompt = story.avatar_prompt(self.profile_brief(), views, people, version, mood)
+        # 기록은 system 에 들어 있고, 사용자가 친 말은 브라우저가 그대로 붙인다
+        prompt["system"], _ = self.outbound.send("browser", prompt["system"], "", purpose="대화 답")
         return {**prompt, "records": views, "people": people}
 
     def greeting(self) -> str:
@@ -248,6 +268,20 @@ class Service:
         st.pop("started", None)
         st["lines"] = list(st.get("lines", []))
         return st
+
+    def delete_all(self) -> dict[str, Any]:
+        """이 프로필의 기록·가명표·계산 결과·올린 파일·음악·전송 로그를 모두 지운다."""
+        if self._build.get("state") == "running":
+            raise ValueError("기록을 처리하는 중에는 지울 수 없습니다. 끝난 뒤에 다시 눌러 주세요.")
+        counts = self.store.wipe()
+        folders = []
+        for label, d in (("올린 파일", self.upload_root), ("음악·영상", self.music_root), ("전송 로그", self.outbound.root)):
+            if d.exists():
+                shutil.rmtree(d, ignore_errors=True)
+                folders.append(label)
+        self.invalidate()
+        self._build = {"state": "idle"}
+        return {"records": counts.get("records", 0), "people": counts.get("people", 0), "folders": folders}
 
     def people_local(self) -> list[dict[str, Any]]:
         """가명 대응표 (이 컴퓨터 화면에서만 쓴다). 가명마다 실명·관계·기록 수."""

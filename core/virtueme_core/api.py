@@ -65,6 +65,10 @@ class BuildBody(BaseModel):
     entities: bool = True
 
 
+class DeleteBody(BaseModel):
+    confirm: str = Field(min_length=1, max_length=60)
+
+
 class TalkBody(BaseModel):
     message: str = Field(min_length=1, max_length=500)
     history: list[str] | None = None
@@ -272,6 +276,26 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
         if not n:
             raise HTTPException(404, "그런 가명이 없습니다")
         return {"ok": True, "people": service.people_local()}
+
+    @app.get("/outbound")
+    def outbound_summary(days: int = 7) -> dict[str, Any]:
+        return service.outbound.summary(max(1, min(days, 30)))
+
+    @app.get("/outbound/item")
+    def outbound_item(id: str) -> dict[str, Any]:  # noqa: A002
+        got = service.outbound.item(id)
+        if not got:
+            raise HTTPException(404, "그런 기록이 없습니다")
+        return got
+
+    @app.post("/profile/delete")
+    def delete_profile(body: DeleteBody) -> dict[str, Any]:
+        if body.confirm.strip() != service.profile:
+            raise HTTPException(400, f"확인란에 프로필 이름({service.profile})을 그대로 적어 주세요")
+        try:
+            return service.delete_all()
+        except ValueError as err:
+            raise HTTPException(409, str(err)) from err
 
     @app.get("/records/{rid}")
     def record(rid: str) -> dict[str, Any]:

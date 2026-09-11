@@ -366,6 +366,22 @@ class Store:
         for r in self.conn.execute("SELECT key, value FROM cache WHERE key LIKE ?", (prefix + "%",)):
             yield r[0], json.loads(r[1])
 
+    # ---------- 전부 지우기 ----------
+    def wipe(self) -> dict[str, int]:
+        """모든 표의 행을 지우고 파일을 다시 쓴다. secure_delete 와 VACUUM 으로 지운 내용이 빈 페이지에 남지 않게 하고,
+        WAL 파일도 비운다. 반환: 표마다 지운 행 수."""
+        c = self.conn
+        tables = [r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
+        c.execute("PRAGMA secure_delete=ON")
+        counts = {}
+        with c:
+            for t in tables:
+                counts[t] = c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+                c.execute(f"DELETE FROM {t}")
+        c.execute("VACUUM")
+        c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        return counts
+
     # ---------- imports ----------
     def log_import(self, source: str, path: str, n: int, note: str | None = None) -> None:
         with self.conn:

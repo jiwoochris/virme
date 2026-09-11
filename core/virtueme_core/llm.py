@@ -1,17 +1,29 @@
 """OpenRouter 호출. 키가 없으면 `LLMUnavailable` 을 던지고, 호출하는 쪽이 로컬 대체 경로로 간다.
 
-여기로 들어오는 텍스트는 이미 privacy.Masker 를 거친 것이어야 한다.
+여기로 들어오는 텍스트는 이미 privacy.Masker 를 거친 것이어야 한다. 그래도 보내기 직전에 `outbound.Outbound` 가
+가명표의 실명이 남았는지 한 번 더 보고, 보낸 글을 프로필 폴더에 남긴다 (Service 가 `set_outbound` 로 연결한다).
 """
 from __future__ import annotations
 
 import json
 import re
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
 from .config import LLM_MODEL, OPENROUTER_URL, openrouter_key
+
+if TYPE_CHECKING:
+    from .outbound import Outbound
+
+_OUTBOUND: "Outbound | None" = None
+
+
+def set_outbound(outbound: "Outbound | None") -> None:
+    """이 프로세스가 보내는 요청을 검사·기록할 곳. 서버 하나가 프로필 하나를 여므로 마지막에 연결한 것 하나만 쓴다."""
+    global _OUTBOUND
+    _OUTBOUND = outbound
 
 
 class LLMUnavailable(RuntimeError):
@@ -56,6 +68,8 @@ def _chat(system: str, user: str, model: str | None, temperature: float, max_tok
     key = openrouter_key()
     if not key:
         raise LLMUnavailable("OPENROUTER_API_KEY 가 없습니다")
+    if _OUTBOUND is not None:
+        system, user = _OUTBOUND.send("core", system, user, model=model or LLM_MODEL)
     body = {
         "model": model or LLM_MODEL,
         "temperature": temperature,
