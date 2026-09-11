@@ -52,7 +52,11 @@ TERM_STOP = {
     # 이야기를 전하는 말(서술·대화 틀)은 기록 속 사실이 아니다
     "주인", "생명체", "대화", "얘기", "이야기", "말", "메시지", "글", "휴대폰", "핸드폰", "폰", "제안", "고백", "사과", "연락",
     "답장", "답", "대답", "질문", "다음", "연속", "추천", "후기", "소식", "기억", "순간", "장면", "누군가", "자신", "스스로",
-    "문장", "단어", "초", "중순", "말일",
+    "문장", "단어", "초", "중순", "말일", "말씀", "자랑", "전화",
+    # 때·정도를 흐리는 말은 기록 속 낱말이 아니다 (eval/grounding_eval.py 에서 맞는 앵커를 떨어뜨리던 것들)
+    "시작", "정도", "요즘", "최근", "며칠", "반쯤", "밤늦게", "다음날", "가까이", "일주일", "들어서다",
+    # 형태소 분석이 조사·관형형을 명사로 잘못 자르는 경우 ("25일에도" → 에도, "쓴 날" → 쓴)
+    "에도", "쓴",
 }
 NOUN_TAGS = {"NNG", "NNP", "SL", "XR", "NR"}
 WEEKDAYS = "월화수목금토일"
@@ -89,6 +93,7 @@ class AnchorResult:
     record_id: str | None = None
     failed_claims: list[str] = field(default_factory=list)
     claims: list[str] = field(default_factory=list)
+    context: str | None = None  # 문맥 검사 판정 (ok | wrong | missing). 검사하지 않았으면 None
 
 
 def _hour24(period: str | None, h: int) -> list[int]:
@@ -116,10 +121,12 @@ GROUP_ROOM_WORDS = "단톡방 단톡 톡방 단체방"
 KIND_WORDS = {"post": "게시물", "story": "스토리", "reel": "릴스", "comment": "댓글", "photo": "사진", "message": "메시지"}
 
 
-def facts_of(r: Record, start: date | None = None) -> Facts:
+def facts_of(r: Record, start: date | None = None, people: dict[str, str | None] | None = None) -> Facts:
+    """people(가명 → 관계)을 주면 대화 상대의 관계("회사 동기")도 대조할 낱말에 넣는다. 이야기·대화는 가명 대신 관계로 부른다."""
+    rel = " ".join(v for p in r.participants if (v := (people or {}).get(p)))
     body = " ".join(filter(None, [r.text, " ".join(r.tags), " ".join(t["tag"] for t in r.meta.get("auto_tags", [])),
                                   SOURCE_WORDS.get(r.source, ""), KIND_WORDS.get(r.kind, ""),
-                                  " ".join(p for p in r.participants if p != "나"), r.meta.get("room") or "",
+                                  " ".join(p for p in r.participants if p != "나"), rel, r.meta.get("room") or "",
                                   GROUP_ROOM_WORDS if len(r.participants) >= 3 else ""]))
     lem = set(r.meta.get("lemmas") or []) | lemmas(body) | set(r.tags)
     d = r.dt.date()
@@ -195,6 +202,8 @@ def parse_claims(text: str) -> list[Claim]:
 def _term_ok(term: str, f: Facts) -> bool:
     if term in f.lemmas or term in f.text:
         return True
+    if len(term) >= 3 and term[-1] in "도시" and term[:-1] in f.text:  # 제주도 ↔ 제주, 서울시 ↔ 서울
+        return True
     stem = term[:-1] if term.endswith("다") and len(term) > 2 else term
     return stem in f.text
 
@@ -265,6 +274,12 @@ def check_anchor(text: str, refs: list[Facts], extra_counts: set[int] | None = N
                 best, best_miss = f, miss
             if not miss:
                 break
+        if best is not None and best_miss and all(_single_ok(c, best) for c in joint):
+            # 한 대화를 여러 메시지로 나눠 보낸 경우: 날짜·시각이 맞은 기록과 같은 날 90분 안에 인용한 다른 기록에
+            # 나머지 낱말이 있으면 한 사건으로 본다 ("고양이 키우기로 했어" / "콩이 정식으로 입양하기로 했어")
+            near = [f for f in refs if f is not best and f.date == best.date and abs(f.minutes - best.minutes) <= 90]
+            if all(any(_single_ok(c, f) for f in near) for c in terms if not _single_ok(c, best)):
+                best_miss = []
         failed += best_miss if best_miss is not None else [c.text for c in need]
         return not failed, (best.id if best and not best_miss else None), failed, claims
     # 여러 기록을 합친 주장 (날짜·시각 없음): 낱말마다 어느 한 기록에 있으면 된다
@@ -308,9 +323,10 @@ def loose_facts(text: str, evidence: list[Facts]) -> list[dict[str, Any]]:
 
 
 class Verifier:
-    def __init__(self, evidence: list[Record], start: date | None = None, extra_counts: set[int] | None = None):
+    def __init__(self, evidence: list[Record], start: date | None = None, extra_counts: set[int] | None = None,
+                 people: dict[str, str | None] | None = None):
         self.records = evidence
-        self.facts = [facts_of(r, start) for r in evidence]
+        self.facts = [facts_of(r, start, people) for r in evidence]
         self.extra = extra_counts or set()
 
     def verify_text(self, text: str, offset: int = 0) -> list[AnchorResult]:
@@ -369,7 +385,9 @@ class Verifier:
             elif r.status == "empty" or mode == "plain":
                 pieces.append(inner)
             elif r.status == "context_mismatch":
-                pieces.append(f'<span class="vx-blur" title="문장 속 사건이 인용한 기록과 달라 흐리게 바꾼 값">'
+                why = r.failed_claims[0].split(": ", 1)[1] if r.failed_claims and ": " in r.failed_claims[0] else ""
+                title = "문장 속 사건이 인용한 기록과 달라 흐리게 바꾼 값" + (f" ({why})" if why else "")
+                pieces.append(f'<span class="vx-blur" title="{html.escape(title, quote=True)}">'
                               f'{html.escape(_blur(r.text))}</span>')
             else:  # blur (rewrite 가 실패한 경우 포함)
                 blurred = html.escape(_blur(r.text))
@@ -380,13 +398,35 @@ class Verifier:
         return "".join(pieces)
 
 
-CONTEXT_SYSTEM = """너는 소설·대화 문장이 인용한 기록과 맞는지 확인한다. 항목마다 문장(인용한 값은 << >> 로 표시)과,
-그 값이 가리키는 실제 기록이 주어진다. 기록에는 쓴 사람이 적혀 있고, "나"는 기록 주인이다. 문장에서 기록 주인은 소설이면
-"나"(주인공), 대화이면 "너" 또는 "나"로 불린다.
-문장이 인용 값과 한 사건으로 묶어 말하는 사실(그날·그때 한 일, 장소, 함께 한 사람, 횟수, "처음"·"마지막" 같은 순서,
-그 일을 한 사람)이 그 기록과 어긋나면 ok=false 다. 다른 사람이 자기 일을 말한 기록을 기록 주인이 한 일처럼 쓰면 어긋난 것이다.
-문장의 나머지가 지어낸 이야기(대사, 감정, 비유, 새 인물)인 것은 괜찮다. 인용 값에 직접 묶인 사실만 본다.
-JSON 하나만 출력한다: {"checks":[{"c":번호,"ok":true}]}"""
+CONTEXT_VERSION = "c4"  # 문맥 검사 지시문이나 넘기는 기록 모양을 바꾸면 올린다 (평가 캐시 구분)
+CONTEXT_SYSTEM = """너는 소설·대화 속 문장이 인용한 기록과 맞는지 확인한다. 항목마다 문장(인용한 값은 << >> 로 표시)과
+그 값이 가리키는 기록(한 건 이상)이 주어진다. 기록마다 쓴 사람이 적혀 있고, "나"는 기록 주인이다. 가명 옆 괄호는 기록 주인과의
+관계이고(예: 지인D(회사 동기)), 글에서는 가명 대신 관계로 부를 수 있다.
+
+인용 값의 날짜·요일·시각·숫자는 규칙 검사가 이미 기록과 대조했다. 너는 그 값에 묶인 사건이 기록과 맞는지만 본다.
+
+항목마다 판정 v 를 하나 고른다.
+- "wrong": 인용 값에 묶인 사실이 기록과 어긋난다.
+  · 기록과 다른 활동·장소·물건·함께 한 사람을 말한다
+  · 다른 사람(지인A 등)이 쓴 기록 속 그 사람의 일을 기록 주인이 한 일처럼 쓴다. 기록 주인이 한 말을 다른 사람이 한 말처럼 쓴다
+  · 기록 내용을 뒤집는다 (기록은 "갔다"인데 "안 갔다")
+  · 주어진 기록만으로도 틀린 것이 드러나는 순서를 말한다 ("처음", "이틀 연속")
+- "missing": 인용 값에 묶인 기록 주인의 구체적인 행동(무엇을 했는지, 어디서, 누구와)이 기록에 없어 확인할 수 없지만
+  어긋나지는 않는다.
+- "ok": 기록이 뒷받침하거나, 묶인 나머지가 창작이다.
+
+아래는 wrong 이 아니다.
+- 기록 주인을 "주인"·"집사"·"그"·"그녀"·이름처럼 3인칭으로 부르는 것. 반려동물이나 사물이 화자인 소설이 많다.
+  대화 답에서는 기록 주인이 "너" 또는 "나"다
+- 감정·기분·해석이 기록의 말투와 다른 것 (기록은 뿌듯한데 소설에서 화가 났다고 써도 창작이다)
+- 기록에 없는 장면·대사·사물·초자연적인 일, 이야기 속 설정을 그날에 덧붙인 것
+- 횟수가 인용한 기록 수보다 많은 것 (인용하지 않은 기록에 있을 수 있다). 인용한 기록이 다른 활동일 때만 wrong 이다
+- 기록 문장을 줄이거나 바꿔 말한 것, "쯤"·"무렵"·"거의"로 흐린 것
+
+v 가 ok 가 아니면 why 에 기록의 어느 부분과 어긋나는지 한 줄로 쓴다 (예: "러닝 크루에 다녀온 사람은 지인D").
+why 에서는 기록 주인을 "기록 주인"이라고만 쓴다.
+JSON 하나만 출력한다: {"checks":[{"c":번호,"v":"ok"},{"c":번호,"v":"wrong","why":"…"}]}"""
+CONTEXT_MAX_RECORDS = 8
 
 
 def _sentence_of(text: str, start: int, end: int) -> str:
@@ -396,25 +436,71 @@ def _sentence_of(text: str, start: int, end: int) -> str:
     return text[a:b].strip()
 
 
-def _record_line(r: Record) -> str:
-    who = [p for p in r.participants if p != "나"]
+def _record_line(r: Record, people: dict[str, str | None] | None = None) -> str:
+    """문맥 검사에 넘기는 기록 한 줄. people(가명 → 관계)을 주면 "지인D(회사 동기)"처럼 적는다:
+    대화 답은 가명 대신 관계로 부르므로, 이게 없으면 "회사 동기한테 말했잖아"를 다른 사람으로 오해한다."""
+    people = people or {}
+    name = lambda a: f"{a}({people[a]})" if people.get(a) else a  # noqa: E731
+    who = [name(p) for p in r.participants if p != "나"]
     body = r.text or " ".join(t["tag"] for t in r.meta.get("auto_tags", []))
     return (f"{r.dt.month}월 {r.dt.day}일 {WEEKDAYS[r.dt.weekday()]}요일 {r.dt.strftime('%H:%M')} "
             f"[{SOURCE_WORDS.get(r.source, r.source).split()[0]}{' · ' + ', '.join(who) if who else ''}] "
-            f"쓴 사람: {r.author or '나'} | {body.replace(chr(10), ' / ')[:160]}")
+            f"쓴 사람: {name(r.author) if r.author else '나'} | {body.replace(chr(10), ' / ')[:160]}")
 
 
-def context_check(items: list[dict[str, Any]], fn: Callable[[str, str], Any]) -> list[bool]:
-    """규칙 검사를 통과한 앵커가 문장 속에서 기록과 다른 사건에 묶이지 않았는지 LLM 에 한 번에 묻는다."""
+def context_items(paragraphs: list[str], results: list[list[AnchorResult]], evidence: list[Record],
+                  people: dict[str, str | None] | None = None) -> tuple[list[dict[str, Any]], list[AnchorResult]]:
+    """규칙 검사를 통과한 앵커마다 문맥 검사에 넘길 문장과 기록 줄. 인용 번호가 가리키는 기록을 모두 넘긴다
+    ("7월 21일과 22일, 이틀 연속 등산"은 두 기록을 함께 봐야 맞는지 안다). 번호를 고친 앵커는 맞은 기록을 앞에 둔다."""
+    by_id = {r.id: r for r in evidence}
+    strip = lambda s: ANCHOR_RE.sub(lambda mm: re.sub(r"<[^>]+>", "", mm.group(2)), s)  # noqa: E731
+    items, where = [], []
+    for para, res in zip(paragraphs, results):
+        for m, r in zip(list(ANCHOR_RE.finditer(para)), res):
+            if r.status not in ("ok", "ref_fixed", "unreferenced_ok") or r.record_id not in by_id:
+                continue
+            plain = strip(para[: m.start()])
+            marked = plain + f"<<{r.text}>>" + strip(para[m.end():])
+            cited = [evidence[n - 1] for n in dict.fromkeys(r.refs) if 1 <= n <= len(evidence)]
+            if by_id[r.record_id] not in cited:
+                cited = [by_id[r.record_id]] + ([] if r.status == "ref_fixed" else cited)
+            items.append({"sentence": _sentence_of(marked, len(plain), len(plain) + len(r.text) + 4),
+                          "records": [_record_line(x, people) for x in cited]})
+            where.append(r)
+    return items, where
+
+
+def context_verdicts(items: list[dict[str, Any]], fn: Callable[[str, str], Any], kind: str = "story") -> list[dict[str, str]]:
+    """규칙 검사를 통과한 앵커가 문장 속에서 기록과 다른 사건에 묶이지 않았는지 LLM 에 한 번에 묻는다.
+
+    item: {"sentence": 인용 값을 << >> 로 표시한 문장, "records": 기록 줄 목록}. 반환: 항목마다 {"v": ok|wrong|missing, "why"}.
+    판정이 실패하면 모두 ok 로 보고 규칙 검사 결과만 쓴다.
+    """
     if not items:
         return []
-    body = "\n\n".join(f"[{i + 1}] 문장: {it['sentence']}\n기록: {it['record']}" for i, it in enumerate(items))
+    head = "글 종류: " + ("대화 답 (\"너\"는 기록 주인)" if kind == "talk" else "소설")
+    blocks = []
+    for i, it in enumerate(items):
+        recs = it["records"]
+        lines = "\n".join(f"  - {x}" for x in recs[:CONTEXT_MAX_RECORDS])
+        more = f"\n  (인용한 기록 {len(recs) - CONTEXT_MAX_RECORDS}건 더 있음)" if len(recs) > CONTEXT_MAX_RECORDS else ""
+        blocks.append(f"[{i + 1}] 문장: {it['sentence']}\n기록:\n{lines}{more}")
     try:
-        data = fn(CONTEXT_SYSTEM, body)
-        got = {int(c.get("c", 0)): bool(c.get("ok", True)) for c in data.get("checks", [])}
+        data = fn(CONTEXT_SYSTEM, head + "\n\n" + "\n\n".join(blocks))
+        got = {}
+        for c in data.get("checks", []):
+            v = str(c.get("v") or ("ok" if c.get("ok", True) else "wrong")).lower()
+            # 화면은 "(나)"를 "나"로 바꿔 보여 주므로 "기록 주인(나)가" 가 "기록 주인나가" 로 깨지지 않게 미리 줄인다
+            why = re.sub(r"기록\s*주인\s*\(나\)|\(나\)", "기록 주인", str(c.get("why") or ""))[:160]
+            got[int(c.get("c", 0))] = {"v": v if v in ("ok", "wrong", "missing") else "ok", "why": why}
     except Exception:  # 판정이 실패하면 규칙 검사 결과만 쓴다
-        return [True] * len(items)
-    return [got.get(i + 1, True) for i in range(len(items))]
+        return [{"v": "ok", "why": ""} for _ in items]
+    return [got.get(i + 1, {"v": "ok", "why": ""}) for i in range(len(items))]
+
+
+def context_check(items: list[dict[str, Any]], fn: Callable[[str, str], Any], kind: str = "story") -> list[bool]:
+    """어긋난 것("wrong")만 탈락시킨다. 기록에 없는 사실("missing")은 규칙 검사가 이미 값을 확인했으므로 통과시킨다."""
+    return [x["v"] != "wrong" for x in context_verdicts(items, fn, kind)]
 
 
 REWRITE_SYSTEM = (
@@ -433,13 +519,16 @@ def verify_story(
     extra_counts: set[int] | None = None,
     rewrite_fn: Callable[[str, str], str] | None = None,
     context_fn: Callable[[str, str], Any] | None = None,
+    kind: str = "story",
+    people: dict[str, str | None] | None = None,
 ) -> dict[str, Any]:
     """문단 목록을 검사하고 강등 방식에 맞춰 HTML 로 돌려준다.
 
     context_fn 을 주면 규칙 검사를 통과한 앵커를 문장째로 한 번 더 판정한다 (문맥 불일치 → context_mismatch).
+    kind 는 "story"(소설) 또는 "talk"(대화 답), people 은 가명 → 관계 (이야기·대화가 "회사 동기"처럼 관계로 부른
+    사람을 기록의 가명과 맞춰 보게 한다).
     """
-    v = Verifier(evidence, start, extra_counts)
-    by_id = {r.id: r for r in evidence}
+    v = Verifier(evidence, start, extra_counts, people)
     out_paras, anchors, loose_all = [], [], []
     rewritten = 0
     offset = 0
@@ -448,18 +537,12 @@ def verify_story(
         first_pass.append(v.verify_text(para, offset))
         offset += len(first_pass[-1])
     if context_fn:
-        items, where = [], []
-        for pi, (para, res) in enumerate(zip(paragraphs, first_pass)):
-            for m, r in zip(list(ANCHOR_RE.finditer(para)), res):
-                if r.status in ("ok", "ref_fixed", "unreferenced_ok") and r.record_id in by_id:
-                    plain = ANCHOR_RE.sub(lambda mm: re.sub(r"<[^>]+>", "", mm.group(2)), para[: m.start()])
-                    marked = plain + f"<<{r.text}>>" + ANCHOR_RE.sub(lambda mm: re.sub(r"<[^>]+>", "", mm.group(2)), para[m.end():])
-                    sent = _sentence_of(marked, len(plain), len(plain) + len(r.text) + 4)
-                    items.append({"sentence": sent, "record": _record_line(by_id[r.record_id])})
-                    where.append(r)
-        for r, ok in zip(where, context_check(items, context_fn)):
-            if not ok:
-                r.status, r.failed_claims = "context_mismatch", ["문장 속 사건이 인용 기록과 다름"]
+        items, where = context_items(paragraphs, first_pass, evidence, people)
+        for r, verdict in zip(where, context_verdicts(items, context_fn, kind)):
+            r.context = verdict["v"]
+            if verdict["v"] == "wrong":
+                r.status = "context_mismatch"
+                r.failed_claims = ["문장 속 사건이 인용 기록과 다름" + (f": {verdict['why']}" if verdict["why"] else "")]
     offset = 0
     for para, res in zip(paragraphs, first_pass):
         if mode == "rewrite" and rewrite_fn and any(r.status in ("failed", "context_mismatch") for r in res):

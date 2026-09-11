@@ -43,7 +43,11 @@ from virtueme_core import patterns, story  # noqa: E402
 from virtueme_core.config import JUDGE_MODEL  # noqa: E402
 from virtueme_core.llm import chat_json, chat_text  # noqa: E402
 from virtueme_core.service import Service  # noqa: E402
-from virtueme_core.verify import ANCHOR_RE, Verifier, check_anchor, parse_claims, verify_story  # noqa: E402
+from virtueme_core.config import LLM_MODEL  # noqa: E402
+from virtueme_core.verify import (  # noqa: E402
+    ANCHOR_RE, CONTEXT_VERSION, Verifier, _record_line, _sentence_of, check_anchor, context_items, context_verdicts,
+    parse_claims, verify_story,
+)
 
 KEYWORDS = {"seoyeon": ["러닝", "콩이", "엄마", "제주", "야근"], "synth": ["등산", "사람들", "휴식", "기록", "탐색"]}
 TALK_QUESTIONS = {
@@ -65,15 +69,33 @@ VERSIONS = ("v1", "v2", "v2b", "talk_v1", "talk_v2")
 WRITER = "anthropic/claude-sonnet-4.5"
 ORACLE = "anthropic/claude-sonnet-4.5"
 OUT = ROOT / "eval" / "grounding_results.json"
-SCORE_VERSION = "s5"  # 채점 방식을 바꾸면 올린다 (강등 뒤 남은 값은 다시 센다)
+SCORE_VERSION = "s6"  # 채점 방식을 바꾸면 올린다 (강등 뒤 남은 값은 다시 센다)
+# 판정 모델 지시문을 바꾸면 올린다. o3: 근거 계약의 정의대로 채점한다. 기록을 쓴 사람과 관계를 보여 주고, 남의 일을 내 일처럼
+# 쓴 주장은 날조로 센다. 날짜에 덧붙인 장면·감정 같은 창작은 사실 주장으로 보지 않는다 ("창작은 자유, 사실만 검증")
+ORACLE_VERSION = "o3"
+# 문맥 검사 모델 후보. 둘 다 "어긋남"이라고 할 때만 탈락시키는 방식도 함께 잰다
+CHECKERS = {"haiku": JUDGE_MODEL, "gemini": LLM_MODEL}
 
-ORACLE_SYSTEM = """너는 소설 속 사실 주장을 실제 기록과 대조하는 검수자다. 번호 붙은 기록 목록과, 소설에서 [A번호: …] 로 표시한
-주장 목록이 주어진다. 주장마다 판단한다.
+ORACLE_SYSTEM = """너는 소설·대화 속 사실 주장을 실제 기록과 대조하는 검수자다. 번호 붙은 기록 목록과, 글에서 [A번호: …] 로
+표시한 주장 목록이 주어진다. 기록마다 쓴 사람이 적혀 있고 "나"는 기록 주인이다. 가명 옆 괄호는 기록 주인과의 관계이고
+(예: 지인D(회사 동기)), 글에서는 가명 대신 관계로 부를 수 있다. 글에서 기록 주인은 소설이면 "나", 주인공 이름, 반려동물 화자가
+부르는 "주인"·"집사", "그"·"그녀"로, 대화 답이면 "너" 또는 "나"로 불린다. 주장마다 판단한다.
 - supported=true: 주장 안의 사실 값(날짜, 요일, 시각, 횟수, 활동·장소·사람·물건)이 기록에 있고, 주장이 한 사건으로 묶어 말한
   값들은 같은 기록(또는 그 주장이 가리키는 여러 기록)에 함께 있다. 날짜 표현이 기록 날짜와 하루라도 다르면 false.
-- 과장된 수식어·감정·해석("최고의", "운명처럼")은 판단에서 뺀다. 사실 값만 본다.
+- 다른 사람이 자기 일을 말한 기록을 기록 주인이 한 일처럼 쓴 주장, 기록 주인이 한 말을 다른 사람이 한 말처럼 쓴 주장은 false.
+- 창작은 판단에서 뺀다. 감정·해석·과장("최고의", "화가 났다"), 기록에 없는 장면·대사·새 인물·세상의 사건·초자연적인 일을
+  그날에 덧붙인 것은 사실 주장이 아니므로 그것만으로 false 로 하지 않는다. 사실 값이 기록과 어긋날 때 false 다.
 - record: 주장을 뒷받침하는 기록 번호 하나 (없으면 null)
 JSON 하나만 출력한다: {"verdicts":[{"a":1,"supported":true,"record":3}]}"""
+
+# 비교용: 3단계까지 쓰던 문맥 검사 (c2). 규칙 검사가 맞은 기록 한 건만 보여 주고 ok/false 로만 답하게 했다
+CONTEXT_SYSTEM_C2 = """너는 소설·대화 문장이 인용한 기록과 맞는지 확인한다. 항목마다 문장(인용한 값은 << >> 로 표시)과,
+그 값이 가리키는 실제 기록이 주어진다. 기록에는 쓴 사람이 적혀 있고, "나"는 기록 주인이다. 문장에서 기록 주인은 소설이면
+"나"(주인공), 대화이면 "너" 또는 "나"로 불린다.
+문장이 인용 값과 한 사건으로 묶어 말하는 사실(그날·그때 한 일, 장소, 함께 한 사람, 횟수, "처음"·"마지막" 같은 순서,
+그 일을 한 사람)이 그 기록과 어긋나면 ok=false 다. 다른 사람이 자기 일을 말한 기록을 기록 주인이 한 일처럼 쓰면 어긋난 것이다.
+문장의 나머지가 지어낸 이야기(대사, 감정, 비유, 새 인물)인 것은 괜찮다. 인용 값에 직접 묶인 사실만 본다.
+JSON 하나만 출력한다: {"checks":[{"c":번호,"ok":true}]}"""
 
 
 def v1_whitelist(result: dict) -> set[str]:
@@ -195,20 +217,54 @@ def talk_result(row: dict) -> dict:
                                  "change_points": []}}
 
 
-def oracle(recs, anchors: list[dict]) -> list[dict]:
+def oracle(recs, anchors: list[dict], kind: str = "story", people: dict | None = None) -> list[dict]:
     if not anchors:
         return []
+    people = people or {}
+    name = lambda a: f"{a}({people[a]})" if people.get(a) else a  # noqa: E731
     lines = []
     for i, r in enumerate(recs, 1):
-        who = [p for p in r.participants if p != "나"]
+        who = [name(p) for p in r.participants if p != "나"]
         body = r.text or " ".join(t["tag"] for t in r.meta.get("auto_tags", []))
         lines.append(f"{i}. {patterns.ko_date(r.day)} {patterns.WEEKDAYS[r.dt.weekday()]}요일 {r.dt.strftime('%H:%M')} "
-                     f"[{r.source}{' · ' + ', '.join(who) if who else ''}] {body.replace(chr(10), ' / ')[:160]}")
-    claims = "\n".join(f"[A{j + 1}: {a['text']}] (문장: {a['sentence'][:120]})" for j, a in enumerate(anchors))
-    data = chat_json(ORACLE_SYSTEM, "기록:\n" + "\n".join(lines) + f"\n\n주장:\n{claims}", model=ORACLE, max_tokens=3000)
+                     f"[{r.source}{' · ' + ', '.join(who) if who else ''}] 쓴 사람: {name(r.author) if r.author else '나'} | "
+                     f"{body.replace(chr(10), ' / ')[:160]}")
+    claims = "\n".join(f"[A{j + 1}: {a['text']}] (문장: {a['sentence'][:160]})" for j, a in enumerate(anchors))
+    head = "글 종류: " + ("대화 답" if kind == "talk" else "소설")
+    data = chat_json(ORACLE_SYSTEM, f"{head}\n\n기록:\n" + "\n".join(lines) + f"\n\n주장:\n{claims}", model=ORACLE,
+                     max_tokens=3000)
     got = {int(v.get("a", 0)): v for v in data.get("verdicts", [])}
     return [{"supported": bool(got.get(j + 1, {}).get("supported", False)), "record": got.get(j + 1, {}).get("record")}
             for j in range(len(anchors))]
+
+
+PASS = ("ok", "ref_fixed", "unreferenced_ok")
+
+
+def context_c2(paras: list[str], recs, start, extra: set[int]) -> list[str]:
+    """비교용 이전 문맥 검사(c2)의 앵커별 상태. 규칙 검사가 맞았다고 본 기록 한 건만 보여 준다."""
+    ver = Verifier(recs, start, extra)
+    by_id = {r.id: r for r in recs}
+    strip = lambda s: ANCHOR_RE.sub(lambda mm: re.sub(r"<[^>]+>", "", mm.group(2)), s)  # noqa: E731
+    statuses, items, where = [], [], []
+    for para in paras:
+        for m, r in zip(list(ANCHOR_RE.finditer(para)), ver.verify_text(para)):
+            statuses.append(r.status)
+            if r.status in PASS and r.record_id in by_id:
+                plain = strip(para[: m.start()])
+                sent = _sentence_of(plain + f"<<{r.text}>>" + strip(para[m.end():]), len(plain), len(plain) + len(r.text) + 4)
+                items.append(f"[{len(items) + 1}] 문장: {sent}\n기록: {_record_line(by_id[r.record_id])}")
+                where.append(len(statuses) - 1)
+    if items:
+        try:
+            data = chat_json(CONTEXT_SYSTEM_C2, "\n\n".join(items), model=JUDGE_MODEL, max_tokens=1500)
+            got = {int(c.get("c", 0)): bool(c.get("ok", True)) for c in data.get("checks", [])}
+        except Exception:
+            got = {}
+        for k, idx in enumerate(where):
+            if not got.get(k + 1, True):
+                statuses[idx] = "context_mismatch"
+    return statuses
 
 
 def score_row(svc: Service, row: dict, result: dict, rewrite: bool) -> dict:
@@ -216,7 +272,9 @@ def score_row(svc: Service, row: dict, result: dict, rewrite: bool) -> dict:
     recs = [svc.store.record(i) for i in row["evidence_ids"]]
     start = svc._start()
     extra = extra_counts(result)
-    ver = Verifier(recs, start, extra)
+    kind = "talk" if row.get("kind") == "talk" else "story"
+    people = svc.store.relations()
+    ver = Verifier(recs, start, extra, people)
     allow = v1_whitelist(result)
     anchors = []
     for para in paras:
@@ -225,19 +283,48 @@ def score_row(svc: Service, row: dict, result: dict, rewrite: bool) -> dict:
             inner = re.sub(r"<[^>]+>", "", m.group(2))
             sent = next((s for s in sentences if m.group(0) in s), para)
             anchors.append({"text": inner, "sentence": re.sub(r"<[^>]+>", "", sent), "refs": a.refs,
-                            "v2_pass": a.status in ("ok", "ref_fixed", "unreferenced_ok"), "status": a.status,
+                            "v2_pass": a.status in PASS, "status": a.status,
                             "failed": a.failed_claims, "v1_pass": inner.strip() in allow})
-    if "oracle" not in row or len(row["oracle"]) != len(anchors):
-        row["oracle"] = oracle(recs, anchors)
+    if row.get("oracle_version") != ORACLE_VERSION or len(row.get("oracle", [])) != len(anchors):
+        row["oracle"] = oracle(recs, anchors, kind, people)
+        row["oracle_version"] = ORACLE_VERSION
     for a, o in zip(anchors, row["oracle"]):
         a.update({"truth": o["supported"], "truth_record": o["record"]})
-    # 규칙 검사 + 문맥 판정(판정 모델) 결과. LLM 호출이므로 저장해 두고 다시 쓴다 (채점 방식이 바뀌면 새로 받는다)
-    if row.get("scored") != SCORE_VERSION or len(row.get("context_status", [])) != len(anchors):
-        ctx_fn = lambda s_, t_: chat_json(s_, t_, model=JUDGE_MODEL, max_tokens=1500)  # noqa: E731
-        vc = verify_story(paras, recs, mode="plain", start=start, extra_counts=extra, context_fn=ctx_fn)
-        row["context_status"] = [a["status"] for a in vc["anchors"]]
-    for a, st in zip(anchors, row["context_status"]):
-        a["v2c_pass"] = st in ("ok", "ref_fixed", "unreferenced_ok")
+    # 문맥 검사 결과는 LLM 호출이므로 저장해 두고 다시 쓴다. c2 는 비교용으로 한 번만, c3 은 지시문이 바뀌면 새로 받는다
+    if len(row.get("context_status", [])) != len(anchors):
+        row["context_status"] = context_c2(paras, recs, start, extra)
+    # 지금 쓰는 문맥 검사: 모델마다 따로 받아 두고, 한 모델만 쓸 때와 둘 다 어긋남이라 할 때만 탈락시킬 때를 함께 잰다
+    c4_old = row.get("context_c4") or {}
+    # 규칙 검사를 고쳐 새로 통과한 앵커가 생기면(판정이 없는 통과 앵커) 그 이야기는 다시 묻는다
+    unjudged = any(a["v2_pass"] and (i >= len(v) or v[i]["context"] is None)
+                   for v in c4_old.values() for i, a in enumerate(anchors))
+    if row.get("context_c4_version") != CONTEXT_VERSION or not c4_old or unjudged or any(
+            len(v) != len(anchors) for v in c4_old.values()):
+        first, off = [], 0
+        for p in paras:
+            first.append(ver.verify_text(p, off))
+            off += len(first[-1])
+        items, where = context_items(paras, first, recs, people)
+        c4 = {}
+        for name, model in CHECKERS.items():
+            fn = lambda s_, t_, m=model: chat_json(s_, t_, model=m, max_tokens=2500)  # noqa: E731
+            per = [{"context": None, "why": ""} for _ in anchors]
+            for r, v in zip(where, context_verdicts(items, fn, kind)):
+                per[r.index] = {"context": v["v"], "why": v["why"]}
+            c4[name] = per
+        row["context_c4"], row["context_c4_version"] = c4, CONTEXT_VERSION
+    for i, (a, st) in enumerate(zip(anchors, row["context_status"])):
+        a["v2c_pass"] = st in PASS
+        a["v2r3_pass"] = st in PASS or st == "context_mismatch"  # 3단계 규칙 검사만 (c2 를 받을 때의 규칙)
+        if "context_c3" in row:
+            c3 = row["context_c3"][i]
+            a["v2c3_pass"] = c3["status"] in PASS                            # 어긋남(wrong)만 탈락
+            a["v2c3m_pass"] = a["v2c3_pass"] and c3["context"] != "missing"  # 기록에 없음(missing)까지 탈락
+        h, g = row["context_c4"]["haiku"][i], row["context_c4"]["gemini"][i]
+        a["c4"] = {"haiku": h, "gemini": g}
+        a["v2c4h_pass"] = a["v2_pass"] and h["context"] != "wrong"
+        a["v2c4g_pass"] = a["v2_pass"] and g["context"] != "wrong"
+        a["v2c4a_pass"] = a["v2_pass"] and not (h["context"] == "wrong" and g["context"] == "wrong")
     for a in anchors:  # 짝 오류 후보: 앵커 속 값이 하나하나는 어느 기록에든 있다
         claims = parse_claims(a["text"])
         a["values_exist"] = bool(claims) and all(any(check_anchor(c.text, [f])[0] for f in ver.facts) for c in claims)
@@ -249,7 +336,7 @@ def score_row(svc: Service, row: dict, result: dict, rewrite: bool) -> dict:
         if mode == "rewrite" and "residual_rewrite" in row:
             continue  # 다시 쓰기는 LLM 호출이라 한 번만 잰다
         fn = (lambda s_, t_: chat_text(s_, t_, model=svc.judge_model, temperature=0.4)) if mode == "rewrite" else None
-        v = verify_story(paras, recs, mode=mode, title=title, start=start, extra_counts=extra, rewrite_fn=fn)
+        v = verify_story(paras, recs, mode=mode, title=title, start=start, extra_counts=extra, rewrite_fn=fn, people=people)
         row[f"residual_{mode}"] = residual_false(v["paragraphs_html"], ver)
         row["loose_unsupported"] = v["stats"]["loose_unsupported"]
     row["scored"] = SCORE_VERSION
@@ -262,7 +349,9 @@ def confusion(anchors: list[dict], key: str) -> dict:
     fn = sum(1 for a in anchors if not a[key] and a["truth"])
     tn = sum(1 for a in anchors if not a[key] and not a["truth"])
     n = max(1, tp + fp + fn + tn)
-    return {"accuracy": round((tp + tn) / n, 3), "false_pass": fp, "false_reject": fn, "caught": tn}
+    # 정밀도: 통과시킨 앵커 가운데 실제로 맞는 비율. 재현율: 실제로 맞는 앵커 가운데 통과시킨 비율
+    return {"accuracy": round((tp + tn) / n, 3), "precision": round(tp / (tp + fp), 3) if tp + fp else None,
+            "recall": round(tp / (tp + fn), 3) if tp + fn else None, "false_pass": fp, "false_reject": fn, "caught": tn}
 
 
 def summarize(rows: list[dict]) -> dict:
@@ -274,14 +363,19 @@ def summarize(rows: list[dict]) -> dict:
             continue
         d = {"stories": len(rs), "anchors_per_story": round(len(a) / len(rs), 2),
              "fabricated_rate": round(mean(not x["truth"] for x in a), 3) if a else None,
-             "v1_whitelist_vs_truth": confusion(a, "v1_pass"), "v2_checker_vs_truth": confusion(a, "v2_pass"),
+             "v1_whitelist_vs_truth": confusion(a, "v1_pass"), "v2_checker_stage3_vs_truth": confusion(a, "v2r3_pass"),
+             "v2_checker_vs_truth": confusion(a, "v2_pass"),
              "v2_checker_context_vs_truth": confusion(a, "v2c_pass"),
+             "v2_checker_context4_haiku_vs_truth": confusion(a, "v2c4h_pass"),
+             "v2_checker_context4_gemini_vs_truth": confusion(a, "v2c4g_pass"),
+             "v2_checker_context4_agree_vs_truth": confusion(a, "v2c4a_pass"),
              "loose_unsupported_per_story": round(mean(r["loose_unsupported"] for r in rs), 2)}
         fab = [x for x in a if not x["truth"]]
         pair = [x for x in fab if x.get("values_exist")]
         d["pair_errors"] = {"count": len(pair), "share_of_fabricated": round(len(pair) / len(fab), 3) if fab else None,
                             "v1_whitelist_passed": sum(1 for x in pair if x["v1_pass"]),
-                            "v2_context_caught": sum(1 for x in pair if not x["v2c_pass"])}
+                            "v2_context_caught": sum(1 for x in pair if not x["v2c_pass"]),
+                            "v2_context4_agree_caught": sum(1 for x in pair if not x["v2c4a_pass"])}
         if not version.endswith("v1"):
             cited = [x for x in a if x["refs"] and x["truth_record"]]
             d["ref_matches_truth"] = round(mean(x["truth_record"] in x["refs"] for x in cited), 3) if cited else None
@@ -304,7 +398,7 @@ def score(args) -> None:
             if "evidence_ids" not in r and r["keyword"]:
                 r["evidence_ids"] = story.story_prompt(results[r["keyword"]], genre=r["genre"], version="v2",
                                                        seed=0)["evidence_ids"]
-        with ThreadPoolExecutor(max_workers=4) as pool:
+        with ThreadPoolExecutor(max_workers=8) as pool:
             list(pool.map(lambda r: score_row(svc, r, results[r["keyword"]] if r["keyword"] else talk_result(r),
                                               args.rewrite), mine))
         print(prof, json.dumps(summarize(mine), ensure_ascii=False))

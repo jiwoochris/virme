@@ -103,20 +103,22 @@ def test_label_tool_roundtrip(svc):
     assert client.get("/label/export").json()["labels"] == {"등산": {rid: 2}}
 
 
-def test_talk_verify_skips_context_check(svc, monkeypatch):
-    """대화 답은 규칙 검사만 한다 (문맥 검사가 대화에서는 정밀도·재현율을 둘 다 낮췄다)."""
+def test_verify_runs_context_check_for_talk_and_story_with_relations(svc, monkeypatch):
+    """대화 답과 이야기 모두 문맥 검사를 한다. 기록 줄에는 관계("지인A(대학 친구)")와 글 종류가 실린다."""
     from virtueme_core import service as service_mod
     import virtueme_core.llm as llm
 
     calls = []
     monkeypatch.setattr(service_mod, "openrouter_key", lambda: "test")
-    monkeypatch.setattr(llm, "chat_json", lambda *a, **k: calls.append(a) or {"checks": []})
-    rec = svc.store.records()[0]
-    para = f'<em ref="1">{rec.dt.month}월 {rec.dt.day}일</em>에 있었던 일'
-    svc.verify([para], [rec.id], kind="talk")
-    assert calls == []
+    monkeypatch.setattr(llm, "chat_json", lambda *a, **k: calls.append(a) or {"checks": [{"c": 1, "v": "wrong", "why": "쓴 사람이 다름"}]})
+    rec = next(r for r in svc.store.records() if r.source == "kakao" and r.author != "나")
+    svc.store.set_relation(rec.author, "대학 친구")
+    para = f'<em ref="1">{rec.dt.month}월 {rec.dt.day}일</em>에 너는 그 얘기를 했지'
+    out = svc.verify([para], [rec.id], kind="talk")
+    assert calls and "대화 답" in calls[0][1] and f"{rec.author}(대학 친구)" in calls[0][1]
+    assert out["anchors"][0]["status"] == "context_mismatch" and "쓴 사람이 다름" in out["paragraphs_html"][0]
     svc.verify([para], [rec.id], kind="story")
-    assert calls  # 이야기는 문맥 검사를 부른다
+    assert "글 종류: 소설" in calls[1][1]
 
 
 def test_semantic_map_points_and_keyword_marks(svc):

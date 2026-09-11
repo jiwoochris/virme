@@ -92,3 +92,47 @@ def test_blur_collapses_runs():
     assert _blur("7월 20일, 7월 27일, 3일 한강에") == "어느 날, 며칠 한강에"
     assert _blur("8월 29일 토요일 아침") == "어느 날 아침"
     assert _blur("7월 13일과 7월 20일에") == "어느 날에"
+
+
+def test_context_check_sees_every_cited_record_and_relations():
+    """"7월 1일과 5일" 처럼 기록 여러 건을 인용한 앵커는 문맥 검사에도 그 기록을 모두 넘긴다 (3단계에는 한 건만 넘겨 맞는 앵커를 떨어뜨렸다)."""
+    seen = []
+
+    def fn(system, body):
+        seen.append(body)
+        return {"checks": [{"c": 1, "v": "ok"}, {"c": 2, "v": "wrong", "why": "뛴 사람은 지인A"}]}
+
+    evidence = EVIDENCE + [rec(5, "2026-07-06T20:00:00+09:00", "나 오늘 한강 뛰었어", author="지인A",
+                               participants=["나", "지인A"])]
+    story = '<em ref="1,2">7월 1일과 5일</em>에 뛰었다. 너는 <em ref="5">7월 6일</em>에 한강을 뛰었지.'
+    out = verify_story([story], evidence, mode="blur", context_fn=fn, kind="talk", people={"지인A": "러닝 크루 친구"})
+    body = seen[0]
+    assert "대화 답" in body and "첫 러닝 3km" in body and "한강에서 또 뛰었어" in body
+    assert "지인A(러닝 크루 친구)" in body
+    assert [a["status"] for a in out["anchors"]] == ["ok", "context_mismatch"]
+    assert [a["context"] for a in out["anchors"]] == ["ok", "wrong"]
+    assert "뛴 사람은 지인A" in out["paragraphs_html"][0]
+
+
+def test_missing_verdict_keeps_the_anchor():
+    """기록에 없어서 확인할 수 없는 것("missing")은 규칙 검사가 값을 확인했으므로 통과시킨다."""
+    fn = lambda s, b: {"checks": [{"c": 1, "v": "missing", "why": "산책 얘기는 기록에 없음"}]}  # noqa: E731
+    out = verify_story(['<em ref="2">7월 5일</em>에 산책도 했다.'], EVIDENCE, context_fn=fn)
+    assert out["anchors"][0]["status"] == "ok" and out["anchors"][0]["context"] == "missing"
+
+
+def test_rules_accept_relations_split_messages_and_place_suffix():
+    evidence = [
+        rec(1, "2026-08-18T12:28:00+09:00", "근데 엄마 나 고양이 키우기로 했어", participants=["나", "엄마"]),
+        rec(2, "2026-08-18T12:32:00+09:00", "응 콩이 / 정식으로 입양하기로 했어", participants=["나", "엄마"]),
+        rec(3, "2026-08-10T11:34:00+09:00", "내일부터 제주 가는데 콩이 부탁해도 되지?", participants=["나", "지인D"]),
+    ]
+    paras = ['<em ref="1,2">8월 18일, 고양이 키우기로 했고 정식 입양</em>한다고 말했다.',   # 같은 날 이어 보낸 두 메시지
+             '<em ref="3">8월 10일, 회사 동기에게 콩이를 맡기고 제주도</em>로 떠났다.']      # 관계 · 제주도 ↔ 제주
+    out = verify_story(paras, evidence, mode="plain", people={"지인D": "회사 동기"})
+    assert [a["status"] for a in out["anchors"]] == ["ok", "ok"]
+    # 관계를 모르면 "회사 동기"를 확인할 수 없다
+    assert verify_story(paras[1:], evidence, mode="plain")["anchors"][0]["status"] == "failed"
+    # 다른 날 메시지의 낱말은 합쳐 주지 않는다 (짝 오류)
+    far = '<em ref="1,3">8월 18일, 고양이와 제주</em>'
+    assert verify_story([far], evidence, mode="plain")["anchors"][0]["status"] == "failed"

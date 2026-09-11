@@ -90,15 +90,15 @@ class Service:
         if openrouter_key():
             from .llm import chat_json, chat_text
 
-            # 이야기는 규칙 검사를 통과한 앵커를 문장째로 한 번 더 판정한다 (날짜만 인용하고 다른 사건을 붙인 경우).
-            # 대화 답에는 쓰지 않는다: eval/grounding_eval.py 에서 대화 40개 답의 정밀도·재현율이 규칙만 95.8%·85.2%,
-            # 문맥 검사를 더하면 96.4%·65.4% 로 정밀도는 거의 그대로이고 재현율만 20%p 떨어졌다 (2026-09-11)
-            if kind == "story":
-                context = lambda system, text: chat_json(system, text, model=self.judge_model, max_tokens=1500)  # noqa: E731
+            # 규칙 검사를 통과한 앵커를 문장째로 한 번 더 판정한다 (날짜만 인용하고 다른 사건을 붙인 경우, 남의 일을 내 일처럼
+            # 쓴 경우). eval/grounding_eval.py (2026-09-12, 이야기 40편·대화 답 40개): 대화는 정밀도·재현율이 규칙만
+            # 93.8%·91.6%, 문맥 검사를 더하면 97.1%·81.9%. 이야기는 86.3%·93.8% → 87.4%·83.3%
+            context = lambda system, text: chat_json(system, text, model=self.judge_model, max_tokens=2500)  # noqa: E731
             if mode == "rewrite":
                 rewrite = lambda system, text: chat_text(system, text, model=self.judge_model, temperature=0.4)  # noqa: E731
         return verify_story(paragraphs, recs, mode=mode, title=title, start=self._start(),
-                            extra_counts=set(extra_counts or []), rewrite_fn=rewrite, context_fn=context)
+                            extra_counts=set(extra_counts or []), rewrite_fn=rewrite, context_fn=context, kind=kind,
+                            people=self.store.relations())
 
     def profile_brief(self) -> dict[str, Any]:
         """대화 모드가 늘 알고 있을 요약."""
