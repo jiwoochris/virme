@@ -300,6 +300,6 @@ button { cursor: pointer; }
 .gap-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); color: #fff; white-space: nowrap; }
 .gap-tag.gap-gap { border-color: rgba(217,89,38,.7); }
 .gap-tag.gap-match { border-color: rgba(57,135,229,.7); }
-.narrative-chip { position: absolute; left: 24px; bottom: 24px; z-index: 5; padding: 7px 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(8,10,16,.72); color: #fff; font: 10px 'Space Mono', monospace; letter-spacing: .04em; }
+.narrative-chip { position: absolute; right: 24px; top: 24px; z-index: 7; padding: 7px 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(8,10,16,.72); color: #fff; font: 10px 'Space Mono', monospace; letter-spacing: .04em; }
 .narrative-chip span { color: var(--state-color); margin-right: 6px; }
 @media (max-width: 860px) { .insight { grid-template-columns: 1fr; } .insight-panel { min-height: calc(100svh - 104px); } }
