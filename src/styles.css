@@ -337,3 +337,8 @@ button { cursor: pointer; }
 .music-video-layer { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: #050607; }
 .music-video-layer video { height: 100%; max-width: 100%; aspect-ratio: 1; object-fit: contain; }
 .music-video-layer button { position: absolute; right: 24px; bottom: 24px; padding: 7px 12px; border: 1px solid rgba(255,255,255,.2); background: rgba(8,10,16,.8); color: #fff; font-size: 11px; cursor: pointer; }
+
+/* 의미 지도 */
+.semmap .chart .map-label { font-size: 12px; font-weight: 600; fill: #fff; stroke-width: 4px; pointer-events: none; }
+.key-dot.ring { background: transparent; border: 1.8px solid #fff; width: 9px; height: 9px; }
+.semmap .graph-tip { white-space: normal; max-width: min(520px, 90%); }

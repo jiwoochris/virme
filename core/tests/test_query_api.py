@@ -117,3 +117,15 @@ def test_talk_verify_skips_context_check(svc, monkeypatch):
     assert calls == []
     svc.verify([para], [rec.id], kind="story")
     assert calls  # 이야기는 문맥 검사를 부른다
+
+
+def test_semantic_map_points_and_keyword_marks(svc):
+    client = TestClient(create_app(svc))
+    m = client.get("/map", params={"keyword": "등산"}).json()
+    assert len(m["points"]) >= 10
+    assert all(0 <= p["x"] <= 1 and 0 <= p["y"] <= 1 for p in m["points"])
+    assert any(p["ev"] == "strong" for p in m["points"])
+    assert all("lat" not in p for p in m["points"])
+    again = client.get("/map").json()  # 좌표는 캐시에서 같은 값
+    assert [(p["id"], p["x"]) for p in again["points"]] == [(p["id"], p["x"]) for p in m["points"]]
+    assert all(p["ev"] is None for p in again["points"])

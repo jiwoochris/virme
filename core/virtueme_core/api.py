@@ -135,6 +135,11 @@ def create_app(service: Service, warm: bool = False) -> FastAPI:
         _ready()
         return service.clusters_overview()
 
+    @app.get("/map")
+    def semantic_map(keyword: str | None = None) -> dict[str, Any]:
+        _ready()
+        return service.semantic_map(keyword.strip() if keyword else None)
+
     @app.get("/graph")
     def graph(keyword: str | None = None, limit: int = 40) -> dict[str, Any]:
         _ready()

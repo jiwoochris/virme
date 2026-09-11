@@ -138,6 +138,38 @@ class Service:
         return {"topics": clusters.overview(self.store), "other": info.get("t-1", {}).get("size", 0),
                 "other_label": clusters.OTHER_LABEL}
 
+    def semantic_map(self, keyword: str | None = None) -> dict[str, Any]:
+        """의미 지도: 본인 기록의 2차원 좌표, 주제, 키워드 근거 표시. 텍스트는 가린 것 앞부분만 싣는다."""
+        m = clusters.semantic_map(self.store)
+        assign, info = self.store.clusters("topic")
+        want = set(m["ids"])
+        recs = {r.id: r for r in self.store.records() if r.id in want}
+        masker = Masker.from_store(self.store)
+        ev: dict[str, str] = {}
+        if keyword:
+            res = self.engine.query(keyword)
+            ev.update({s.record.id: "weak" for s in res.weak})
+            ev.update({s.record.id: "strong" for s in res.strong})
+        points = []
+        for rid, (x, y) in zip(m["ids"], m["xy"]):
+            r = recs.get(rid)
+            if not r:
+                continue
+            text = masker.mask(r.text) if r.text else "사진 · " + ", ".join(t["tag"] for t in r.meta.get("auto_tags", [])[:3])
+            points.append({"id": rid, "x": x, "y": y, "topic": assign.get(rid, "t-1"), "date": r.day,
+                           "source": narrative.SOURCE_LABEL.get(r.source, r.source),
+                           "text": (text or "").replace("\n", " / ")[:60], "ev": ev.get(rid)})
+        topics = []
+        for c, meta in info.items():
+            mine = [p for p in points if p["topic"] == c]
+            if c == "t-1" or not mine:
+                continue
+            topics.append({"id": c, "label": meta["label"], "size": len(mine),
+                           "cx": round(sum(p["x"] for p in mine) / len(mine), 4),
+                           "cy": round(sum(p["y"] for p in mine) / len(mine), 4)})
+        topics.sort(key=lambda t: -t["size"])
+        return {"points": points, "topics": topics, "keyword": keyword, "people": self.store.relations()}
+
     def graph(self, keyword: str | None = None, limit: int = 40) -> dict[str, Any]:
         eng = self.engine
         ids = None

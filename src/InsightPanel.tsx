@@ -15,7 +15,10 @@ type GraphNode = { id: string; type: string; type_ko: string; name: string; alia
 type GraphEdge = { source: string; target: string; weight: number; predicates: Record<string, number> }
 type Gap = { claim: string; topic: string; date: string; quote: string; verdict: '간극' | '일치' | '판단 보류'; summary: string; evidence_after: number }
 type People = Record<string, string | null>
-type Core = { series: DaySeries[]; topics: Topic[]; other: number; graph: { nodes: GraphNode[]; edges: GraphEdge[] }; gaps: Gap[] | null; people: People; records: number }
+type MapPoint = { id: string; x: number; y: number; topic: string; date: string; source: string; text: string; ev: 'strong' | 'weak' | null }
+type MapTopic = { id: string; label: string; size: number; cx: number; cy: number }
+type SemMap = { points: MapPoint[]; topics: MapTopic[]; keyword: string | null }
+type Core = { series: DaySeries[]; topics: Topic[]; other: number; graph: { nodes: GraphNode[]; edges: GraphEdge[] }; map: SemMap | null; gaps: Gap[] | null; people: People; records: number }
 
 async function getJson<T>(path: string): Promise<T> {
   const r = await coreFetch(path, { signal: AbortSignal.timeout(120000) })
@@ -38,12 +41,13 @@ export const InsightPanel = memo(function InsightPanel({ narrative, active }: { 
       getJson<{ series: DaySeries[] }>('/emotion'),
       getJson<{ topics: Topic[]; other?: number }>('/clusters'),
       getJson<{ nodes: GraphNode[]; edges: GraphEdge[]; people?: People }>(`/graph?limit=34${keyword ? `&keyword=${encodeURIComponent(keyword)}` : ''}`),
+      getJson<SemMap>(`/map${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ''}`).catch(() => null),
     ])
-      .then(([h, e, t, g]) => {
+      .then(([h, e, t, g, m]) => {
         if (cancelled) return
         const people = g.people ?? {}
         const named = { ...g, nodes: g.nodes.map((n) => ({ ...n, name: relabel(n.name, people) })) }
-        setCore((prev) => ({ series: e.series, topics: t.topics, other: t.other ?? 0, graph: named, gaps: prev?.gaps ?? null, people, records: h.records }))
+        setCore((prev) => ({ series: e.series, topics: t.topics, other: t.other ?? 0, graph: named, map: m, gaps: prev?.gaps ?? null, people, records: h.records }))
         setState('ready')
         // 간극은 처음 한 번 LLM 을 부르므로 따로, 늦게 받는다
         getJson<{ gaps: Gap[] }>('/gaps').then((x) => !cancelled && setCore((c) => (c ? { ...c, gaps: x.gaps } : c))).catch(() => {})
@@ -70,6 +74,13 @@ export const InsightPanel = memo(function InsightPanel({ narrative, active }: { 
         <p className="insight-sub">하루 기록의 정서가를 7일 이동평균으로 이은 선입니다. 0 보다 위는 긍정, 아래는 부정입니다{narrative?.change_points?.length ? '. 세로선은 흐름이 꺾인 변화점(PELT)입니다' : ''}.</p>
         <EmotionChart series={core.series} narrative={narrative} />
       </section>
+      {core.map && core.map.points.length > 0 && (
+        <section className="insight-card wide">
+          <h2>의미 지도</h2>
+          <p className="insight-sub">본인 기록을 뜻(bge-m3 벡터)이 가까운 것끼리 가깝게 2차원에 펼쳤습니다(UMAP). 점 하나가 기록 하나이고, 글자는 주제 묶음 이름입니다{core.map.keyword ? `. 흰 테두리는 '${core.map.keyword}' 근거 기록입니다` : ''}.</p>
+          <SemanticMap map={core.map} narrative={narrative} people={core.people} />
+        </section>
+      )}
       <section className="insight-card">
         <h2>{narrative?.clusters?.length ? `'${narrative.keyword}' 근거가 속한 주제` : '기록 주제 묶음'}</h2>
         <p className="insight-sub">{narrative?.clusters?.length
@@ -96,6 +107,86 @@ export const InsightPanel = memo(function InsightPanel({ narrative, active }: { 
     </div>
   )
 })
+
+// 산점도는 모든 점 쌍이 구분돼야 하므로 dataviz 기준 팔레트에서 모든 쌍 검사를 통과하는 첫 세 색만 주제에 쓰고, 나머지는 회색으로 둔다
+function SemanticMap({ map, narrative, people }: { map: SemMap; narrative: NarrativeObject | null; people: People }) {
+  const [hover, setHover] = useState<MapPoint | null>(null)
+  const W = 920, H = 440, P = 22
+  const x = (v: number) => P + v * (W - 2 * P)
+  const y = (v: number) => P + v * (H - 2 * P)
+  const colored = useMemo(() => {
+    const fromNarr = (narrative?.clusters ?? []).map((c) => c.id.replace(/^topic:/, '')).filter((id) => map.topics.some((t) => t.id === id))
+    const ids = (fromNarr.length ? fromNarr : map.topics.map((t) => t.id)).slice(0, 3)
+    return new Map(ids.map((id, i) => [id, [C.line, C.evidence, C.aqua][i]]))
+  }, [map, narrative])
+  const label = useMemo(() => new Map(map.topics.map((t) => [t.id, t.label])), [map])
+  const ordered = useMemo(() => [...map.points].sort((a, b) => Number(Boolean(a.ev)) - Number(Boolean(b.ev))), [map])
+  const evidence = map.points.filter((p) => p.ev)
+  const focus = Boolean(map.keyword)
+  // 주제 이름표가 겹치면 큰 묶음부터 자리를 잡고, 겹치는 이름표는 위아래로 비켜 놓는다
+  const labels = useMemo(() => {
+    const placed: { x0: number; y0: number; x1: number; y1: number }[] = []
+    const out: { id: string; label: string; x: number; y: number }[] = []
+    for (const t of [...map.topics].sort((a, b) => b.size - a.size)) {
+      const w = [...t.label].reduce((n, ch) => n + (/[가-힣]/.test(ch) ? 12.5 : 7), 0), h = 15
+      const cx = P + t.cx * (W - 2 * P), cy = P + t.cy * (H - 2 * P)
+      for (const dy of [0, 16, -16, 32, -32, 48]) {
+        const box = { x0: cx - w / 2, y0: cy + dy - h + 3, x1: cx + w / 2, y1: cy + dy + 3 }
+        if (!placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0)) {
+          placed.push(box)
+          out.push({ id: t.id, label: t.label, x: cx, y: cy + dy })
+          break
+        }
+      }
+    }
+    return out
+  }, [map])
+  return (
+    <div className="graph-wrap semmap">
+      <div className="legend small">
+        {[...colored].map(([id, col]) => <span key={id}><i className="key-dot" style={{ background: col }} />{label.get(id)}</span>)}
+        <span><i className="key-dot" style={{ background: C.gray }} />그 밖의 주제·짧은 말</span>
+        {focus && <span><i className="key-dot ring" />'{map.keyword}' 근거 {evidence.length}건</span>}
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="chart" role="img" aria-label={`본인 기록 ${map.points.length}건의 의미 지도`}>
+        {ordered.map((p) => {
+          const col = colored.get(p.topic) ?? C.gray
+          const dim = focus && !p.ev
+          return (
+            <g key={p.id} onPointerEnter={() => setHover(p)} onPointerLeave={() => setHover(null)}>
+              <circle cx={x(p.x)} cy={y(p.y)} r={9} fill="transparent" />
+              <circle cx={x(p.x)} cy={y(p.y)} r={p.ev ? 5.5 : 3.6} fill={col}
+                fillOpacity={dim ? 0.28 : colored.has(p.topic) ? 0.9 : 0.5}
+                stroke={p.ev ? '#ffffff' : '#15161d'} strokeWidth={p.ev ? 1.8 : 1} />
+            </g>
+          )
+        })}
+        {labels.map((t) => (
+          <text key={t.id} x={t.x} y={t.y} textAnchor="middle" className="node-label map-label">{t.label}</text>
+        ))}
+      </svg>
+      {hover && (
+        <div className="graph-tip">
+          <strong>{label.get(hover.topic) ?? '짧은 말·기타'}</strong> <span>{koDate(hover.date)} · {hover.source}{hover.ev ? ` · ${hover.ev === 'strong' ? '강한' : '약한'} 근거` : ''}</span>
+          <br /><span>{relabel(hover.text, people)}</span>
+        </div>
+      )}
+      {focus && evidence.length > 0 && (
+        <details className="table-view">
+          <summary>근거 기록 목록 보기</summary>
+          <table>
+            <thead><tr><th>날짜</th><th>주제</th><th>기록</th></tr></thead>
+            <tbody>
+              {[...evidence].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 40).map((p) => (
+                <tr key={p.id}><td>{koDate(p.date)}</td><td>{label.get(p.topic) ?? '짧은 말·기타'}</td><td>{relabel(p.text, people)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      )}
+    </div>
+  )
+}
 
 function Kpis({ narrative, core }: { narrative: NarrativeObject | null; core: Core }) {
   const first = core.series[0]?.date, last = core.series[core.series.length - 1]?.date

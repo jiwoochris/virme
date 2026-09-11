@@ -6,11 +6,13 @@
           LLM 이 공통 활동을 찾지 못한 묶음은 "짧은 말·기타"(t-1)로 합친다.
 - mood  : 정서가·각성도 부호로 네 칸 (들뜸 / 편안 / 긴장 / 가라앉음). 0 근처는 "보통"
 - social: 정서 채점 때 받은 함께 여부 (혼자 / 함께 / 알 수 없음)
+- map   : 같은 bge-m3 벡터를 UMAP 으로 2차원에 펼친 좌표. 인사이트 화면의 "의미 지도"가 쓴다 (설계 문서의 "하나의 의미 공간")
 
 본인이 쓴 기록만 묶는다. 결과는 DB 의 clusters·cluster_info 표에 남는다.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 from typing import Any
 
@@ -132,8 +134,35 @@ def build_mood_social(store: Store) -> dict[str, Any]:
             "social": {SOCIAL_LABELS[k]: sum(1 for x in social.values() if x == k) for k in SOCIAL_LABELS}}
 
 
+MAP_VERSION = "map1"
+
+
+def semantic_map(store: Store, seed: int = 42) -> dict[str, Any]:
+    """본인 기록의 텍스트 벡터를 UMAP 으로 2차원(0..1)에 펼친다. 기록이나 벡터가 바뀌면 다시 계산하고, 결과는 캐시에 둔다."""
+    ids, mat = store.vectors("text")
+    pos = {rid: i for i, rid in enumerate(ids)}
+    own = [r.id for r in store.records() if r.is_self and r.id in pos]
+    if len(own) < 10:
+        return {"ids": [], "xy": []}
+    emb = mat[[pos[i] for i in own]]
+    sig = hashlib.sha1(("|".join(own)).encode() + np.round(emb[:, :4], 4).tobytes()).hexdigest()[:12]
+    key = f"{MAP_VERSION}:{sig}"
+    hit = store.cache_get(key)
+    if hit is not None:
+        return hit
+    from umap import UMAP
+
+    xy = UMAP(n_neighbors=15, n_components=2, min_dist=0.15, metric="cosine", random_state=seed).fit_transform(emb)
+    xy = (xy - xy.min(axis=0)) / np.maximum(xy.max(axis=0) - xy.min(axis=0), 1e-9)
+    out = {"ids": own, "xy": [[round(float(a), 4), round(float(b), 4)] for a, b in xy]}
+    store.cache_put(key, out)
+    return out
+
+
 def build_all(store: Store, llm_model: str = LLM_MODEL) -> dict[str, Any]:
-    return {"topic": build_topics(store, llm_model), **build_mood_social(store)}
+    out = {"topic": build_topics(store, llm_model), **build_mood_social(store)}
+    out["map_points"] = len(semantic_map(store)["ids"])
+    return out
 
 
 def summarize(store: Store, record_ids: list[str]) -> dict[str, Any]:
