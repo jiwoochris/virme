@@ -127,38 +127,53 @@ def cmd_serve(args) -> int:
 
 
 def cmd_demo(args) -> int:
-    """발표용 키워드마다 검색 결과(판정 캐시)·음악·오디오 반응 영상을 미리 만들어 둔다. 이미 있으면 건너뛴다."""
+    """발표용 키워드마다 검색 결과(판정 캐시)·음악·오디오 반응 영상과 간극을 미리 만들어 둔다. 이미 있으면 건너뛴다.
+
+    ACE-Step 서버는 아직 음악이 없는 키워드가 있을 때만 필요하다.
+    """
+    import os
     import subprocess
 
     from . import music
 
     svc = _svc(args)
-    if not svc.acestep.health():
-        print(f"ACE-Step 서버({svc.acestep.base})가 꺼져 있습니다. acestep 폴더에서 uv run acestep-api 로 켜 주세요 (README 시연 준비).")
-        return 1
     virme = Path(__file__).resolve().parents[2]
     team_py = virme / ".venv" / "bin" / "python"
+    acestep_up = None  # 처음 필요할 때 한 번만 확인
+    missing = []
+    # 인사이트 화면의 "스스로 말한 나와 기록"은 처음 한 번 LLM 을 불러 1분 넘게 걸리므로 미리 계산해 둔다
+    gaps = svc.gaps()["gaps"]
+    print(f"- 간극 {len(gaps)}건 미리 계산 (" + ", ".join(f"{g['verdict']} {g['topic']}" for g in gaps[:4]) + ")")
     for kw in args.keywords:
         no = svc.query(kw)["narrative_object"]
         if no["evidence_grade"] == "근거 부족":
             print(f"- {kw}: 근거 부족이라 음악을 만들지 않습니다")
             continue
         plan = music.plan(no, args.seconds)
+        d = music.job_dir(svc.music_root, plan["music_id"])
         print(f"- {kw}: #{no['narrative_id']} 음악 {plan['music_id']} ({len(plan['sections'])}구간, {plan['bpm']} BPM)")
+        if not (d / "features.json").exists():
+            if acestep_up is None:
+                acestep_up = svc.acestep.health()
+            if not acestep_up:
+                print(f"    ACE-Step 서버({svc.acestep.base})가 꺼져 있어 건너뜁니다. acestep 폴더에서 uv run acestep-api 로 켜 주세요.")
+                missing.append(kw)
+                continue
         st = music.make(svc.music_root, plan, svc.acestep,
                         on_progress=lambda x: print(f"    {x['stage']} {x['done'] + 1}/{x['total']}", flush=True))
-        d = music.job_dir(svc.music_root, plan["music_id"])
         print(f"    음악: {d / st['audio']}")
         if args.video and not (d / "video.mp4").exists():
             if not team_py.exists():
                 print("    영상: 팀 모델 환경이 없습니다. virme 에서 bun run model:setup 을 먼저 실행하세요.")
                 continue
             subprocess.run([str(team_py), str(virme / "scripts" / "render-audio-reactive.py"), "--music-dir", str(d)],
-                           cwd=virme, env={**__import__("os").environ, "PYTHONPATH": str(virme / "model_service"),
+                           cwd=virme, env={**os.environ, "PYTHONPATH": str(virme / "model_service"),
                                            "PYTORCH_ENABLE_MPS_FALLBACK": "1"}, check=True)
         if (d / "video.mp4").exists():
             print(f"    영상: {d / 'video.mp4'}")
-    return 0
+    if missing:
+        print(f"음악을 만들지 못한 키워드: {', '.join(missing)}")
+    return 1 if missing else 0
 
 
 def cmd_people(args) -> int:

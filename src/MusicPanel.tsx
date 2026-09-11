@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { coreFetch, useCoreBase } from './coreApi'
 import { koDate, type NarrativeObject } from './narrative'
 
 /* 기록의 음악: core 서버가 서사 오브젝트의 정서 곡선으로 음악 계획을 세우고 로컬 ACE-Step 이 만든다.
    재생하는 동안 features.json 의 음량·온셋을 현재 재생 위치로 읽어 비주얼 모드에 넘긴다(onDrive). */
 
-const API = '/api/core'
 
 export type MusicSection = {
   index: number; name: string; start_date: string; end_date: string; keyscale: string; mood_ko: string; energy_ko: string
@@ -26,6 +26,7 @@ export function MusicPanel({ narrative, onDrive, onVideo }: {
   const [showNotes, setShowNotes] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const pulse = useRef(0)
+  const base = useCoreBase()
   const usable = narrative && narrative.evidence_grade !== '근거 부족'
 
   // 키워드가 바뀌면 이전 음악을 내리고, 계획(만들지 않고 값만)을 먼저 받아 보여 준다. 캐시가 있으면 바로 재생할 수 있다
@@ -33,12 +34,12 @@ export function MusicPanel({ narrative, onDrive, onVideo }: {
     setStatus(null); setPlan(null); setFeatures(null); onVideo(null)
     if (!usable) return
     let cancelled = false
-    fetch(`${API}/music/plan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keyword: narrative.keyword }) })
+    coreFetch('/music/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keyword: narrative.keyword }) })
       .then((r) => (r.ok ? r.json() : null))
       .then(async (p: MusicPlan | null) => {
         if (cancelled || !p) return
         setPlan(p)
-        const st: Status = await (await fetch(`${API}/music/${p.music_id}`)).json()
+        const st: Status = await (await coreFetch(`/music/${p.music_id}`)).json()
         if (!cancelled) setStatus(st)
       })
       .catch(() => {})
@@ -49,21 +50,21 @@ export function MusicPanel({ narrative, onDrive, onVideo }: {
   useEffect(() => {
     if (!status || status.state !== 'running') return
     const t = setTimeout(async () => {
-      try { setStatus(await (await fetch(`${API}/music/${status.music_id}`)).json()) } catch { /* 다음 차례에 다시 */ }
+      try { setStatus(await (await coreFetch(`/music/${status.music_id}`)).json()) } catch { /* 다음 차례에 다시 */ }
     }, 2000)
     return () => clearTimeout(t)
   }, [status])
 
   useEffect(() => {
     if (status?.state !== 'ready') return
-    fetch(`${API}/music/${status.music_id}/features.json`).then((r) => r.json()).then(setFeatures).catch(() => {})
+    coreFetch(`/music/${status.music_id}/features.json`).then((r) => r.json()).then(setFeatures).catch(() => {})
   }, [status?.state, status?.music_id])
 
   const start = useCallback(async () => {
     if (!narrative) return
     setStatus((s) => ({ ...(s ?? { music_id: plan?.music_id ?? '' }), state: 'running', stage: '음악 생성 준비 중' }))
     try {
-      const r = await fetch(`${API}/music`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keyword: narrative.keyword }) })
+      const r = await coreFetch('/music', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keyword: narrative.keyword }) })
       setStatus(await r.json())
     } catch {
       setStatus((s) => ({ ...(s as Status), state: 'error', error: '로컬 기록 서버에 연결하지 못했습니다' }))
@@ -119,11 +120,11 @@ export function MusicPanel({ narrative, onDrive, onVideo }: {
           </li>
         ))}
       </ol>
-      {status?.state === 'ready' ? (
+      {status?.state === 'ready' && base ? (
         <>
-          <audio ref={audioRef} controls preload="auto" src={`${API}/music/${status.music_id}/${status.audio ?? 'music.m4a'}`} data-testid="music-audio" />
+          <audio ref={audioRef} controls preload="auto" src={`${base}/music/${status.music_id}/${status.audio ?? 'music.m4a'}`} data-testid="music-audio" />
           {status.video && (
-            <button type="button" className="music-button" onClick={() => { audioRef.current?.pause(); onVideo(`${API}/music/${status.music_id}/video.mp4`) }}>
+            <button type="button" className="music-button" onClick={() => { audioRef.current?.pause(); onVideo(`${base}/music/${status.music_id}/video.mp4`) }}>
               오디오 반응 영상 보기
             </button>
           )}
