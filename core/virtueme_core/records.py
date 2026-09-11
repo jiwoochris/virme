@@ -15,7 +15,7 @@ from .config import DEFAULT_TZ
 
 RECORD_SCHEMA = "virtueme.record/1"
 
-SOURCES = ("kakao", "instagram", "photo", "synthetic")
+SOURCES = ("kakao", "sms", "instagram", "photo", "synthetic")
 KINDS = ("message", "post", "story", "reel", "comment", "photo", "activity")
 MODALITIES = ("text", "image", "text+image")
 

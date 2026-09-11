@@ -903,7 +903,7 @@ function render(kw){
    core 서버(uv run virtueme serve)가 켜져 있으면 "내 기록"을 고를 수 있다. 서버가 없으면 이 줄은 숨고
    화면은 원래 Storyseed 와 같다. 공통 코드는 virtueme-core-bridge.js, 근거 계약 v2 검증은 core/verify.py. */
 let CORE=null,SOURCE='persona',FORCE_KW=null,CURPEOPLE={};
-const SRC_COLOR={'카카오톡':'#F5D34B','인스타그램':'#F26AA0','사진':'#5CE8D5','활동 기록':'#8A6BF2'};
+const SRC_COLOR={'카카오톡':'#F5D34B','문자':'#7FB2FF','인스타그램':'#F26AA0','사진':'#5CE8D5','활동 기록':'#8A6BF2'};
 async function detectCore(){
   CORE=window.VX?await VX.detect():null;
   renderSources();

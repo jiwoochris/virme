@@ -34,7 +34,7 @@ from .records import Record
 from .textproc import top_nouns
 
 SCHEMA_ID = "virtueme.narrative/1"
-SOURCE_LABEL = {"kakao": "카카오톡", "instagram": "인스타그램", "photo": "사진", "synthetic": "활동 기록"}
+SOURCE_LABEL = {"kakao": "카카오톡", "sms": "문자", "instagram": "인스타그램", "photo": "사진", "synthetic": "활동 기록"}
 KIND_LABEL = {"message": "메시지", "post": "게시물", "story": "스토리", "reel": "릴스", "comment": "댓글",
               "photo": "사진", "activity": "활동"}
 

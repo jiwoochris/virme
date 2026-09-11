@@ -2,6 +2,7 @@
 
     uv run virtueme -p 서연 ingest kakao 대화.txt --me 윤서연
     uv run virtueme -p 서연 ingest instagram ~/Downloads/instagram-export
+    uv run virtueme -p 서연 ingest sms sms-20260911.xml            # 안드로이드 SMS Backup & Restore, 또는 맥 chat.db 복사본
     uv run virtueme -p 서연 ingest photos ~/Pictures/2026-summer
     uv run virtueme -p 서연 build
     uv run virtueme -p 서연 query 혼자
@@ -49,6 +50,16 @@ def cmd_ingest(args) -> int:
                   f" (참여자 {', '.join(info['participants'])})")
             if info["warnings"]:
                 print(f"  경고 {len(info['warnings'])}건: {info['warnings'][0]}")
+    elif args.source == "sms":
+        from .ingest import sms
+
+        for p in args.paths:
+            recs, info = sms.to_records(sms.parse_file(Path(p)), pseudo)
+            store.upsert_records(recs)
+            store.log_import("sms", str(p), len(recs), json.dumps(info, ensure_ascii=False))
+            skipped = ", ".join(f"{k} {v}" for k, v in info["skipped"].items()) or "없음"
+            print(f"문자 {Path(p).name}: 메시지 {info['messages']}건 → 발화 {info['turns']}건, 대화 {info['threads']}개"
+                  f" (자동 발송 등 뺀 것: {skipped})")
     elif args.source == "instagram":
         from .ingest import instagram
 
@@ -210,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("ingest", help="기록 가져오기")
-    p.add_argument("source", choices=["kakao", "instagram", "photos", "synthetic"])
+    p.add_argument("source", choices=["kakao", "sms", "instagram", "photos", "synthetic"])
     p.add_argument("paths", nargs="*")
     p.add_argument("--me", action="append", help="본인 이름 (카카오톡·인스타그램 DM). 여러 번 지정 가능")
     p.add_argument("--seed", type=int, default=20260711)
@@ -259,7 +270,7 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(func=cmd_reset)
 
     args = ap.parse_args(argv)
-    if args.cmd == "ingest" and args.source in ("kakao", "instagram", "photos") and not args.paths:
+    if args.cmd == "ingest" and args.source in ("kakao", "sms", "instagram", "photos") and not args.paths:
         ap.error("가져올 파일이나 폴더 경로를 적으세요")
     return args.func(args)
 

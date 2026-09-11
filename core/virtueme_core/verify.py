@@ -110,7 +110,7 @@ def _numbers_in(text: str) -> set[tuple[float, str]]:
     return out
 
 
-SOURCE_WORDS = {"kakao": "카카오톡 카톡 메시지 대화 톡 채팅", "instagram": "인스타그램 인스타 게시물 피드", "photo": "사진",
+SOURCE_WORDS = {"kakao": "카카오톡 카톡 메시지 대화 톡 채팅", "sms": "문자 문자메시지 메시지 대화", "instagram": "인스타그램 인스타 게시물 피드", "photo": "사진",
                 "synthetic": "활동"}
 GROUP_ROOM_WORDS = "단톡방 단톡 톡방 단체방"
 KIND_WORDS = {"post": "게시물", "story": "스토리", "reel": "릴스", "comment": "댓글", "photo": "사진", "message": "메시지"}
