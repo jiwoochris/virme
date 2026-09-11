@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import os
 import threading
-from datetime import date
+import time
+from collections import Counter
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from . import clusters, entities, music, narrative, patterns, story
+from . import clusters, entities, importer, music, narrative, patterns, story
 from .config import DATA_DIR, JUDGE_MODEL, LLM_MODEL, SETTINGS, Settings, openrouter_key, profile_db_path
 from .embed import HashEmbedder, TextEmbedder, VisionEmbedder
 from .privacy import Masker
@@ -34,6 +36,8 @@ class Service:
         # 음악은 로컬 ACE-Step 서버가 만든다. 결과는 프로필별 캐시 폴더에 남아 발표 때 다시 쓴다
         self.music_root = Path(os.environ.get("VIRTUEME_MUSIC_DIR", DATA_DIR / "music")) / profile
         self.acestep = music.AceStepClient(os.environ.get("VIRTUEME_ACESTEP_URL", music.ACESTEP_URL))
+        self.upload_root = DATA_DIR / "uploads" / profile
+        self._build: dict[str, Any] = {"state": "idle"}
 
     @property
     def engine(self) -> QueryEngine:
@@ -181,6 +185,80 @@ class Service:
     def gaps(self) -> dict[str, Any]:
         # 습관 단정과 그날 일을 가르는 일은 지시를 잘 따르는 판정 모델에 맡긴다
         return {"gaps": entities.find_gaps(self.store, self.engine, model=self.judge_model), "people": self.store.relations()}
+
+    # ---------- 웹 화면에서 기록 넣기 ----------
+    def new_upload_dir(self, source: str) -> Path:
+        d = self.upload_root / f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{source}"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def import_paths(self, source: str, saved: list[Path], me: list[str] | None = None) -> dict[str, Any]:
+        """올린 파일을 가져온다. 압축 파일은 풀어서, 인스타그램·사진은 폴더째, 카카오톡·문자는 파일마다."""
+        if source not in importer.SOURCES:
+            raise ValueError(f"모르는 출처: {source}")
+        d = saved[0].parent
+        files: list[Path] = []
+        for f in saved:
+            if f.suffix.lower() == ".zip":
+                root = importer.safe_extract(f, d / f.stem)
+                files += [root] if source in ("instagram", "photos") else sorted(
+                    p for p in root.rglob("*") if p.suffix.lower() in (".txt", ".csv", ".xml", ".db"))
+            else:
+                files.append(f)
+        if source in ("instagram", "photos"):
+            dirs = [f for f in files if f.is_dir()]
+            files = [dirs[0] if dirs else d]
+        out = importer.ingest(self.store, source, files, me)
+        self.invalidate()
+        return out
+
+    def start_build(self, pii: bool = True, cluster: bool = True, extract_entities: bool = True) -> dict[str, Any]:
+        """임베딩·정서·묶기·관계 추출을 백그라운드에서 돌린다. 끝나면 검색 엔진을 새로 읽는다."""
+        from .build import build
+
+        with self._lock:
+            if self._build.get("state") == "running":
+                return self.build_status()
+            lines: list[str] = []
+            state: dict[str, Any] = {"state": "running", "lines": lines, "started": time.time()}
+            self._build = state
+
+        def log(msg: str) -> None:
+            lines.append(str(msg))
+            del lines[:-40]
+
+        def run() -> None:
+            try:
+                state["report"] = build(self.store, self.text, self.vision, log=log, cluster=cluster,
+                                        extract_entities=extract_entities, pii=pii)
+                state["state"] = "done"
+            except Exception as err:  # 화면에 이유를 보여 준다
+                state.update(state="error", error=str(err)[:400])
+            finally:
+                state["elapsed"] = round(time.time() - state["started"], 1)
+                self.invalidate()
+
+        threading.Thread(target=run, daemon=True).start()
+        return self.build_status()
+
+    def build_status(self) -> dict[str, Any]:
+        st = dict(self._build)
+        if st.get("state") == "running":
+            st["elapsed"] = round(time.time() - st["started"], 1)
+        st.pop("started", None)
+        st["lines"] = list(st.get("lines", []))
+        return st
+
+    def people_local(self) -> list[dict[str, Any]]:
+        """가명 대응표 (이 컴퓨터 화면에서만 쓴다). 가명마다 실명·관계·기록 수."""
+        counts = Counter(r.author for r in self.store.records() if r.author)
+        rel = self.store.relations()
+        by_alias: dict[str, list[str]] = {}
+        for name, alias in self.store.people().items():
+            if alias != "나":
+                by_alias.setdefault(alias, []).append(name)
+        return sorted(({"alias": a, "names": sorted(set(n)), "relation": rel.get(a), "records": counts.get(a, 0)}
+                       for a, n in by_alias.items()), key=lambda x: -x["records"])
 
     # ---------- 음악 (3단계) ----------
     def music_plan(self, keyword: str, total_sec: int = 60) -> dict[str, Any]:

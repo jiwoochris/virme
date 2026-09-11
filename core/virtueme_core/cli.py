@@ -27,56 +27,11 @@ def _svc(args, fake: bool = False):
 
 
 def cmd_ingest(args) -> int:
-    from .privacy import Pseudonymizer
+    from .importer import ingest
 
     svc = _svc(args, fake=True)
     store = svc.store
-    pseudo = Pseudonymizer(store)
-    if args.source == "kakao":
-        from .ingest import kakao
-
-        total = 0
-        for p in args.paths:
-            parsed = kakao.parse_kakao_file(Path(p))
-            if not args.me:
-                listing = ", ".join(f"{n}({c})" for n, c in parsed.senders.most_common(10))
-                print(f"본인 이름을 --me 로 지정하세요. 보낸 사람: {listing}", file=sys.stderr)
-                return 2
-            recs, info = kakao.to_records(parsed, args.me, pseudo)
-            store.upsert_records(recs)
-            store.log_import("kakao", str(p), len(recs), json.dumps(info, ensure_ascii=False))
-            total += len(recs)
-            print(f"카카오톡 {Path(p).name}: 형식 {info['format']}, 메시지 {info['messages']}건 → 발화 {info['turns']}건"
-                  f" (참여자 {', '.join(info['participants'])})")
-            if info["warnings"]:
-                print(f"  경고 {len(info['warnings'])}건: {info['warnings'][0]}")
-    elif args.source == "sms":
-        from .ingest import sms
-
-        for p in args.paths:
-            recs, info = sms.to_records(sms.parse_file(Path(p)), pseudo)
-            store.upsert_records(recs)
-            store.log_import("sms", str(p), len(recs), json.dumps(info, ensure_ascii=False))
-            skipped = ", ".join(f"{k} {v}" for k, v in info["skipped"].items()) or "없음"
-            print(f"문자 {Path(p).name}: 메시지 {info['messages']}건 → 발화 {info['turns']}건, 대화 {info['threads']}개"
-                  f" (자동 발송 등 뺀 것: {skipped})")
-    elif args.source == "instagram":
-        from .ingest import instagram
-
-        recs, info = instagram.import_instagram(Path(args.paths[0]), pseudo, me=(args.me or [None])[0])
-        store.upsert_records(recs)
-        store.log_import("instagram", args.paths[0], len(recs), json.dumps(info, ensure_ascii=False))
-        print(f"인스타그램: 게시물 {info['posts']}, 스토리 {info['stories']}, 릴스 {info['reels']}, 댓글 {info['comments']},"
-              f" DM 발화 {info['dm_messages']} (사진 포함 {info['with_media']}, GPS {info['with_gps']})")
-    elif args.source == "photos":
-        from .ingest import photos
-
-        recs, info = photos.import_photos(Path(args.paths[0]))
-        store.upsert_records(recs)
-        store.log_import("photo", args.paths[0], len(recs), json.dumps(info, ensure_ascii=False))
-        print(f"사진: {info['records']}장 (EXIF 시각 {info['time_source']['exif']}, 파일 시각 {info['time_source']['mtime']},"
-              f" GPS {info['with_gps']}, 건너뜀 {info['skipped']})")
-    elif args.source == "synthetic":
+    if args.source == "synthetic":
         from .ingest import synthetic
 
         persona, recs = synthetic.synthetic_dataset(args.seed, args.persona, date.fromisoformat(args.start))
@@ -84,6 +39,13 @@ def cmd_ingest(args) -> int:
         store.cache_put("persona", persona)
         store.log_import("synthetic", f"seed={args.seed}", len(recs))
         print(f"합성 페르소나 {persona['name']} ({persona['age']}세, {persona['occupation']}) 90일 기록 {len(recs)}건")
+    else:
+        try:
+            out = ingest(store, args.source, [Path(p) for p in args.paths], args.me)
+        except ValueError as err:
+            print(err, file=sys.stderr)
+            return 2
+        print("\n".join(out["lines"]))
     print(f"프로필 '{args.profile}': 기록 {store.count()}건 → 다음 단계: virtueme -p {args.profile} build")
     return 0
 

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtueme 내 기록 넣기</title>
+<style>
+  :root { color-scheme: dark; --bg:#0e0f16; --card:#15161d; --line:rgba(255,255,255,.09); --ink:#fff; --sub:#c3c2b7; --mut:#898781; --acc:#3987e5; --warn:#e8a37f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.7 -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 15px; margin: 30px 0 10px; }
+  p.sub { margin: 0 0 16px; color: var(--sub); font-size: 13px; }
+  .status { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--sub); font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .card h3 { margin: 0; font-size: 14px; }
+  .how { margin: 0; color: var(--mut); font-size: 12px; line-height: 1.6; }
+  input[type=text] { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: #0f1016; color: var(--ink); font: inherit; font-size: 13px; }
+  input[type=file] { font-size: 12px; color: var(--sub); }
+  button { padding: 9px 12px; border-radius: 9px; border: 1px solid var(--line); background: #1c1e28; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+  button.primary { border-color: var(--acc); background: rgba(57,135,229,.16); }
+  button:disabled { opacity: .45; cursor: default; }
+  .out { margin: 0; white-space: pre-wrap; color: var(--sub); font-size: 12px; }
+  .out.err { color: var(--warn); }
+  .log { max-height: 220px; overflow-y: auto; margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #0b0c11; border: 1px solid var(--line); font: 12px/1.6 ui-monospace, Menlo, monospace; color: var(--sub); white-space: pre-wrap; }
+  .opts { display: flex; gap: 14px; flex-wrap: wrap; color: var(--sub); font-size: 13px; margin: 6px 0 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--mut); font-weight: 500; font-size: 12px; }
+  td.names { color: var(--sub); }
+  td input { width: 100%; }
+  .note { margin-top: 26px; color: var(--mut); font-size: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>내 기록 넣기</h1>
+  <p class="sub">이 화면은 이 컴퓨터(127.0.0.1)에서만 열립니다. 올린 파일과 실명은 이 컴퓨터의 프로필 폴더에만 남고, 밖(OpenRouter)으로 나가는 것은 가명·가리기를 거친 문장뿐입니다.</p>
+  <div class="status" id="status">프로필 상태를 불러오는 중</div>
+
+  <h2>1. 기록 파일 올리기</h2>
+  <div class="grid">
+    <div class="card" data-source="kakao">
+      <h3>카카오톡</h3>
+      <p class="how">대화방 → 메뉴 → 대화 내용 → 대화 내보내기 → 텍스트. txt·csv 여러 개나 zip 을 올립니다.</p>
+      <input type="text" name="me" placeholder="카카오톡에 표시되는 본인 이름" autocomplete="off">
+      <input type="file" multiple accept=".txt,.csv,.zip">
+      <button>가져오기</button><p class="out"></p>
+    </div>
+    <div class="card" data-source="sms">
+      <h3>문자</h3>
+      <p class="how">안드로이드: "SMS Backup &amp; Restore" 앱의 XML. 아이폰: 아이클라우드 메시지를 켠 맥의 chat.db 복사본.</p>
+      <input type="file" multiple accept=".xml,.db,.zip">
+      <button>가져오기</button><p class="out"></p>
+    </div>
+    <div class="card" data-source="instagram">
+      <h3>인스타그램</h3>
+      <p class="how">설정 → 계정 센터 → 내 정보 다운로드 → JSON 형식. 받은 zip 을 그대로 올립니다.</p>
+      <input type="file" accept=".zip">
+      <button>가져오기</button><p class="out"></p>
+    </div>
+    <div class="card" data-source="photos">
+      <h3>사진</h3>
+      <p class="how">jpg·png·heic 여러 장이나 zip. 촬영 시각과 위치(EXIF)를 읽고, 위치는 밖으로 보내지 않습니다.</p>
+      <input type="file" multiple accept="image/*,.heic,.zip">
+      <button>가져오기</button><p class="out"></p>
+    </div>
+  </div>
+
+  <h2>2. 기록 처리하기</h2>
+  <p class="sub">문장 벡터·정서·주제 묶음·관계를 계산합니다. 기록 700건 기준 몇 분 걸리고, 이미 계산한 기록은 건너뜁니다.</p>
+  <div class="opts">
+    <label><input type="checkbox" id="optPii" checked> 본문 속 다른 사람 이름 가리기</label>
+    <label><input type="checkbox" id="optCluster" checked> 주제 묶기</label>
+    <label><input type="checkbox" id="optEnt" checked> 사람·장소 관계 추출</label>
+  </div>
+  <button class="primary" id="buildBtn">처리 시작</button>
+  <div class="log" id="log" hidden></div>
+
+  <h2>3. 사람 관계 붙이기</h2>
+  <p class="sub">가명에 관계를 붙이면 이야기와 대화에서 "지인D" 대신 "회사 동기"처럼 부릅니다. 실명은 쓰지 마세요.</p>
+  <table>
+    <thead><tr><th>가명</th><th>원래 이름·번호 (이 화면에만)</th><th>기록</th><th>관계</th><th></th></tr></thead>
+    <tbody id="people"><tr><td colspan="5" class="names">불러오는 중</td></tr></tbody>
+  </table>
+
+  <p class="note">다 넣었으면 웹 앱(<a href="http://127.0.0.1:5173" style="color:var(--acc)">127.0.0.1:5173</a>)의 노벨·대화에서 "내 기록"을 고르고, INSIGHT 에서 흐름을 확인합니다.</p>
+</main>
+<script>
+"use strict";
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+async function refreshStatus() {
+  try {
+    const h = await (await fetch('health')).json();
+    const dr = h.date_range || [];
+    $('#status').textContent = `프로필 ${h.profile} · 기록 ${h.records}건` + (h.records ? ` · ${String(dr[0] || '').slice(0, 10)} ~ ${String(dr[1] || '').slice(0, 10)}` : '') +
+      ` · ${h.built ? '처리 완료' : '아직 처리 전'}` + (h.models && h.models.llm ? '' : ' · OpenRouter 키 없음 (LLM 단계는 로컬 계산으로 대체)');
+  } catch (e) { $('#status').textContent = 'core 서버에 연결하지 못했습니다'; }
+}
+
+document.querySelectorAll('.card').forEach((card) => {
+  const btn = $('button', card), out = $('.out', card), input = $('input[type=file]', card);
+  btn.onclick = async () => {
+    if (!input.files.length) { out.className = 'out err'; out.textContent = '파일을 먼저 고르세요'; return; }
+    const fd = new FormData();
+    [...input.files].forEach((f) => fd.append('files', f, f.name));
+    const me = $('input[name=me]', card);
+    if (me) fd.append('me', me.value.trim());
+    btn.disabled = true; out.className = 'out'; out.textContent = '파일 전송 중';
+    try {
+      const r = await fetch('import/' + card.dataset.source, { method: 'POST', body: fd });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || ('HTTP ' + r.status));
+      out.textContent = d.lines.join('\n') + `\n→ 전체 기록 ${d.total_records}건. 다음은 2. 기록 처리하기`;
+      refreshStatus(); loadPeople();
+    } catch (e) { out.className = 'out err'; out.textContent = String(e.message || e); }
+    finally { btn.disabled = false; }
+  };
+});
+
+let polling = null;
+async function pollBuild() {
+  const st = await (await fetch('build/status')).json();
+  const log = $('#log');
+  if (st.state !== 'idle') log.hidden = false;
+  log.textContent = (st.lines || []).join('\n') + (st.state === 'running' ? `\n기록 처리 중 · ${Math.round(st.elapsed || 0)}초` :
+    st.state === 'done' ? `\n처리 완료 (${st.elapsed}초)` : st.state === 'error' ? `\n오류: ${st.error}` : '');
+  log.scrollTop = log.scrollHeight;
+  $('#buildBtn').disabled = st.state === 'running';
+  if (st.state === 'running') { polling = setTimeout(pollBuild, 2000); } else { polling = null; refreshStatus(); loadPeople(); }
+}
+$('#buildBtn').onclick = async () => {
+  await fetch('build', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pii: $('#optPii').checked, cluster: $('#optCluster').checked, entities: $('#optEnt').checked }) });
+  if (!polling) pollBuild();
+};
+
+async function loadPeople() {
+  const d = await (await fetch('people/local')).json();
+  const rows = d.people || [];
+  $('#people').innerHTML = rows.length ? rows.map((p) => `<tr data-alias="${esc(p.alias)}">
+      <td>${esc(p.alias)}</td><td class="names">${esc(p.names.join(', '))}</td><td>${p.records}</td>
+      <td><input type="text" value="${esc(p.relation || '')}" placeholder="예: 회사 동기"></td>
+      <td><button>저장</button></td></tr>`).join('') : '<tr><td colspan="5" class="names">아직 가져온 대화가 없습니다</td></tr>';
+  document.querySelectorAll('#people tr[data-alias]').forEach((tr) => {
+    $('button', tr).onclick = async () => {
+      const r = await fetch('people/relation', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alias: tr.dataset.alias, relation: $('input', tr).value.trim() }) });
+      $('button', tr).textContent = r.ok ? '저장됨' : '실패';
+    };
+  });
+}
+
+refreshStatus(); loadPeople(); pollBuild();
+</script>
+</body>
+</html>

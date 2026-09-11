@@ -5,11 +5,12 @@
 from __future__ import annotations
 
 import os
+import shutil
 import threading
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi import Path as PathParam
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
@@ -47,6 +48,17 @@ class LabelBody(BaseModel):
 
 class MusicBody(QueryBody):
     total_sec: int = Field(default=60, ge=20, le=180)
+
+
+class RelationBody(BaseModel):
+    alias: str = Field(min_length=1, max_length=20)
+    relation: str | None = Field(default=None, max_length=30)
+
+
+class BuildBody(BaseModel):
+    pii: bool = True
+    cluster: bool = True
+    entities: bool = True
 
 
 class TalkBody(BaseModel):
@@ -200,6 +212,48 @@ def create_app(service: Service, warm: bool = False) -> FastAPI:
         if not got:
             raise HTTPException(404, "아직 만들지 않았습니다")
         return FileResponse(got)
+
+    # ---------- 웹 화면에서 기록 넣기 (이 컴퓨터에서만: 서버는 127.0.0.1 에만 뜬다) ----------
+    @app.get("/import", response_class=HTMLResponse)
+    def import_page() -> str:
+        return (Path(__file__).parent / "static" / "import.html").read_text(encoding="utf-8")
+
+    @app.post("/import/{source}")
+    def import_files(source: str = PathParam(pattern="^(kakao|sms|instagram|photos)$"),
+                     files: list[UploadFile] = File(...), me: str = Form(default="")) -> dict[str, Any]:
+        d = service.new_upload_dir(source)
+        saved = []
+        for f in files:
+            name = Path(f.filename or "upload").name  # 경로는 버리고 파일 이름만
+            target = d / name
+            with target.open("wb") as out:
+                shutil.copyfileobj(f.file, out)
+            saved.append(target)
+        try:
+            names = [n.strip() for n in me.split(",") if n.strip()] or None
+            return service.import_paths(source, saved, names)
+        except ValueError as err:
+            raise HTTPException(400, str(err)) from err
+
+    @app.post("/build")
+    def start_build(body: BuildBody | None = None) -> dict[str, Any]:
+        b = body or BuildBody()
+        return service.start_build(pii=b.pii, cluster=b.cluster, extract_entities=b.entities)
+
+    @app.get("/build/status")
+    def build_status() -> dict[str, Any]:
+        return service.build_status()
+
+    @app.get("/people/local")
+    def people_local() -> dict[str, Any]:
+        return {"people": service.people_local()}
+
+    @app.post("/people/relation")
+    def set_relation(body: RelationBody) -> dict[str, Any]:
+        n = service.store.set_relation(body.alias.strip(), (body.relation or "").strip() or None)
+        if not n:
+            raise HTTPException(404, "그런 가명이 없습니다")
+        return {"ok": True, "people": service.people_local()}
 
     @app.get("/records/{rid}")
     def record(rid: str) -> dict[str, Any]:

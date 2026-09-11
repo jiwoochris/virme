@@ -43,6 +43,10 @@ bun run dev      # 또는 npm run dev. Vite 가 /api/core 를 8767 로 넘긴다
 
 ## 내 기록 가져오기
 
+명령줄 대신 웹 화면으로도 넣을 수 있습니다. `virtueme -p <프로필> serve` 를 켠 뒤 `http://127.0.0.1:8767/import` 를 열면
+파일 올리기 → 기록 처리하기 → 사람 관계 붙이기를 한 화면에서 합니다(카카오톡 발화 335건 기준 처리 57초).
+이 화면은 서버가 뜬 컴퓨터에서만 열리고, 원래 이름·번호는 이 화면과 로컬 DB 에만 보입니다.
+
 | 출처 | 내보내는 방법 | 명령 |
 |---|---|---|
 | 카카오톡 (PC) | 대화방 → 메뉴 → 대화 내용 → 대화 내보내기 → 텍스트 | `ingest kakao 파일.txt --me 내이름` |
@@ -72,7 +76,7 @@ bun run dev      # 또는 npm run dev. Vite 가 /api/core 를 8767 로 넘긴다
 | 임베딩 | `embed.py` | 텍스트 bge-m3, 사진 SigLIP 2. 사진은 자동 태그("사진: 바다, 해변")로 텍스트 공간에도 넣음 | sentence-transformers, transformers |
 | 정서 | `emotion.py` | 기록마다 정서가(-1..1)·각성도(0..1). 텍스트는 LLM 채점, 사진은 SigLIP 비교 | OpenRouter (gemini-2.5-flash) |
 | 패턴 | `patterns.py` | 날짜별 정서 곡선, 변화점, 주 단위 주기, 시간대 | ruptures (PELT), statsmodels (STL) |
-| 묶기 | `clusters.py` | 주제 묶음(형태소 명사로 BERTopic, LLM 이름 붙이기), 기분 묶음, 혼자/함께 묶음 | BERTopic, UMAP, HDBSCAN |
+| 묶기 | `clusters.py` | 주제 묶음(형태소 명사로 BERTopic, LLM 이름 붙이기), 기분 묶음, 혼자/함께 묶음, 의미 지도(2차원 좌표) | BERTopic, UMAP, HDBSCAN |
 | 개체·관계 | `entities.py` | 기록마다 사람·장소·활동·물건과 관계를 뽑아 그래프로. 습관을 단정한 자기 서술("요즘 운동할 시간도 없어")과 그 뒤 기록 수의 간극 찾기 | OpenRouter (추출 gemini-2.5-flash, 자기 서술 claude-haiku-4.5), networkx |
 | 검색 | `query.py` | 키워드 확장 → 직접 일치 + 의미 유사도 → LLM 판정 → 근거 3등급 | OpenRouter (확장 gemini-2.5-flash, 판정 claude-haiku-4.5) |
 | 서사 오브젝트 | `narrative.py` | `virtueme.narrative/1` JSON, 근거 기록 목록, 주제·기분·혼자/함께 비율, 비주얼 신호 7개 | `schema/narrative.v1.schema.json` |
@@ -127,6 +131,8 @@ bun run dev      # 또는 npm run dev. Vite 가 /api/core 를 8767 로 넘긴다
 | `GET /clusters` | 주제·기분·혼자/함께 묶음과 비율 |
 | `GET /graph?keyword=` | 개체·관계 그래프 (노드·엣지, 근거 기록 수) |
 | `GET /gaps` | 자기 서술과 기록 비율이 어긋나는 곳 |
+| `GET /map?keyword=` | 의미 지도: 본인 기록의 2차원 좌표, 주제, 키워드 근거 표시 |
+| `GET /import` | 기록 넣기 화면 (`POST /import/{kakao,sms,instagram,photos}`, `POST /build`, `GET /build/status`, `GET /people/local`, `POST /people/relation`) |
 | `GET /label` | 정답 라벨 붙이는 화면 (`/label/candidates`, `POST /label`, `/label/export`) |
 | `POST /music/plan` `{"keyword"}` | 음악 계획: 구간별 날짜·조성·분위기·설명, BPM, 매핑 설명 (만들지는 않음) |
 | `POST /music` `{"keyword"}` | 음악 만들기 시작(캐시가 있으면 바로 ready). ACE-Step 서버가 꺼져 있으면 `unavailable` |
@@ -239,7 +245,7 @@ VIRTUEME_PROFILE=seoyeon ./scripts/start-demo-mac.sh --music    # 새 키워드 
 ## 테스트
 
 ```bash
-uv run pytest -q     # 52개. 모델을 내려받지 않는 해시 임베더와 가짜 음악 서버로 돈다
+uv run pytest -q     # 54개. 모델을 내려받지 않는 해시 임베더와 가짜 음악 서버로 돈다
 ```
 
 ## 알려진 한계

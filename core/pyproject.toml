@@ -26,6 +26,7 @@ dependencies = [
     "networkx>=3.2",
     "scikit-learn>=1.4",
     "gliner>=0.2.29",
+    "python-multipart>=0.0.32",
 ]
 
 [dependency-groups]

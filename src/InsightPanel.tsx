@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { coreFetch } from './coreApi'
+import { coreFetch, useCoreBase } from './coreApi'
 import { koDate, relabel, type NarrativeObject } from './narrative'
 
 /* 시각화 렌더러: 서사 오브젝트 + core 서버의 전체 정서 곡선·주제 묶음·관계 그래프·간극.
@@ -189,6 +189,7 @@ function SemanticMap({ map, narrative, people }: { map: SemMap; narrative: Narra
 }
 
 function Kpis({ narrative, core }: { narrative: NarrativeObject | null; core: Core }) {
+  const base = useCoreBase()
   const first = core.series[0]?.date, last = core.series[core.series.length - 1]?.date
   if (!narrative) {
     return (
@@ -196,7 +197,8 @@ function Kpis({ narrative, core }: { narrative: NarrativeObject | null; core: Co
         <Tile label="기록" value={`${core.records.toLocaleString()}건`} />
         <Tile label="기간" value={first && last ? `${koDate(first)} ~ ${koDate(last)}` : '—'} />
         <Tile label="주제 묶음" value={`${core.topics.length}개`} />
-        <div className="kpi-note">노벨 모드에서 키워드를 심으면 이 화면과 비주얼 모드가 같은 근거로 바뀝니다.</div>
+        <div className="kpi-note">노벨 모드에서 키워드를 심으면 이 화면과 비주얼 모드가 같은 근거로 바뀝니다.
+          {base && <> 기록을 더 넣으려면 <a href={`${base}/import`} target="_blank" rel="noreferrer">내 기록 넣기</a>.</>}</div>
       </div>
     )
   }

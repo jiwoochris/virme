@@ -266,6 +266,7 @@ button { cursor: pointer; }
 .kpi strong { font-size: 20px; font-weight: 600; color: #fff; }
 .kpi small { font-size: 11px; color: #c3c2b7; }
 .kpi-note { flex: 2 1 280px; align-self: center; font-size: 12.5px; color: #c3c2b7; line-height: 1.6; }
+.kpi-note a { color: #7fb2ff; }
 .chart-wrap { position: relative; }
 .chart { display: block; width: 100%; height: auto; overflow: visible; }
 .chart:focus-visible { outline: 1px solid rgba(255,255,255,.4); outline-offset: 4px; border-radius: 6px; }

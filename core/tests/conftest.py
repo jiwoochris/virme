@@ -23,5 +23,6 @@ def svc(tmp_path, monkeypatch):
     store.upsert_records(krecs)
     s = Service("test", fake_models=True, store=store)
     s.music_root = tmp_path / "music"
+    s.upload_root = tmp_path / "uploads"
     build(s.store, s.text, s.vision, emotion_backend="truth", log=lambda *_: None, cluster=False, extract_entities=False, pii=False)
     return s
