@@ -232,7 +232,9 @@ def graph(store: Store, emotions: dict[str, tuple[float, float, str]], record_id
 def find_gaps(store: Store, engine: QueryEngine, model: str = LLM_MODEL, max_topics: int = 8) -> list[dict[str, Any]]:
     """자기 서술과 기록 사이의 간극. 결과는 캐시에 남긴다 (기록이 바뀌면 다시 계산)."""
     own = [r for r in engine.records if r.is_self and r.text and len(r.text) >= 6]
-    key = f"{CLAIM_VERSION}:{model}:{_hash(''.join(r.id + (r.text or '') for r in engine.records))}"
+    from .query import JUDGE_VERSION  # 판정 기준이 바뀌면 간극의 기록 수도 달라진다
+
+    key = f"{CLAIM_VERSION}:{JUDGE_VERSION}:{model}:{_hash(''.join(r.id + (r.text or '') for r in engine.records))}"
     hit = store.cache_get(key)
     if hit is not None:
         return hit

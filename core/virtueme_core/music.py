@@ -12,7 +12,8 @@
 매핑표 (정서가 v: -1..1, 각성도 a: 0..1)
 - BPM      : 62 + 60 × (근거 기록 날의 평균 각성도) + 45 × (활동량 신호), 60~140
              각성도는 LLM 채점값이 0.3~0.5 에 몰려 있어서, 기록이 얼마나 자주 나오는지(활동량)를 함께 쓴다
-- 조성     : 서사 번호로 으뜸음을 고르고(키워드마다 다른 조), 구간 v ≥ 0.05 는 장조, v ≤ -0.05 는 나란한조(단조),
+- 조성     : 키워드로 으뜸음을 고르고(키워드마다 다른 조, 근거가 조금 바뀌어도 같은 조), 구간 v ≥ 0.05 는 장조,
+             v ≤ -0.05 는 나란한조(단조),
              그 사이는 전체 평균을 따른다. 장조와 나란한조는 같은 음을 쓰므로 구간을 이어도 어긋나지 않는다.
 - 분위기   : v·a 사분면 → 밝고 힘찬 / 따뜻하고 잔잔한 / 긴장된 / 쓸쓸하고 느린
 - 셈여림   : 구간 각성도 + 0.2 × (구간의 하루 근거 수 ÷ 전체 평균 - 1). 0.35 미만 여리게, 0.55 초과 강한 리듬
@@ -41,7 +42,7 @@ import numpy as np
 
 from . import patterns
 
-MUSIC_VERSION = "m1"
+MUSIC_VERSION = "m2"
 ACESTEP_URL = "http://127.0.0.1:8001"
 SAMPLE_RATE = 48000
 CROSSFADE_SEC = 2.5
@@ -113,8 +114,8 @@ def plan(no: dict[str, Any], total_sec: int = 60) -> dict[str, Any]:
     per_day = ev_total / max(1, len(series))
     three = sig.get("stability", 0.5) > 0.7 and a_mean < 0.35
     nid = str(no.get("narrative_id") or "0")
-    major, minor = KEY_PAIRS[int(nid[:6], 16) % len(KEY_PAIRS)] if all(c in "0123456789abcdef" for c in nid[:6]) \
-        else KEY_PAIRS[0]
+    kw_hash = hashlib.sha1(str(no.get("keyword") or "").encode("utf-8")).hexdigest()
+    major, minor = KEY_PAIRS[int(kw_hash[:6], 16) % len(KEY_PAIRS)]
 
     social = (no.get("social_mix") or {})
     alone = (social.get("혼자") or {}).get("evidence", 0)
@@ -143,7 +144,7 @@ def plan(no: dict[str, Any], total_sec: int = 60) -> dict[str, Any]:
     climax = sig.get("possibility", 0.5) >= 0.6 or (len(dens) > 1 and dens[-1] >= max(dens) and dens[-1] > 1.2)
     sections = []
     t = 0.0
-    seed0 = int(hashlib.sha1(nid.encode()).hexdigest()[:8], 16) % (2**31 - 16)
+    seed0 = int(kw_hash[8:16], 16) % (2**31 - 16)
     for i, ((lo, hi), dur) in enumerate(zip(segs, durs)):
         part = series[lo:hi]
         v = float(np.mean([s["valence"] for s in part]))
@@ -175,7 +176,7 @@ def plan(no: dict[str, Any], total_sec: int = 60) -> dict[str, Any]:
     music_id = hashlib.sha1(json.dumps(core, ensure_ascii=False).encode()).hexdigest()[:12]
     kd = lambda iso: patterns.ko_date(date.fromisoformat(iso))  # noqa: E731
     notes = [f"BPM {bpm}: 근거 기록이 있는 날의 평균 각성도 {a_mean:.2f}, 활동량 {sig.get('activity', 0.3):.2f}",
-             f"조성 {major} 장조 / {minor} 단조: 서사 번호 #{nid}로 고른 으뜸음. 정서가가 0보다 낮은 구간은 나란한조(단조)",
+             f"조성 {major} 장조 / {minor} 단조: 키워드 '{no.get('keyword')}'로 고른 으뜸음. 정서가가 0보다 낮은 구간은 나란한조(단조)",
              f"편성 {band_ko}: 근거 기록 가운데 혼자 {alone:.0%}, 함께 {together:.0%}",
              f"장르 바탕 {genre_ko}: 안정 {sig.get('stability', 0):.2f}, 새로움 {sig.get('novelty', 0):.2f}"]
     notes += [f"{s['name']} {kd(s['start_date'])}~{kd(s['end_date'])}: 정서가 {s['valence']:+.2f}, 각성도 {s['arousal']:.2f}"
