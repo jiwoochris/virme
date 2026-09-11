@@ -26,7 +26,7 @@ def svc(tmp_path, monkeypatch):
     krecs, _ = kakao.to_records(parsed, "윤서연", Pseudonymizer(store))
     store.upsert_records(krecs)
     s = Service("test", fake_models=True, store=store)
-    build(s.store, s.text, s.vision, emotion_backend="truth", log=lambda *_: None)
+    build(s.store, s.text, s.vision, emotion_backend="truth", log=lambda *_: None, cluster=False, extract_entities=False, pii=False)
     return s
 
 
@@ -108,3 +108,16 @@ def test_llm_judge_reassigns_evidence(svc, monkeypatch):
     again = eng.query("등산", use_judge=True)
     assert [s.record.id for s in again.strong] == [s.record.id for s in res.strong]
     assert target  # 기준 질의가 근거를 찾았는지 확인
+
+
+def test_label_tool_roundtrip(svc):
+    client = TestClient(create_app(svc))
+    assert "정답 라벨" in client.get("/label").text
+    cands = client.get("/label/candidates", params={"keyword": "등산"}).json()
+    assert len(cands["items"]) == 80 and all("lat" not in x for x in cands["items"])
+    rid = cands["items"][0]["id"]
+    assert client.post("/label", json={"keyword": "등산", "record_id": rid, "label": 2}).json()["labeled"] == 1
+    assert client.post("/label", json={"keyword": "등산", "record_id": rid, "label": 3}).status_code == 422
+    again = client.get("/label/candidates", params={"keyword": "등산"}).json()
+    assert next(x for x in again["items"] if x["id"] == rid)["label"] == 2
+    assert client.get("/label/export").json()["labels"] == {"등산": {rid: 2}}

@@ -8,8 +8,11 @@ import os
 import threading
 from typing import Any
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from .service import Service
@@ -18,6 +21,34 @@ from .service import Service
 class QueryBody(BaseModel):
     keyword: str = Field(min_length=1, max_length=40)
     include_others: bool | None = None
+
+
+class StoryBody(QueryBody):
+    genre: int | None = Field(default=None, ge=-1, le=5)
+    version: str = Field(default="v2", pattern="^v[12]$")
+    variation: int = Field(default=0, ge=0, le=20)
+
+
+class VerifyBody(BaseModel):
+    paragraphs: list[str] = Field(max_length=60)
+    evidence_ids: list[str] = Field(max_length=200)
+    mode: str = Field(default="blur", pattern="^(plain|blur|rewrite)$")
+    title: str | None = None
+    extra_counts: list[int] | None = None
+
+
+class LabelBody(BaseModel):
+    keyword: str = Field(min_length=1, max_length=40)
+    record_id: str = Field(pattern=r"^r[0-9a-f]{11}$")
+    label: int = Field(ge=0, le=2)
+    labeler: str = Field(default="", max_length=40)
+
+
+class TalkBody(BaseModel):
+    message: str = Field(min_length=1, max_length=500)
+    history: list[str] | None = None
+    version: str = Field(default="v2", pattern="^v[12]$")
+    mood: int | None = Field(default=None, ge=0, le=4)
 
 
 def create_app(service: Service, warm: bool = False) -> FastAPI:
@@ -65,6 +96,72 @@ def create_app(service: Service, warm: bool = False) -> FastAPI:
             return service.query(body.keyword, include_others=body.include_others)
         except ValueError as err:
             raise HTTPException(400, str(err)) from err
+
+    def _ready() -> None:
+        if not service.store.count():
+            raise HTTPException(409, "가져온 기록이 없습니다. virtueme ingest 를 먼저 실행하세요.")
+        if not service.store.vector_ids("text"):
+            raise HTTPException(409, "임베딩이 없습니다. virtueme build 를 먼저 실행하세요.")
+
+    @app.post("/story/prompt")
+    def story_prompt(body: StoryBody) -> dict[str, Any]:
+        _ready()
+        try:
+            return service.story_prompt(body.keyword, body.genre, body.version, body.variation, body.include_others)
+        except ValueError as err:
+            raise HTTPException(400, str(err)) from err
+
+    @app.post("/verify")
+    def verify(body: VerifyBody) -> dict[str, Any]:
+        return service.verify(body.paragraphs, body.evidence_ids, body.mode, body.title, body.extra_counts)
+
+    @app.post("/talk/context")
+    def talk_context(body: TalkBody) -> dict[str, Any]:
+        _ready()
+        return service.talk_context(body.message, body.history, body.version, body.mood)
+
+    @app.get("/talk/greeting")
+    def talk_greeting() -> dict[str, Any]:
+        _ready()
+        return {"greeting": service.greeting()}
+
+    @app.get("/clusters")
+    def clusters_overview() -> dict[str, Any]:
+        _ready()
+        return service.clusters_overview()
+
+    @app.get("/graph")
+    def graph(keyword: str | None = None, limit: int = 40) -> dict[str, Any]:
+        _ready()
+        return service.graph(keyword, max(5, min(limit, 120)))
+
+    @app.get("/gaps")
+    def gaps() -> dict[str, Any]:
+        _ready()
+        return service.gaps()
+
+    @app.get("/label", response_class=HTMLResponse)
+    def label_page() -> str:
+        return (Path(__file__).parent / "static" / "label.html").read_text(encoding="utf-8")
+
+    @app.get("/label/candidates")
+    def label_candidates(keyword: str) -> dict[str, Any]:
+        _ready()
+        keyword = keyword.strip()
+        if not 1 <= len(keyword) <= 40:
+            raise HTTPException(400, "키워드는 1~40자로 넣어 주세요")
+        return service.label_candidates(keyword)
+
+    @app.post("/label")
+    def put_label(body: LabelBody) -> dict[str, Any]:
+        if not service.store.record(body.record_id):
+            raise HTTPException(404, "기록이 없습니다")
+        service.store.put_label(body.keyword.strip(), body.record_id, body.label, body.labeler)
+        return {"ok": True, "labeled": len(service.store.labels(body.keyword.strip()).get(body.keyword.strip(), {}))}
+
+    @app.get("/label/export")
+    def label_export() -> dict[str, Any]:
+        return {"labels": service.store.labels()}
 
     @app.get("/records/{rid}")
     def record(rid: str) -> dict[str, Any]:

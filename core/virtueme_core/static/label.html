@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtueme 정답 라벨 붙이기</title>
+<style>
+  :root { color-scheme: dark; --bg:#0e0f16; --card:#15161d; --line:rgba(255,255,255,.09); --ink:#fff; --sub:#c3c2b7; --mut:#898781; --acc:#3987e5; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.7 -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  p.sub { margin: 0 0 20px; color: var(--sub); font-size: 13px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  input { flex: 1 1 180px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; }
+  button { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; cursor: pointer; }
+  button:hover { border-color: rgba(255,255,255,.3); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+  .meta { color: var(--mut); font-size: 12px; }
+  .text { margin: 10px 0 16px; white-space: pre-wrap; font-size: 15px; }
+  .choices { display: flex; gap: 8px; flex-wrap: wrap; }
+  .choices button { flex: 1 1 150px; text-align: left; }
+  .choices button b { display: inline-block; min-width: 18px; color: var(--acc); }
+  .choices button.on { border-color: var(--acc); background: rgba(57,135,229,.12); }
+  .progress { margin: 14px 0; color: var(--sub); font-size: 12.5px; display: flex; justify-content: space-between; }
+  .guide { margin-top: 26px; color: var(--sub); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .guide b { color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <h1>정답 라벨 붙이기</h1>
+  <p class="sub">키워드마다 후보 기록 80건을 섞어서 보여 줍니다. 검색 결과 순서와 판정 모델의 답은 보여 주지 않습니다. 라벨은 이 컴퓨터의 프로필 DB 에만 저장됩니다.</p>
+  <div class="row">
+    <input id="kw" placeholder="키워드 (예: 러닝)" autocomplete="off">
+    <input id="who" placeholder="붙이는 사람 (선택)" autocomplete="off" style="flex:0 1 160px">
+    <button id="load">불러오기</button>
+  </div>
+  <div id="stage"></div>
+  <div class="guide">
+    <b>2 직접</b>: 기록이 키워드 주제를 직접 다룹니다. 그 일이 실제로 있었거나 그 사람·대상·감정을 직접 말합니다.<br>
+    <b>1 간접</b>: 같은 상황의 일부이거나 원인·결과·암시로만 이어집니다.<br>
+    <b>0 무관</b>: 낱말이 비슷해도 뜻이 다릅니다.<br>
+    단축키: 2 · 1 · 0 으로 고르고, ← → 로 앞뒤 기록을 오갑니다.
+  </div>
+</main>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+let DATA = null, POS = 0;
+const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+async function load() {
+  const kw = $('kw').value.trim(); if (!kw) return;
+  $('stage').innerHTML = '<p class="meta">후보를 고르는 중입니다</p>';
+  const r = await fetch('label/candidates?keyword=' + encodeURIComponent(kw));
+  if (!r.ok) { $('stage').innerHTML = '<p class="meta">불러오지 못했습니다 (HTTP ' + r.status + ')</p>'; return; }
+  DATA = await r.json();
+  POS = Math.max(0, DATA.items.findIndex((x) => x.label == null));
+  render();
+}
+function render() {
+  if (!DATA) return;
+  const it = DATA.items[POS];
+  const done = DATA.items.filter((x) => x.label != null).length;
+  const body = it.text || ('사진 · ' + (it.photo_tags || []).join(', '));
+  $('stage').innerHTML = `
+    <div class="progress"><span>${esc(DATA.keyword)} · ${POS + 1} / ${DATA.items.length}</span><span>라벨 ${done}건</span></div>
+    <div class="card">
+      <div class="meta">${esc(it.date_ko)} ${esc(it.weekday)}요일 ${esc(it.time)} · ${esc(it.source)}${it.room ? ' · ' + esc(it.room) : ''}</div>
+      <div class="text">${esc(body)}</div>
+      <div class="choices">
+        ${[[2, '직접'], [1, '간접'], [0, '무관']].map(([v, l]) => `<button data-v="${v}" class="${it.label === v ? 'on' : ''}"><b>${v}</b> ${l}</button>`).join('')}
+      </div>
+    </div>`;
+  document.querySelectorAll('.choices button').forEach((b) => b.onclick = () => put(+b.dataset.v));
+}
+async function put(v) {
+  const it = DATA.items[POS];
+  const r = await fetch('label', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ keyword: DATA.keyword, record_id: it.id, label: v, labeler: $('who').value.trim() }) });
+  if (!r.ok) return alert('저장하지 못했습니다');
+  it.label = v;
+  if (POS < DATA.items.length - 1) POS++;
+  render();
+}
+$('load').onclick = load;
+$('kw').addEventListener('keydown', (e) => { if (e.key === 'Enter') load(); });
+document.addEventListener('keydown', (e) => {
+  if (!DATA || e.target.tagName === 'INPUT') return;
+  if (['0', '1', '2'].includes(e.key)) put(+e.key);
+  if (e.key === 'ArrowRight' && POS < DATA.items.length - 1) { POS++; render(); }
+  if (e.key === 'ArrowLeft' && POS > 0) { POS--; render(); }
+});
+</script>
+</body>
+</html>
