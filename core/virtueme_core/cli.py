@@ -111,7 +111,9 @@ def cmd_serve(args) -> int:
 def cmd_demo(args) -> int:
     """발표용 키워드마다 검색 결과(판정 캐시)·음악·오디오 반응 영상과 간극을 미리 만들어 둔다. 이미 있으면 건너뛴다.
 
-    ACE-Step 서버는 아직 음악이 없는 키워드가 있을 때만 필요하다.
+    두 단계로 돈다: 먼저 모든 키워드의 음악, 그다음 영상. ACE-Step 서버는 음악이 없는 키워드가 있을 때만 필요하고,
+    영상 단계에서는 필요 없다. 메모리가 부족한 맥이면 음악 단계가 끝난 뒤 ACE-Step 서버를 꺼도 된다
+    (24GB 맥에서 ACE-Step 과 영상 렌더를 함께 돌리다 시스템이 작업을 끊은 적이 있다, 2026-09-11).
     """
     import os
     import subprocess
@@ -122,7 +124,8 @@ def cmd_demo(args) -> int:
     virme = Path(__file__).resolve().parents[2]
     team_py = virme / ".venv" / "bin" / "python"
     acestep_up = None  # 처음 필요할 때 한 번만 확인
-    missing = []
+    missing: list[str] = []
+    ready: list[tuple[str, Path]] = []
     # 인사이트 화면의 "스스로 말한 나와 기록"은 처음 한 번 LLM 을 불러 1분 넘게 걸리므로 미리 계산해 둔다
     gaps = svc.gaps()["gaps"]
     print(f"- 간극 {len(gaps)}건 미리 계산 (" + ", ".join(f"{g['verdict']} {g['topic']}" for g in gaps[:4]) + ")")
@@ -144,15 +147,25 @@ def cmd_demo(args) -> int:
         st = music.make(svc.music_root, plan, svc.acestep,
                         on_progress=lambda x: print(f"    {x['stage']} {x['done'] + 1}/{x['total']}", flush=True))
         print(f"    음악: {d / st['audio']}")
-        if args.video and not (d / "video.mp4").exists():
-            if not team_py.exists():
-                print("    영상: 팀 모델 환경이 없습니다. virme 에서 bun run model:setup 을 먼저 실행하세요.")
-                continue
-            subprocess.run([str(team_py), str(virme / "scripts" / "render-audio-reactive.py"), "--music-dir", str(d)],
-                           cwd=virme, env={**os.environ, "PYTHONPATH": str(virme / "model_service"),
-                                           "PYTORCH_ENABLE_MPS_FALLBACK": "1"}, check=True)
-        if (d / "video.mp4").exists():
-            print(f"    영상: {d / 'video.mp4'}")
+        ready.append((kw, d))
+    todo = [(kw, d, mode) for kw, d in ready for mode in (args.video_modes if args.video else [])
+            if not (d / music.VIDEO_FILES[mode]).exists()]
+    if todo:
+        if not team_py.exists():
+            print("영상: 팀 모델 환경이 없습니다. virme 에서 bun run model:setup 을 먼저 실행하세요.")
+            todo = []
+        elif acestep_up:
+            print("음악을 다 만들었습니다. 이제부터는 ACE-Step 서버가 필요 없으니, 메모리가 부족하면 꺼도 됩니다.")
+    for kw, d, mode in todo:
+        print(f"- {kw}: 영상({mode}) 렌더", flush=True)
+        subprocess.run([str(team_py), str(virme / "scripts" / "render-audio-reactive.py"), "--music-dir", str(d),
+                        "--mode", mode],
+                       cwd=virme, env={**os.environ, "PYTHONPATH": str(virme / "model_service"),
+                                       "PYTORCH_ENABLE_MPS_FALLBACK": "1"}, check=True)
+    for kw, d in ready:
+        for mode, name in music.VIDEO_FILES.items():
+            if (d / name).exists():
+                print(f"- {kw}: 영상({mode}) {d / name}")
     if missing:
         print(f"음악을 만들지 못한 키워드: {', '.join(missing)}")
     return 1 if missing else 0
@@ -228,6 +241,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("keywords", nargs="+")
     p.add_argument("--seconds", type=int, default=60, help="음악 길이(초)")
     p.add_argument("--video", action="store_true", help="팀 StyleGAN 환경으로 오디오 반응 영상도 만든다")
+    p.add_argument("--video-modes", nargs="+", default=["place"], choices=["place", "object", "situation"],
+                   help="영상 모드 (장소는 StyleGAN2 약 7분, 사물·상황은 StyleGAN-XL)")
     p.set_defaults(func=cmd_demo)
 
     p = sub.add_parser("people", help="가명 대응표 (로컬에서만 확인), 관계 붙이기")

@@ -91,8 +91,8 @@ class Service:
             from .llm import chat_json, chat_text
 
             # 이야기는 규칙 검사를 통과한 앵커를 문장째로 한 번 더 판정한다 (날짜만 인용하고 다른 사건을 붙인 경우).
-            # 대화 답에는 쓰지 않는다: eval/grounding_eval.py 에서 대화 20개 답의 정밀도·재현율이 규칙만 94.3%·82.5%,
-            # 문맥 검사를 더하면 92.6%·62.5% 로 둘 다 낮았다 (2026-09-11)
+            # 대화 답에는 쓰지 않는다: eval/grounding_eval.py 에서 대화 40개 답의 정밀도·재현율이 규칙만 95.8%·85.2%,
+            # 문맥 검사를 더하면 96.4%·65.4% 로 정밀도는 거의 그대로이고 재현율만 20%p 떨어졌다 (2026-09-11)
             if kind == "story":
                 context = lambda system, text: chat_json(system, text, model=self.judge_model, max_tokens=1500)  # noqa: E731
             if mode == "rewrite":

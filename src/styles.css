@@ -343,3 +343,6 @@ button { cursor: pointer; }
 .semmap .chart .map-label { font-size: 12px; font-weight: 600; fill: #fff; stroke-width: 4px; pointer-events: none; }
 .key-dot.ring { background: transparent; border: 1.8px solid #fff; width: 9px; height: 9px; }
 .semmap .graph-tip { white-space: normal; max-width: min(520px, 90%); }
+.music-videos { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.music-videos span { font-size: 10.5px; color: rgba(255,255,255,.5); margin-right: 2px; }
+.music-button.small { width: auto; margin-top: 0; padding: 6px 10px; font-size: 11px; }

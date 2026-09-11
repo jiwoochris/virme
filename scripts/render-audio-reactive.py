@@ -16,14 +16,23 @@
   구간 경계에서는 크로스페이드 길이만큼 두 팔레트를 섞는다.
 - 잘림 정도(truncation): 확신도 신호가 높을수록 형태가 또렷하다 (0.55~0.8).
 
+사물·상황 모드(--mode object|situation)는 기본으로 팀이 StyleGAN-XL 로 미리 렌더한 12초 잠재 루프(public/assets)를
+음악에 맞춰 다시 편집한다. 음량이 클수록 루프를 빨리 돌리고(0.55~1.85배, 앞뒤 프레임을 섞어 부드럽게), 온셋마다 밝기·대비를
+올린다. 비주얼 화면이 재생 중에 하는 일과 같은 규칙이라, 화면과 영상이 같은 리듬으로 움직인다. 1분 안에 끝난다.
+--xl 을 주면 StyleGAN-XL 로 구간마다 클래스 기준점을 새로 만들어 직접 합성한다(한 프레임에 합성 한 번, 윤곽은 앞뒤 프레임
+차이에서, 8fps 로 만들고 24fps 로 보간). 24GB M4 맥에서 128px 한 프레임에 7~50초가 걸려 한 곡에 몇 시간이 걸리므로,
+메모리가 넉넉한 장비에서만 쓴다. 결과는 video-object.mp4 처럼 모드 이름을 붙여 저장한다.
+
     PYTHONPATH=model_service PYTORCH_ENABLE_MPS_FALLBACK=1 .venv/bin/python scripts/render-audio-reactive.py \\
-        --music-dir /tmp/vm6data/music/seoyeon/1929fccf9bbd
+        --music-dir /tmp/vm6data/music/seoyeon/1929fccf9bbd [--mode object]
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -31,6 +40,7 @@ import numpy as np
 import torch
 from PIL import Image
 
+from latent_modes import MULTI_CLASS_MODES
 from stylegan_runtime import STATE_PALETTES, StyleGanRuntime, latent_rgb_structure_fields, synthesize_latent_stage
 
 MOOD_PALETTE = {"up": "novelty", "calm": "possible-self", "tense": "conflict", "down": "uncertainty"}
@@ -74,13 +84,191 @@ def progress_by_loudness(rms: np.ndarray, bounds: list[tuple[int, int]]) -> np.n
     return pos
 
 
+ROOT = Path(__file__).resolve().parents[1]
+XL_ROOT = ROOT / ".runtime" / "stylegan-xl"
+XL_MODEL = ROOT / "models" / "stylegan-xl-imagenet128.pkl"
+XL_FPS = 8
+
+
+def load_xl():
+    """팀 render-multimode-loops.py 와 같은 방식으로 StyleGAN-XL 을 올린다 (legacy 모듈이 작업 폴더를 본다)."""
+    previous = Path.cwd()
+    os.chdir(XL_ROOT)
+    sys.path.insert(0, str(XL_ROOT))
+    try:
+        import legacy
+
+        with XL_MODEL.open("rb") as handle:
+            gen = legacy.load_network_pkl(handle)["G_ema"].eval().requires_grad_(False)
+    finally:
+        os.chdir(previous)
+    dev = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    return gen.to(dev), dev
+
+
+def render_xl(args, mode_id: str) -> None:
+    d = args.music_dir
+    plan = json.loads((d / "plan.json").read_text(encoding="utf-8"))
+    feats = json.loads((d / "features.json").read_text(encoding="utf-8"))
+    audio = d / "music.m4a" if (d / "music.m4a").exists() else d / "music.wav"
+    fps = int(feats["fps"])
+    step = max(1, fps // XL_FPS)
+    rms = np.asarray(feats["rms"], dtype=np.float64)
+    onset = np.asarray(feats["onset"], dtype=np.float64)
+    sections = plan["sections"]
+    real = feats.get("sections") or [{"start_sec": s["start_sec"], "end_sec": s["end_sec"]} for s in sections]
+    cuts = [int(round(r["start_sec"] * fps)) for r in real[1:]]
+    bounds = list(zip([0, *cuts], [*cuts, len(rms)]))
+    pos_all = progress_by_loudness(rms, bounds)
+    pulse_all = pulse_envelope(onset, fps)
+    total = len(rms) if args.seconds is None else min(len(rms), int(args.seconds * fps))
+    frames_idx = list(range(0, total, step))
+    sig = plan.get("signals") or {}
+    mode = next(m for m in MULTI_CLASS_MODES if m.mode_id == mode_id)
+
+    G, dev = load_xl()
+    trunc = 0.55 + 0.25 * float(sig.get("confidence", 0.6))
+    seeds = [int(s["seed"]) for s in sections] + [int(sections[-1]["seed"]) + 101]
+    classes = [mode.classes[sd % len(mode.classes)] for sd in seeds]
+
+    def mapped(seed_list: list[int], class_list: list[int]) -> torch.Tensor:
+        z = torch.from_numpy(np.stack([np.random.RandomState(sd % (2**31)).randn(G.z_dim) for sd in seed_list]))
+        c = torch.nn.functional.one_hot(torch.tensor(class_list), G.c_dim)
+        with torch.no_grad():
+            return G.mapping(z.to(dev, torch.float32), c.to(dev), truncation_psi=trunc)
+
+    key_ws = mapped(seeds, classes)
+    aux_ws = mapped([sd + 1000 for sd in seeds], classes)   # 원운동 방향 (같은 클래스 안에서)
+    kick_ws = mapped([sd + 2000 for sd in seeds], classes)  # 박동 방향
+    palettes = [np.array(STATE_PALETTES[MOOD_PALETTE.get(s["mood"], "stability")], dtype=np.float32) for s in sections]
+    fade = int(plan.get("crossfade_sec", 2.5) * fps)
+
+    def w_at(j: int) -> torch.Tensor:
+        p = pos_all[j]
+        k = int(min(len(sections) - 1, max(0, np.floor(p))))
+        t = float(np.clip(p - k, 0, 1))
+        e = t * t * t * (t * (t * 6 - 15) + 10)
+        base = key_ws[k].lerp(key_ws[k + 1], e)
+        wander = 0.22 * float(np.sin(2 * np.pi * p * 2.5)) * (aux_ws[k] - key_ws[k])
+        kick = 0.45 * float(pulse_all[j]) * (kick_ws[k] - key_ws[k])
+        return base + wander + kick
+
+    def palette_at(j: int) -> np.ndarray:
+        k = int(min(len(sections) - 1, np.floor(pos_all[j])))
+        if k + 1 < len(sections) and bounds[k + 1][0] - j < fade:
+            m = 1 - (bounds[k + 1][0] - j) / fade
+            return palettes[k] * (1 - m) + palettes[k + 1] * m
+        return palettes[k]
+
+    out = d / (f"video-{mode_id}.mp4" if args.seconds is None else f"video-{mode_id}_test.mp4")
+    part = out.with_name(out.stem + ".part.mp4")
+    enc = subprocess.Popen([
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-f", "rawvideo", "-pixel_format", "rgb24", "-video_size", f"{args.size}x{args.size}",
+        "-framerate", str(fps / step), "-i", "-", "-i", str(audio), "-map", "0:v", "-map", "1:a", "-shortest",
+        "-vf", f"minterpolate=fps={fps}:mi_mode=blend",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(part),
+    ], stdin=subprocess.PIPE)
+    assert enc.stdin is not None
+    weights = torch.tensor((0.5, 0.25, 0.25), dtype=torch.float32)
+    t0 = time.time()
+    window: list[torch.Tensor] = []  # 윤곽은 앞·지금·뒤 세 프레임의 차이에서 뽑는다
+
+    def emit(prev: torch.Tensor, cur: torch.Tensor, nxt: torch.Tensor, j: int) -> None:
+        fields = latent_rgb_structure_fields(torch.stack((cur, prev, nxt)), weights)
+        rgb = colorize(fields, palette_at(j))
+        frame = Image.fromarray(rgb, "RGB").resize((args.size, args.size), Image.Resampling.LANCZOS)
+        enc.stdin.write(np.asarray(frame).tobytes())
+
+    with torch.no_grad():
+        _ = G.synthesis(key_ws[:1], noise_mode="const", force_fp32=True)
+        for n_done, j in enumerate(frames_idx):
+            img = G.synthesis(w_at(j).unsqueeze(0), noise_mode="const", force_fp32=True)[0]
+            window.append(((img + 1) * 0.5).clamp(0, 1).cpu())
+            if dev.type == "mps":
+                torch.mps.synchronize()
+            if len(window) == 2 and n_done == 1:
+                emit(window[0], window[0], window[1], frames_idx[0])  # 첫 프레임은 앞 프레임 대신 자기 자신
+            if len(window) == 3:
+                emit(window[0], window[1], window[2], frames_idx[n_done - 1])
+                window.pop(0)
+            if n_done % 60 == 0:
+                print(f"{mode_id}: {n_done + 1}/{len(frames_idx)} 프레임, {time.time() - t0:.0f}초", flush=True)
+        if len(window) >= 2:
+            emit(window[-2], window[-1], window[-1], frames_idx[-1])
+    enc.stdin.close()
+    if enc.wait() != 0:
+        raise RuntimeError("ffmpeg 실패")
+    part.replace(out)
+    meta = {"mode": mode_id, "frames": len(frames_idx), "fps": fps / step, "size": args.size,
+            "seconds": round(time.time() - t0, 1), "classes": classes}
+    (d / f"video-{mode_id}.json").write_text(json.dumps(meta), encoding="utf-8")
+    print(f"완료: {out} ({meta})")
+
+
+LOOP_FILES = {"object": "latent-object-loop.mp4", "situation": "latent-situation-loop.mp4"}
+
+
+def render_loop(args, mode_id: str) -> None:
+    """팀의 사물·상황 잠재 루프를 음악의 음량·온셋에 맞춰 시간을 늘이고 줄여 다시 엮는다."""
+    import imageio.v2 as iio
+
+    d = args.music_dir
+    feats = json.loads((d / "features.json").read_text(encoding="utf-8"))
+    audio = d / "music.m4a" if (d / "music.m4a").exists() else d / "music.wav"
+    fps = int(feats["fps"])
+    rms = np.asarray(feats["rms"], dtype=np.float64)
+    pulse = pulse_envelope(np.asarray(feats["onset"], dtype=np.float64), fps, release=0.25)
+    n = len(rms) if args.seconds is None else min(len(rms), int(args.seconds * fps))
+    reader = iio.get_reader(ROOT / "public" / "assets" / LOOP_FILES[mode_id])
+    loop_fps = float(reader.get_meta_data().get("fps", 12))
+    src = [np.asarray(Image.fromarray(f).resize((args.size, args.size), Image.Resampling.LANCZOS), dtype=np.float32)
+           for f in reader]
+    reader.close()
+    out = d / (f"video-{mode_id}.mp4" if args.seconds is None else f"video-{mode_id}_test.mp4")
+    part = out.with_name(out.stem + ".part.mp4")
+    enc = subprocess.Popen([
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-f", "rawvideo", "-pixel_format", "rgb24", "-video_size", f"{args.size}x{args.size}", "-framerate", str(fps),
+        "-i", "-", "-i", str(audio), "-map", "0:v", "-map", "1:a", "-shortest",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(part),
+    ], stdin=subprocess.PIPE)
+    assert enc.stdin is not None
+    t0 = time.time()
+    pos = 0.0
+    for i in range(n):
+        speed = min(1.85, 0.55 + 1.3 * rms[i])  # 비주얼 화면(StyleGanLayer)과 같은 식
+        pos = (pos + speed * loop_fps / fps) % len(src)
+        a = int(pos)
+        frac = pos - a
+        img = src[a] * (1 - frac) + src[(a + 1) % len(src)] * frac
+        p = float(pulse[i])
+        img = np.clip((img - 128.0) * (1 + 0.25 * p) + 128.0, 0, 255) * (1 + 0.4 * p)
+        enc.stdin.write(np.clip(img, 0, 255).astype(np.uint8).tobytes())
+    enc.stdin.close()
+    if enc.wait() != 0:
+        raise RuntimeError("ffmpeg 실패")
+    part.replace(out)
+    meta = {"mode": mode_id, "method": "loop-timewarp", "frames": n, "fps": fps, "size": args.size,
+            "seconds": round(time.time() - t0, 1)}
+    (d / f"video-{mode_id}.json").write_text(json.dumps(meta), encoding="utf-8")
+    print(f"완료: {out} ({meta})")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--music-dir", required=True, type=Path)
+    ap.add_argument("--mode", choices=["place", "object", "situation"], default="place")
+    ap.add_argument("--xl", action="store_true", help="사물·상황을 StyleGAN-XL 로 직접 합성 (매우 느림)")
     ap.add_argument("--size", type=int, default=512, help="출력 한 변 픽셀")
     ap.add_argument("--batch", type=int, default=6)
     ap.add_argument("--seconds", type=float, default=None, help="앞부분만 시험 렌더")
     args = ap.parse_args()
+    if args.mode != "place":
+        (render_xl if args.xl else render_loop)(args, args.mode)
+        return
 
     d = args.music_dir
     plan = json.loads((d / "plan.json").read_text(encoding="utf-8"))

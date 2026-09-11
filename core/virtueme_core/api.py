@@ -225,7 +225,7 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
 
     @app.get("/music/{music_id}/{name}")
     def music_file(music_id: str = PathParam(pattern=r"^[0-9a-f]{12}$"),
-                   name: str = PathParam(pattern=r"^(music\.m4a|music\.wav|features\.json|plan\.json|video\.mp4)$")):
+                   name: str = PathParam(pattern=r"^(music\.m4a|music\.wav|features\.json|plan\.json|video(-object|-situation)?\.mp4)$")):
         got = service.music_file(music_id, name)
         if not got:
             raise HTTPException(404, "아직 만들지 않았습니다")

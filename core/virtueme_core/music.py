@@ -379,6 +379,8 @@ def features(x: np.ndarray, sr: int = SAMPLE_RATE, fps: int = FEATURE_FPS) -> di
 
 # ---------------------------------------------------------------- 만들기와 캐시
 
+# 오디오 반응 영상: 장소(StyleGAN2)·사물·상황(StyleGAN-XL) 모드마다 한 파일
+VIDEO_FILES = {"place": "video.mp4", "object": "video-object.mp4", "situation": "video-situation.mp4"}
 _JOBS: dict[str, dict[str, Any]] = {}
 _LOCK = threading.Lock()
 
@@ -390,9 +392,10 @@ def job_dir(root: Path, music_id: str) -> Path:
 def status(root: Path, music_id: str) -> dict[str, Any]:
     d = job_dir(root, music_id)
     if (d / "features.json").exists():
+        videos = [m for m, name in VIDEO_FILES.items() if (d / name).exists()]
         out = {"music_id": music_id, "state": "ready", "plan": json.loads((d / "plan.json").read_text(encoding="utf-8")),
                "audio": "music.m4a" if (d / "music.m4a").exists() else "music.wav",
-               "video": (d / "video.mp4").exists()}
+               "video": "place" in videos, "videos": videos}
         return out
     with _LOCK:
         job = dict(_JOBS.get(music_id) or {})

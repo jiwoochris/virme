@@ -153,7 +153,9 @@ function SemanticMap({ map, narrative, people }: { map: SemMap; narrative: Narra
           const col = colored.get(p.topic) ?? C.gray
           const dim = focus && !p.ev
           return (
-            <g key={p.id} onPointerEnter={() => setHover(p)} onPointerLeave={() => setHover(null)}>
+            <g key={p.id} onPointerEnter={() => setHover(p)} onPointerLeave={() => setHover(null)}
+              tabIndex={p.ev ? 0 : -1} onFocus={() => setHover(p)} onBlur={() => setHover(null)}
+              aria-label={p.ev ? `${koDate(p.date)} ${label.get(p.topic) ?? '짧은 말·기타'} 근거 기록` : undefined}>
               <circle cx={x(p.x)} cy={y(p.y)} r={9} fill="transparent" />
               <circle cx={x(p.x)} cy={y(p.y)} r={p.ev ? 5.5 : 3.6} fill={col}
                 fillOpacity={dim ? 0.28 : colored.has(p.topic) ? 0.9 : 0.5}

@@ -12,7 +12,8 @@ export type MusicSection = {
 }
 export type MusicPlan = { music_id: string; narrative_id: string; keyword: string; bpm: number; time_signature: number; band: string; genre: string; sections: MusicSection[]; notes: string[] }
 type Features = { fps: number; frames: number; rms: number[]; onset: number[]; duration?: number; sections?: { index: number; start_sec: number; end_sec: number }[] }
-type Status = { music_id: string; state: 'ready' | 'running' | 'missing' | 'error' | 'unavailable'; stage?: string; done?: number; total?: number; error?: string; plan?: MusicPlan; audio?: string; video?: boolean }
+type Status = { music_id: string; state: 'ready' | 'running' | 'missing' | 'error' | 'unavailable'; stage?: string; done?: number; total?: number; error?: string; plan?: MusicPlan; audio?: string; video?: boolean; videos?: string[] }
+const VIDEO_LABEL: Record<string, [string, string]> = { place: ['장소', 'video.mp4'], object: ['사물', 'video-object.mp4'], situation: ['상황', 'video-situation.mp4'] }
 export type AudioDrive = { level: number; pulse: number; playing: boolean }
 
 export function MusicPanel({ narrative, onDrive, onVideo }: {
@@ -123,10 +124,15 @@ export function MusicPanel({ narrative, onDrive, onVideo }: {
       {status?.state === 'ready' && base ? (
         <>
           <audio ref={audioRef} controls preload="auto" src={`${base}/music/${status.music_id}/${status.audio ?? 'music.m4a'}`} data-testid="music-audio" />
-          {status.video && (
-            <button type="button" className="music-button" onClick={() => { audioRef.current?.pause(); onVideo(`${base}/music/${status.music_id}/video.mp4`) }}>
-              오디오 반응 영상 보기
-            </button>
+          {(status.videos ?? (status.video ? ['place'] : [])).length > 0 && (
+            <div className="music-videos">
+              <span>오디오 반응 영상</span>
+              {(status.videos ?? ['place']).map((m) => (
+                <button type="button" key={m} className="music-button small" onClick={() => { audioRef.current?.pause(); onVideo(`${base}/music/${status.music_id}/${VIDEO_LABEL[m]?.[1] ?? 'video.mp4'}`) }}>
+                  {VIDEO_LABEL[m]?.[0] ?? m}
+                </button>
+              ))}
+            </div>
           )}
         </>
       ) : status?.state === 'running' ? (

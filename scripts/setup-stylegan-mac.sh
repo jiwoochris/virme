@@ -5,7 +5,7 @@ project_root=${0:A:h:h}
 cd "$project_root"
 
 uv venv --python 3.11 .venv
-uv pip install --python .venv/bin/python torch torchvision pillow fastapi 'uvicorn[standard]' numpy scipy imageio imageio-ffmpeg 'dill>=0.4.1' 'timm==0.4.12' 'ftfy==6.1.1' regex requests
+uv pip install --python .venv/bin/python torch torchvision pillow fastapi 'uvicorn[standard]' numpy scipy imageio imageio-ffmpeg 'dill>=0.4.1' 'timm==0.4.12' 'ftfy==6.1.1' regex requests tqdm
 mkdir -p .runtime models generated
 
 if [[ ! -d .runtime/stylegan2-ada-pytorch ]]; then
