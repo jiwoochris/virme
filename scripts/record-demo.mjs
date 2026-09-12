@@ -24,6 +24,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function main() {
   await mkdir(OUT, { recursive: true })
+  // 지난 녹화본이 남아 있으면 이름순 정렬로는 그것을 집어 버린다. 이번에 새로 생긴 파일만 고른다.
+  const before = new Set((await readdir(OUT)).filter((f) => f.endsWith('.webm')))
   const browser = await chromium.launch()
   const ctx = await browser.newContext({
     viewport: { width: 1280, height: 800 },
@@ -94,8 +96,9 @@ async function main() {
 
   await ctx.close()
   await browser.close()
-  const made = (await readdir(OUT)).filter((f) => f.endsWith('.webm')).sort()
-  const from = `${OUT}/${made[made.length - 1]}`
+  const made = (await readdir(OUT)).filter((f) => f.endsWith('.webm') && !before.has(f))
+  if (made.length !== 1) throw new Error(`새로 만들어진 녹화 파일을 하나로 특정하지 못했습니다: ${made.join(', ') || '없음'}`)
+  const from = `${OUT}/${made[0]}`
   const day = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
   const to = `${OUT}/virtueme-demo-${day}-${keyword}.webm`
   await rename(from, to)
