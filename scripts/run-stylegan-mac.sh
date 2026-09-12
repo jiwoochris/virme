@@ -1,8 +1,6 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-project_root=${0:A:h:h}
-cd "$project_root"
-export PYTHONPATH="$project_root/model_service"
-export PYTORCH_ENABLE_MPS_FALLBACK=1
-exec .venv/bin/uvicorn app:app --app-dir model_service --host 127.0.0.1 --port 8766
+# Kept so `bun run model:serve` and the demo script stay working. The shared
+# script picks the device on its own; on this laptop that lands on MPS.
+exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/run-stylegan.sh" "$@"

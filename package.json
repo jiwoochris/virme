@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "model:setup": "./scripts/setup-stylegan-mac.sh",
-    "model:serve": "./scripts/run-stylegan-mac.sh",
+    "model:setup": "./scripts/setup-stylegan.sh",
+    "model:serve": "./scripts/run-stylegan.sh",
+    "model:bench": "PYTHONPATH=model_service PYTORCH_ENABLE_MPS_FALLBACK=1 .venv/bin/python scripts/benchmark-stylegan.py",
     "model:smoke": "PYTHONPATH=model_service PYTORCH_ENABLE_MPS_FALLBACK=1 .venv/bin/python scripts/smoke-stylegan-mac.py",
     "model:video": "PYTHONPATH=model_service PYTORCH_ENABLE_MPS_FALLBACK=1 .venv/bin/python scripts/render-latent-loop.py",
     "model:video:modes": "PYTHONPATH=model_service PYTORCH_ENABLE_MPS_FALLBACK=1 .venv/bin/python scripts/render-multimode-loops.py",

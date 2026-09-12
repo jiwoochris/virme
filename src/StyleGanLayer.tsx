@@ -110,6 +110,7 @@ export function StyleGanLayer({
       data-renderer={mode.renderer}
       data-model={health.model ?? mode.model}
       data-device={health.device ?? 'unavailable'}
+      data-precision={health.precision ?? 'fp32'}
       data-render-mode={health.render_mode ?? 'latent-structure'}
       data-class-count={mode.classes.length}
       data-display-mode="latent-loop-video"

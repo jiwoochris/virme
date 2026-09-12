@@ -17,6 +17,11 @@ export type StyleGanHealth = {
   status: 'ready' | 'loading' | 'error'
   backend?: string
   device?: string
+  precision?: string
+  concurrent_requests?: boolean
+  gpu_name?: string
+  gpu_memory_gb?: number
+  cuda_version?: string
   model?: string
   resolution?: number
   render_mode?: string
