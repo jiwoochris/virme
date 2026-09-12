@@ -83,12 +83,70 @@ bun run storyseed:import -- /path/to/Storyseed_v9.html /path/to/Storyseed_Talk_v
 
 - 장소 런타임: NVIDIA `stylegan2-ada-pytorch`, LSUN Church `stylegan2-church-config-f.pkl`, 256×256
 - 사물·상황 런타임: `StyleGAN-XL` ImageNet 128×128 체크포인트. 클래스 조건과 latent를 함께 보간해 단일 대상이 아닌 여러 범주의 중간 영역을 만든다.
-- 장치: Apple Silicon `mps`, 지원되지 않는 연산만 CPU fallback
+- 장치: `VIRME_DEVICE` 가 없으면 `cuda → mps → cpu` 순으로 고른다. 이 맥에서는 `mps` 로 잡히고 지원되지 않는 연산만 CPU 로 넘어간다. GPU 서버로 옮기는 방법은 아래 「GPU 서버에 모델 올리기」 참고
 - 렌더 모드: `latent-structure`; 여러 잠재점의 128×128 중간 RGB 합성 단계에서 공통 윤곽·차이·비선형 잔차를 추출하고 이를 명확한 면·능선 단계로 분절한다. 완성 이미지는 직접 노출하지 않는다.
 - 배경 모드: 잠재점을 폐루프 보간한 12초·144프레임 H.264 영상을 효과 없이 직접 재생한다. 장소는 `bun run model:video`, 사물·상황은 `bun run model:video:modes`로 재생성한다.
 - 실제 측정 smoke output: `generated/stylegan-mac-smoke.jpg`
 - 체크포인트 교체: `VIRTUEME_STYLEGAN_MODEL=/absolute/model.pkl bun run model:serve`
+- 속도 측정: `bun run model:bench -- --batch 1,4,8`. 결과는 `generated/stylegan-benchmark.json` 에 남는다
 
 Lucid Sonic Dreams 예제의 `Abstract Photos` 가중치는 기존 MEGA 배포 링크가 응답하지 않고, `Abstract art` 가중치의 Google Drive 공개 다운로드도 현재 사용할 수 없었습니다. 따라서 지금 화면은 **Lucid의 latent 보간 방식을 적용한 실제 StyleGAN2 파이프라인**이지만, 동일한 추상 체크포인트라고 주장하지 않습니다. 해당 `.pkl`을 확보하면 서비스 코드 변경 없이 교체할 수 있습니다.
+
+## GPU 서버에 모델 올리기
+
+모델 서비스는 장치를 스스로 고르고 주소를 환경변수로 받기 때문에, GPU 서버를 빌리면 코드를 고치지 않고 옮겨 붙습니다.
+
+GPU 서버에서 설치하고 띄웁니다. `scripts/setup-stylegan.sh` 는 `nvidia-smi` 가 보이면 CUDA 빌드 torch 와 ninja 를 설치합니다. ninja 는 `bias_act`·`upfirdn2d` 커널을 처음 쓸 때 컴파일하는 데 필요하고, 없으면 느린 파이썬 폴백으로 돕니다.
+
+```bash
+./scripts/setup-stylegan.sh                  # CUDA 휠 설치 (채널 고정은 VIRME_CUDA_CHANNEL=cu121)
+VIRME_MODEL_HOST=0.0.0.0 ./scripts/run-stylegan.sh
+```
+
+이 맥에서 웹 앱을 그 서버로 붙입니다.
+
+```bash
+VITE_STYLEGAN_TARGET=http://<서버주소>:8766 bun run dev
+```
+
+붙었는지는 `/health` 응답과 화면의 `data-device`·`data-precision` 속성으로 확인합니다. `device` 가 `cuda` 로 나오면 실시간 생성 경로가 열린 것이고, `cpu` 로 나오면 CPU 전용 torch 가 깔린 상태입니다.
+
+| 환경변수 | 기본값 | 쓰임 |
+| --- | --- | --- |
+| `VIRME_DEVICE` | `auto` | `cuda`·`mps`·`cpu` 중 하나로 고정. 없는 장치를 지정하면 서버가 뜨지 않고 그 사실을 알립니다 |
+| `VIRME_PRECISION` | `auto` | `fp16` 은 CUDA 에서만 켜집니다. 구조 계산은 항상 fp32 로 되돌려 맥과 같은 프레임을 그립니다 |
+| `VIRME_MODEL_HOST` | `127.0.0.1` | 원격에서 붙으려면 `0.0.0.0` |
+| `VIRME_MODEL_PORT` | `8766` | 모델 서버 포트 |
+| `VIRME_MODEL_WORKERS` | `1` | CUDA 에서 여러 프로세스로 받을 때만 올립니다 |
+| `VITE_STYLEGAN_TARGET` | `http://127.0.0.1:8766` | 개발 서버가 `/api/stylegan` 을 넘길 주소 |
+| `VITE_CORE_TARGET` | `http://127.0.0.1:8767` | 개발 서버가 `/api/core` 를 넘길 주소 |
+
+CUDA 에서는 요청 잠금이 풀립니다. MPS 는 여러 요청이 동시에 명령 인코더를 만들면 서버가 죽어서 모든 연산을 한 줄로 세워 두는데, CUDA 는 스트림이 동시 작업을 처리하므로 같은 잠금이 처리량 상한으로만 남기 때문입니다.
+
+여러 프레임을 한 번에 만들려면 `POST /generate/batch` 에 `{"frames": [ ...generate 본문... ]}` 를 보냅니다. 한 번에 최대 64장이고, truncation 이 같은 요청끼리 묶어 생성기를 한 번만 통과합니다. 응답은 프레임마다 base64 JPEG 과 메타데이터입니다.
+
+### 지금 이 맥의 실측
+
+`bun run model:bench -- --batch 1,4,8 --frames 8` 결과입니다. 장소 체크포인트(256×256, `latent-structure` 모드) 기준입니다.
+
+| 배치 | 프레임당 | 초당 프레임 |
+| --- | --- | --- |
+| 1 | 0.548초 | 1.83 |
+| 4 | 0.623초 | 1.61 |
+| 8 | 0.810초 | 1.24 |
+
+MPS 에서는 배치를 키울수록 프레임당 시간이 늘어납니다. 배치가 이득이 되는 것은 CUDA 에서이고, 그 수치는 서버를 빌린 뒤 같은 명령으로 재어 비교하면 됩니다.
+
+배치 경로는 부동소수점 재결합 때문에 단건 생성과 픽셀값이 uint8 기준 1 단계까지 달라질 수 있습니다. 화면에서 구분되는 차이는 아니지만, 발표용으로 미리 렌더할 때는 배치 크기를 고정해야 같은 프레임이 다시 나옵니다.
+
+### 학습 준비
+
+`scripts/prepare-training.sh` 가 이미지 폴더를 StyleGAN2-ADA 학습용 zip 으로 바꾸고 학습 명령을 만들어 줍니다. 변환은 이 맥에서도 되므로 GPU 서버가 생기기 전에 데이터셋을 준비해 둘 수 있습니다.
+
+```bash
+./scripts/prepare-training.sh --source ~/이미지폴더 --resolution 256      # 데이터셋 준비 + 명령 출력
+./scripts/prepare-training.sh --source ~/이미지폴더 --gpus 4 --train      # GPU 서버에서 학습 시작
+```
+
 
 원시 개인 데이터는 렌더러에 전달하지 않고 정규화된 파생 신호만 사용합니다. 외부 시스템은 `virtueme:personal-data` CustomEvent 또는 JSON 파일로 연결할 수 있습니다. 원본 프로젝트는 MIT 라이선스입니다.
