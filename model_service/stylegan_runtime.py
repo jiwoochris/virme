@@ -3,6 +3,8 @@ import os
 import sys
 import threading
 import time
+from collections.abc import Sequence
+from contextlib import nullcontext
 from pathlib import Path
 
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
@@ -12,7 +14,8 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 
-from latent_control import ModelRequest, derive_control
+from device import device_report, resolve_device, resolve_precision, serializes_requests, synchronize
+from latent_control import LatentControl, ModelRequest, derive_control
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -106,13 +109,18 @@ def structure_map_to_rgb(fields: torch.Tensor, state: str) -> torch.Tensor:
     return (rgb * 255).round().clamp(0, 255).to(torch.uint8).cpu()
 
 
-def synthesize_latent_stage(synthesis, ws: torch.Tensor, target_resolution: int) -> tuple[torch.Tensor, torch.Tensor]:
+def synthesize_latent_stage(
+    synthesis,
+    ws: torch.Tensor,
+    target_resolution: int,
+    force_fp32: bool = True,
+) -> tuple[torch.Tensor, torch.Tensor]:
     x = img = None
     w_index = 0
     for resolution in synthesis.block_resolutions:
         block = getattr(synthesis, f"b{resolution}")
         block_ws = ws.narrow(1, w_index, block.num_conv + block.num_torgb)
-        x, img = block(x, img, block_ws, noise_mode="const", force_fp32=True)
+        x, img = block(x, img, block_ws, noise_mode="const", force_fp32=force_fp32)
         w_index += block.num_conv
         if resolution == target_resolution:
             return x, img
@@ -122,7 +130,8 @@ def synthesize_latent_stage(synthesis, ws: torch.Tensor, target_resolution: int)
 class StyleGanRuntime:
     def __init__(self, model_path: Path | None = None):
         self.model_path = model_path or Path(os.environ.get("VIRTUEME_STYLEGAN_MODEL", DEFAULT_MODEL))
-        self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        self.device = resolve_device()
+        self.precision = resolve_precision(self.device)
         self.generator = None
         self.load_seconds = 0.0
         self.lock = threading.Lock()
@@ -131,7 +140,7 @@ class StyleGanRuntime:
         if self.generator is not None:
             return self
         if not STYLEGAN_ROOT.exists():
-            raise RuntimeError("StyleGAN runtime missing; run scripts/setup-stylegan-mac.sh")
+            raise RuntimeError("StyleGAN runtime missing; run scripts/setup-stylegan.sh")
         if not self.model_path.exists():
             raise RuntimeError(f"StyleGAN checkpoint missing: {self.model_path}")
         sys.path.insert(0, str(STYLEGAN_ROOT))
@@ -145,47 +154,90 @@ class StyleGanRuntime:
 
     @property
     def metadata(self) -> dict:
+        report = device_report(self.device, self.precision)
         if self.generator is None:
-            return {"status": "loading", "device": self.device.type, "model": self.model_path.name}
+            return {"status": "loading", "model": self.model_path.name, **report}
         return {
             "status": "ready",
             "backend": "stylegan2-ada-pytorch",
-            "device": self.device.type,
             "model": self.model_path.name,
             "resolution": int(self.generator.img_resolution),
             "render_mode": "latent-structure",
             "feature_resolution": FEATURE_RESOLUTION,
             "load_seconds": round(self.load_seconds, 3),
+            **report,
         }
 
-    def generate_jpeg(self, request: ModelRequest) -> tuple[bytes, dict]:
-        self.load()
-        control = derive_control(request)
-        seeds = (control.seed,) + control.secondary_seeds
-        latents = np.stack([np.random.RandomState(seed).randn(self.generator.z_dim) for seed in seeds])
-        started = time.perf_counter()
-        with self.lock, torch.no_grad():
-            # MPS command encoders are not safe to create concurrently across
-            # FastAPI worker threads. Keep every device operation in one lane.
-            z = torch.from_numpy(latents).to(device=self.device, dtype=torch.float32)
-            ws = self.generator.mapping(z, None, truncation_psi=control.truncation)
-            _, progressive_images = synthesize_latent_stage(self.generator.synthesis, ws, FEATURE_RESOLUTION)
-            weights = torch.tensor(control.weights, device=self.device, dtype=progressive_images.dtype)
-            structure = latent_rgb_structure_fields(progressive_images, weights)
-            image = structure_map_to_rgb(structure, request.state)
-            if self.device.type == "mps":
-                torch.mps.synchronize()
-        array = image.permute(1, 2, 0).numpy()
+    def _lane(self):
+        return self.lock if serializes_requests(self.device) else nullcontext()
+
+    def _render_structures(self, controls: Sequence[LatentControl], states: Sequence[str]) -> list[torch.Tensor]:
+        seed_sets = [(control.seed,) + control.secondary_seeds for control in controls]
+        grouped: dict[float, list[int]] = {}
+        for index, control in enumerate(controls):
+            grouped.setdefault(round(control.truncation, 4), []).append(index)
+        structures: list[torch.Tensor | None] = [None] * len(controls)
+        with self._lane(), torch.no_grad():
+            for truncation, indexes in grouped.items():
+                # One mapping and one synthesis pass per truncation value, so a batch of
+                # frames costs a single trip through the generator instead of one each.
+                latents = np.stack([
+                    np.random.RandomState(seed).randn(self.generator.z_dim)
+                    for index in indexes
+                    for seed in seed_sets[index]
+                ])
+                z = torch.from_numpy(latents).to(device=self.device, dtype=torch.float32)
+                ws = self.generator.mapping(z, None, truncation_psi=truncation)
+                _, progressive_images = synthesize_latent_stage(
+                    self.generator.synthesis,
+                    ws,
+                    FEATURE_RESOLUTION,
+                    force_fp32=self.precision == torch.float32,
+                )
+                # Structure fields stay in fp32 so a half-precision synthesis pass still
+                # renders the frame the laptop renders.
+                progressive_images = progressive_images.float()
+                offset = 0
+                for index in indexes:
+                    span = len(seed_sets[index])
+                    weights = torch.tensor(controls[index].weights, device=self.device, dtype=progressive_images.dtype)
+                    structure = latent_rgb_structure_fields(progressive_images[offset:offset + span], weights)
+                    structures[index] = structure_map_to_rgb(structure, states[index])
+                    offset += span
+            synchronize(self.device)
+        return [structure for structure in structures if structure is not None]
+
+    def _encode_jpeg(self, structure: torch.Tensor) -> bytes:
+        array = structure.permute(1, 2, 0).numpy()
         output = io.BytesIO()
-        abstract_image = Image.fromarray(array, "RGB").resize(
+        image = Image.fromarray(array, "RGB").resize(
             (int(self.generator.img_resolution), int(self.generator.img_resolution)),
             Image.Resampling.LANCZOS,
         )
-        abstract_image.save(output, format="JPEG", quality=92, optimize=True)
-        elapsed = time.perf_counter() - started
-        return output.getvalue(), {
-            **self.metadata,
-            "seed": control.seed,
-            "truncation": round(control.truncation, 4),
-            "generation_seconds": round(elapsed, 3),
-        }
+        image.save(output, format="JPEG", quality=92, optimize=True)
+        return output.getvalue()
+
+    def generate_many(self, requests: Sequence[ModelRequest]) -> tuple[list[bytes], list[dict]]:
+        if not requests:
+            return [], []
+        self.load()
+        controls = [derive_control(request) for request in requests]
+        started = time.perf_counter()
+        structures = self._render_structures(controls, [request.state for request in requests])
+        seconds_each = (time.perf_counter() - started) / len(requests)
+        payloads = [self._encode_jpeg(structure) for structure in structures]
+        metadata = [
+            {
+                **self.metadata,
+                "seed": control.seed,
+                "truncation": round(control.truncation, 4),
+                "generation_seconds": round(seconds_each, 3),
+                "batch_size": len(requests),
+            }
+            for control in controls
+        ]
+        return payloads, metadata
+
+    def generate_jpeg(self, request: ModelRequest) -> tuple[bytes, dict]:
+        payloads, metadata = self.generate_many([request])
+        return payloads[0], metadata[0]
