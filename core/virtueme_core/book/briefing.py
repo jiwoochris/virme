@@ -16,10 +16,14 @@
 
 참고 표지 고르기 (`retrieve`): 점수 = 같은 장르 1.0 (+ 비전 모델의 장르 추정도 같으면 0.25, 다른 장르인데 추정이
 같으면 0.35) + 분위기 겹침(목표 분위기 가중치 합 대비 겹친 가중치) + 명도 맞춤 0.2 (정서가 밝으면 밝은 표지, 어두우면
-어두운 표지). 상위 k 장(기본 6).
+어두운 표지) + 사람이 라벨을 검수한 표지 0.1. 상위 k 장(기본 6).
 
-값 고르기: 칸마다 0.5 × 장르 분포 + 0.5 × 상위 k 장의 점수 가중 표. 레이아웃 원형과 맞지 않는 조합(그림 없는 원형에 그림
-양식, 가운데 그림이 있는 원형에 가운데 제목)은 다음 값으로 넘긴다.
+값 고르기: 칸마다 점수 = 0.5 × 장르 분포 + 0.5 × 상위 k 장의 점수 가중 표. 이 점수에서 p ∝ 점수^(1/T) 로 뽑는다
+(T 기본 1.2, 0 이면 가장 큰 값). 시드는 브리프 번호(입력의 해시)와 칸 이름이라 다시 렌더해도 같은 값이 나오고,
+variant 를 바꾸면 같은 이야기로 다른 디자인을 뽑는다. 뽑은 확률은 brief.json 의 decision.<칸>.probabilities 에 남는다.
+레이아웃 원형과 맞지 않는 조합(그림 없는 원형에 그림 양식, 가운데 그림이 있는 원형에 가운데 제목)은 후보에서 뺀다.
+
+장 나누기(`chapters.split_chapters`)와 장마다 삽화를 넣을 단락·삽화 프롬프트도 브리프에 들어간다(삽화는 최대 4장).
 
 팔레트: 상위 참고 표지의 주요 색(점수 × 면적)과 장르 팔레트(0.5배)를 CIELAB k-means 로 5색으로 묶은 뒤, 정서 곡선 쪽으로
 옮긴다. 정서가 v 만큼 명도 +8v, 색상각은 v>0 이면 따뜻한 쪽(60°), v<0 이면 차가운 쪽(250°)으로 |v|×20°까지,
@@ -73,6 +77,8 @@ TEXT_MOODS = {
     "serene": ["조용", "고요", "바다", "바람"],
 }
 CONFLICTS = {"centered_motif": {"middle"}, "framed": {"middle"}}
+# 뽑기 온도. 1.0 이면 점수 비례, 클수록 장르에서 드문 원형이 자주 나온다 (README 「브리프」의 원형 분포 표)
+DEFAULT_TEMPERATURE = 1.2
 
 STYLE_PHRASE = {
     "photo": "cinematic photograph, natural light, shallow depth of field, film grain",
@@ -186,6 +192,9 @@ def retrieve(refs: list[dict[str, Any]], genre: str, moods: dict[str, float], va
         if want_tone and r["features"]["tone"] == want_tone:
             s += 0.2
             why.append(f"{want_tone} 표지")
+        if s > 0 and r.get("label_checked"):
+            s += 0.1
+            why.append("사람이 라벨 검수")
         if s > 0:
             scored.append((round(s, 3), r, why))
     scored.sort(key=lambda t: (-t[0], t[1]["id"]))
@@ -203,6 +212,34 @@ def _choose(field: str, allowed: dict[str, str], prior: dict[str, float], top: l
     scores = {v: round(0.5 * prior.get(v, 0.0) + 0.5 * votes.get(v, 0.0), 3) for v in allowed}
     ranked = [v for v, sc in sorted(scores.items(), key=lambda kv: (-kv[1], kv[0])) if sc > 0 and v not in exclude]
     return (ranked[0] if ranked else None), {k: v for k, v in scores.items() if v > 0}
+
+
+def draw_probabilities(scores: dict[str, float], temperature: float, exclude: set[str] = frozenset()
+                       ) -> dict[str, float]:
+    """점수 → 뽑을 확률. p ∝ score^(1/T). T=1 이면 점수 비례, 클수록 고르게, 0 이면 가장 큰 값 하나."""
+    items = [(v, sc) for v, sc in sorted(scores.items()) if sc > 0 and v not in exclude]
+    if not items:
+        return {}
+    if temperature <= 0:
+        best = sorted([v for v, sc in items if sc == max(x[1] for x in items)])[0]
+        return {best: 1.0}
+    w = [sc ** (1.0 / temperature) for _, sc in items]
+    tot = sum(w)
+    return {v: round(x / tot, 4) for (v, _), x in zip(items, w)}
+
+
+def seeded_draw(probs: dict[str, float], seed_text: str) -> str | None:
+    """같은 seed_text 면 같은 값 (sha1 을 0..1 균등값으로 바꿔 누적 확률에서 고른다)."""
+    if not probs:
+        return None
+    u = int(hashlib.sha1(seed_text.encode()).hexdigest()[:12], 16) / float(16 ** 12)
+    acc = 0.0
+    keys = sorted(probs)
+    for v in keys:
+        acc += probs[v]
+        if u < acc:
+            return v
+    return keys[-1]
 
 
 def _lch(lab: np.ndarray) -> tuple[float, float, float]:
@@ -335,14 +372,16 @@ def art_prompt(genre: str, b: dict[str, Any], motif_words: list[str]) -> str:
     comp = {
         "full_bleed": f"Full-bleed artwork filling the whole frame edge to edge. The {zone} of the picture must be "
                       f"naturally quiet and low-detail, made of {open_area}, so a title can be set over it later. "
-                      "Place the subject outside that area. One continuous scene: no panels, bars, borders, frames "
-                      "or split layout.",
+                      "Place the subject outside that area and away from the bottom edge. One continuous photograph "
+                      "or painting: the scene runs unbroken from the top edge to the bottom edge with no blank band, "
+                      "no panels, bars, borders, frames or split layout.",
         "framed": "A self-contained vignette with one clear subject, simple background, generous breathing room.",
         "split": "One clear subject centred in the frame, simple background, strong silhouette.",
         "pattern": "A seamless decorative repeating pattern of small motifs evenly spread across the frame, "
                    "no focal point.",
-        "centered_motif": f"One small single motif in the centre on a plain flat background of {b['palette']['background']}, "
-                          "with wide empty space all around it.",
+        "centered_motif": f"One single emblem-like motif in the centre, filling about two thirds of the frame, on a plain "
+                          f"flat background of exactly {b['palette']['background']} that reaches every edge. No scenery, "
+                          "no horizon, no vignette.",
         "typographic": "Subtle abstract paper texture with a few soft shapes.",
     }[b["archetype"] or "full_bleed"]
     subject = ", ".join(motif_words) if motif_words else "an everyday moment"
@@ -359,11 +398,21 @@ def illustration_prompt(genre: str, b: dict[str, Any], scene_text: str) -> str:
             f"Palette: {', '.join(b['palette']['colors'][:4])}. {PEOPLE_NOTE}{NO_TEXT}")
 
 
+FIELD_ORDER = ("archetype", "title_position", "title_scale", "typeface", "art_style")
+MAX_ILLUSTRATIONS = 4
+
+
 def brief(genre: int | str | None, narrative_object: dict[str, Any] | None = None, story_text: str | None = None,
           refs: list[dict[str, Any]] | None = None, grammar: dict[str, Any] | None = None, k: int = 6,
-          title: str | None = None, overrides: dict[str, str] | None = None) -> dict[str, Any]:
+          title: str | None = None, overrides: dict[str, str] | None = None,
+          temperature: float = DEFAULT_TEMPERATURE, variant: int = 0) -> dict[str, Any]:
     """overrides: 사람이 고른 값으로 덮어쓸 칸 (archetype, title_position, title_scale, typeface, art_style).
-    통제 어휘 밖의 값은 ValueError."""
+    통제 어휘 밖의 값은 ValueError.
+
+    칸마다 값은 섞은 분포에서 뽑는다 (temperature, 0 이면 가장 큰 값). 시드는 브리프 번호(입력의 해시)와 칸 이름이라
+    같은 입력이면 언제나 같은 값이 나온다. variant 를 바꾸면 같은 이야기로 다른 디자인을 뽑는다."""
+    from .chapters import illustration_spot, split_chapters
+
     g = genre_key(genre)
     refs = load_references() if refs is None else refs
     grammar = load_grammar() if grammar is None else grammar
@@ -371,63 +420,89 @@ def brief(genre: int | str | None, narrative_object: dict[str, Any] | None = Non
     moods, why = target_moods(g, narrative_object, story_text)
     valence, arousal = _valence(narrative_object)
     top = retrieve(refs, g, moods, valence, k)
-    fb = FALLBACK[g]
-    decision: dict[str, Any] = {}
-
-    def pick(field: str, allowed: dict[str, str], default: str | None, exclude: set[str] = frozenset()) -> str | None:
-        v, scores = _choose(field, allowed, gdist.get(field) or {}, top, exclude)
-        decision[field] = {"chosen": v or default, "scores": scores, "from": "참고 표지" if v else "기본값"}
-        return v or default
-
-    arch = pick("archetype", ARCHETYPES, fb[0])
-    pos = pick("title_position", TITLE_POSITIONS, "top", CONFLICTS.get(arch, set()))
-    scale = pick("title_scale", TITLE_SCALES, "large")
-    face = pick("typeface", TYPEFACES, fb[1])
-    art = pick("art_style", ART_STYLES, fb[2], {"none"} if arch != "typographic" else set())
+    o = dict(overrides or {})
     allowed_map = {"archetype": ARCHETYPES, "title_position": TITLE_POSITIONS, "title_scale": TITLE_SCALES,
                    "typeface": TYPEFACES, "art_style": ART_STYLES}
-    for f, v in (overrides or {}).items():
+    for f, v in o.items():
         if f not in allowed_map or v not in allowed_map[f]:
             raise ValueError(f"덮어쓸 수 없는 값: {f}={v}")
-        decision.setdefault(f, {})["chosen"] = v
-        decision[f]["from"] = "사람이 고름"
-    o = overrides or {}
-    arch, pos, scale = o.get("archetype", arch), o.get("title_position", pos), o.get("title_scale", scale)
-    face, art = o.get("typeface", face), o.get("art_style", art)
+    title_s, paras = parse_story(story_text) if story_text else (None, [])
+    narrative_id = (narrative_object or {}).get("narrative_id")
+    # 브리프 번호는 입력만으로 정한다 (고른 값은 이 번호에서 나온다)
+    key = (g, sorted(moods.items()), narrative_id, sorted(o.items()), [t["id"] for t in top], (story_text or "")[:2000],
+           round(float(temperature), 3), int(variant))
+    brief_id = hashlib.sha1(repr(key).encode()).hexdigest()[:10]
+    fb = FALLBACK[g]
+    defaults = {"archetype": fb[0], "title_position": "top", "title_scale": "large", "typeface": fb[1],
+                "art_style": fb[2]}
+    decision: dict[str, Any] = {}
+    chosen: dict[str, str | None] = {}
+    for field in FIELD_ORDER:
+        exclude: set[str] = set()
+        if field == "title_position":
+            exclude = set(CONFLICTS.get(chosen["archetype"] or "", set()))
+        if field == "art_style":
+            exclude = {"none"} if chosen["archetype"] != "typographic" else set()
+        _, scores = _choose(field, allowed_map[field], gdist.get(field) or {}, top)
+        if field in o:
+            chosen[field] = o[field]
+            decision[field] = {"chosen": o[field], "scores": scores, "from": "사람이 고름"}
+            continue
+        if field == "art_style" and chosen["archetype"] == "typographic":
+            chosen[field] = "none"
+            decision[field] = {"chosen": "none", "scores": scores, "from": "원형이 글자형이라 그림 없음"}
+            continue
+        probs = draw_probabilities(scores, temperature, exclude)
+        v = seeded_draw(probs, f"{brief_id}|{field}")
+        chosen[field] = v or defaults[field]
+        decision[field] = {"chosen": chosen[field], "scores": scores, "probabilities": probs,
+                           "from": "참고 표지 분포에서 뽑음" if v else "기본값"}
+    arch, pos, scale, face, art = (chosen[f] for f in FIELD_ORDER)
     if pos in CONFLICTS.get(arch, set()):
         pos = "top"
+        decision["title_position"]["chosen"] = pos
     if arch != "typographic" and art == "none":
-        art = FALLBACK[g][2]
-    if arch == "typographic":
-        art = "none"
-        decision["art_style"]["chosen"] = "none"
-    illus, _ = _choose("art_style", ART_STYLES, gdist.get("art_style") or {}, top, {"none", "photo", "collage"})
+        art = fb[2]
+        decision["art_style"]["chosen"] = art
+    # 삽화는 표지와 같은 그림 양식으로 (표지 그림을 스타일 참고로 넘긴다). 글자형 표지면 장르 분포에서 사진 말고 뽑는다
+    if art and art != "none":
+        illus = art
+    else:
+        _, sc = _choose("art_style", ART_STYLES, gdist.get("art_style") or {}, top)
+        illus = seeded_draw(draw_probabilities(sc, temperature, {"none", "photo"}), f"{brief_id}|illustration_style") \
+            or "line"
     tone = (grammar.get("genres", {}).get(g) or {}).get("tone") or {}
     prefer = "light" if valence >= 0.2 else "dark" if valence <= -0.2 else (
         "dark" if tone.get("dark", 0) > 0.5 else "light" if tone.get("light", 0) > 0.4 else None)
     pal = build_palette(g, top, grammar, valence, arousal, prefer)
-    title_s, paras = parse_story(story_text) if story_text else (None, [])
     b: dict[str, Any] = {
-        "schema": "virtueme.book_brief/1",
+        "schema": "virtueme.book_brief/2",
         "genre": g, "genre_name": GENRE_KO[g],
         "moods": list(moods), "mood_weights": moods, "mood_reasons": why,
         "archetype": arch, "title_position": pos, "title_scale": scale, "typeface": face,
-        "art_style": art, "illustration_style": illus or ("line" if art in ("none", "photo") else art),
+        "art_style": art, "illustration_style": illus,
         "palette": pal, "emotion_curve": emotion_curve(narrative_object),
-        "narrative_id": (narrative_object or {}).get("narrative_id"),
+        "narrative_id": narrative_id,
         "references": [{"id": t["id"], "score": t["score"], "why": t["why"], "genre": t["ref"]["genre"],
                         "title": t["ref"]["provenance"].get("title"), "label": t["ref"].get("label"),
+                        "label_checked": bool(t["ref"].get("label_checked")),
                         "source_url": t["ref"]["provenance"].get("source_url")} for t in top],
         "decision": decision,
+        "draw": {"temperature": temperature, "variant": variant, "seed": f"{brief_id}|<칸 이름>",
+                 "rule": "p ∝ (0.5×장르 분포 + 0.5×참고 표지 표)^(1/T)"},
         "grammar_used": bool(gdist),
     }
     mw = motifs(narrative_object, "\n\n".join(paras) if paras else None, title or title_s)
     b["motifs"] = mw
     b["art_prompt"] = art_prompt(g, b, mw) if arch != "typographic" else None
-    if paras:
-        mid = paras[len(paras) // 2]
-        b["illustration_after_paragraph"] = len(paras) // 2
-        b["illustration_prompt"] = illustration_prompt(g, b, mid)
-    key = (g, sorted(moods.items()), b["narrative_id"], arch, sorted(o.items()), pal["colors"], (story_text or "")[:2000])
-    b["brief_id"] = hashlib.sha1(repr(key).encode()).hexdigest()[:10]
+    chapters = []
+    for i, (a, e) in enumerate(split_chapters(paras)):
+        ch: dict[str, Any] = {"index": i + 1, "start": a, "end": e}
+        if i < MAX_ILLUSTRATIONS and e - a >= 2:
+            spot = illustration_spot(paras, a, e)
+            ch["illustration_after"] = spot
+            ch["illustration_prompt"] = illustration_prompt(g, b, paras[spot])
+        chapters.append(ch)
+    b["chapters"] = chapters
+    b["brief_id"] = brief_id
     return b

@@ -200,7 +200,24 @@
     ],
     "is_cover": true,
     "genre_guess": "mystery"
-   }
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "top",
+    "title_scale": "small",
+    "typeface": "sans",
+    "art_style": "line",
+    "moods": [
+     "mysterious",
+     "whimsical"
+    ],
+    "is_cover": true,
+    "genre_guess": "mystery"
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": []
   },
   {
    "id": "ol15251331",
@@ -451,6 +468,20 @@
     "aspect": 1.506
    },
    "label": {
+    "archetype": "centered_motif",
+    "title_position": "top",
+    "title_scale": "medium",
+    "typeface": "sans",
+    "art_style": "photo",
+    "moods": [
+     "dark",
+     "eerie",
+     "tense"
+    ],
+    "is_cover": true,
+    "genre_guess": "mystery"
+   },
+   "label_model": {
     "archetype": "full_bleed",
     "title_position": "top",
     "title_scale": "medium",
@@ -463,7 +494,14 @@
     ],
     "is_cover": true,
     "genre_guess": "mystery"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "archetype",
+    "art_style"
+   ]
   },
   {
    "id": "ol12704842",
@@ -1107,6 +1145,20 @@
    },
    "label": {
     "archetype": "split",
+    "title_position": "top",
+    "title_scale": "dominant",
+    "typeface": "sans",
+    "art_style": "collage",
+    "moods": [
+     "dark",
+     "mysterious",
+     "tense"
+    ],
+    "is_cover": true,
+    "genre_guess": "mystery"
+   },
+   "label_model": {
+    "archetype": "split",
     "title_position": "middle",
     "title_scale": "dominant",
     "typeface": "sans",
@@ -1118,7 +1170,13 @@
     ],
     "is_cover": true,
     "genre_guess": "mystery"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "title_position"
+   ]
   },
   {
    "id": "ol744854",
@@ -1250,7 +1308,25 @@
     ],
     "is_cover": true,
     "genre_guess": "mystery"
-   }
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "middle",
+    "title_scale": "dominant",
+    "typeface": "display",
+    "art_style": "abstract",
+    "moods": [
+     "dark",
+     "mysterious",
+     "tense"
+    ],
+    "is_cover": true,
+    "genre_guess": "mystery"
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": []
   },
   {
    "id": "ol8368314",
@@ -1439,6 +1515,21 @@
     "archetype": "full_bleed",
     "title_position": "bottom",
     "title_scale": "large",
+    "typeface": "sans",
+    "art_style": "photo",
+    "moods": [
+     "dark",
+     "eerie",
+     "mysterious",
+     "tense"
+    ],
+    "is_cover": true,
+    "genre_guess": "thriller"
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "bottom",
+    "title_scale": "large",
     "typeface": "serif",
     "art_style": "photo",
     "moods": [
@@ -1449,7 +1540,13 @@
     ],
     "is_cover": true,
     "genre_guess": "thriller"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "typeface"
+   ]
   },
   {
    "id": "ol13147028",
@@ -2041,7 +2138,25 @@
     ],
     "is_cover": true,
     "genre_guess": "romance"
-   }
+   },
+   "label_model": {
+    "archetype": "centered_motif",
+    "title_position": "middle",
+    "title_scale": "dominant",
+    "typeface": "sans",
+    "art_style": "photo",
+    "moods": [
+     "hopeful",
+     "romantic",
+     "serene"
+    ],
+    "is_cover": true,
+    "genre_guess": "romance"
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": []
   },
   {
    "id": "ol13326725",
@@ -2756,6 +2871,20 @@
    },
    "label": {
     "archetype": "full_bleed",
+    "title_position": "top",
+    "title_scale": "small",
+    "typeface": "serif",
+    "art_style": "photo",
+    "moods": [
+     "dreamy",
+     "nostalgic",
+     "serene"
+    ],
+    "is_cover": true,
+    "genre_guess": "literary"
+   },
+   "label_model": {
+    "archetype": "full_bleed",
     "title_position": "middle",
     "title_scale": "small",
     "typeface": "sans",
@@ -2767,7 +2896,14 @@
     ],
     "is_cover": true,
     "genre_guess": "literary"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "title_position",
+    "typeface"
+   ]
   },
   {
    "id": "ol8761045",
@@ -3220,6 +3356,20 @@
     "archetype": "full_bleed",
     "title_position": "middle",
     "title_scale": "large",
+    "typeface": "serif",
+    "art_style": "painterly",
+    "moods": [
+     "dark",
+     "mysterious",
+     "tense"
+    ],
+    "is_cover": true,
+    "genre_guess": "fantasy"
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "middle",
+    "title_scale": "large",
     "typeface": "sans",
     "art_style": "painterly",
     "moods": [
@@ -3229,7 +3379,13 @@
     ],
     "is_cover": true,
     "genre_guess": "fantasy"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "typeface"
+   ]
   },
   {
    "id": "ol14339089",
@@ -3286,6 +3442,19 @@
     "archetype": "centered_motif",
     "title_position": "middle",
     "title_scale": "medium",
+    "typeface": "serif",
+    "art_style": "photo",
+    "moods": [
+     "dark",
+     "melancholic"
+    ],
+    "is_cover": true,
+    "genre_guess": "literary"
+   },
+   "label_model": {
+    "archetype": "centered_motif",
+    "title_position": "middle",
+    "title_scale": "medium",
     "typeface": "sans",
     "art_style": "photo",
     "moods": [
@@ -3294,7 +3463,13 @@
     ],
     "is_cover": true,
     "genre_guess": "literary"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "typeface"
+   ]
   },
   {
    "id": "ol7370711",
@@ -3951,7 +4126,25 @@
     ],
     "is_cover": true,
     "genre_guess": "romance"
-   }
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "middle",
+    "title_scale": "large",
+    "typeface": "sans",
+    "art_style": "photo",
+    "moods": [
+     "hopeful",
+     "romantic",
+     "serene"
+    ],
+    "is_cover": true,
+    "genre_guess": "romance"
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": []
   },
   {
    "id": "ol15216589",
@@ -4017,7 +4210,25 @@
     ],
     "is_cover": true,
     "genre_guess": "sf"
-   }
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "bottom",
+    "title_scale": "medium",
+    "typeface": "sans",
+    "art_style": "flat_vector",
+    "moods": [
+     "energetic",
+     "hopeful",
+     "mysterious"
+    ],
+    "is_cover": true,
+    "genre_guess": "sf"
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": []
   },
   {
    "id": "ol15123920",
@@ -4409,7 +4620,25 @@
     ],
     "is_cover": true,
     "genre_guess": "fantasy"
-   }
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "top",
+    "title_scale": "medium",
+    "typeface": "display",
+    "art_style": "painterly",
+    "moods": [
+     "dark",
+     "mysterious",
+     "tense"
+    ],
+    "is_cover": true,
+    "genre_guess": "fantasy"
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": []
   },
   {
    "id": "ol14551243",
@@ -4661,6 +4890,20 @@
    "label": {
     "archetype": "full_bleed",
     "title_position": "top",
+    "title_scale": "large",
+    "typeface": "display",
+    "art_style": "painterly",
+    "moods": [
+     "energetic",
+     "playful",
+     "whimsical"
+    ],
+    "is_cover": true,
+    "genre_guess": "fantasy"
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "top",
     "title_scale": "medium",
     "typeface": "display",
     "art_style": "painterly",
@@ -4671,7 +4914,13 @@
     ],
     "is_cover": true,
     "genre_guess": "fantasy"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "title_scale"
+   ]
   },
   {
    "id": "ol15136877",
@@ -4999,7 +5248,25 @@
     ],
     "is_cover": true,
     "genre_guess": "fantasy"
-   }
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "top",
+    "title_scale": "large",
+    "typeface": "serif",
+    "art_style": "painterly",
+    "moods": [
+     "hopeful",
+     "playful",
+     "whimsical"
+    ],
+    "is_cover": true,
+    "genre_guess": "fantasy"
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": []
   },
   {
    "id": "ol9269962",
@@ -6043,6 +6310,20 @@
     "aspect": 1.44
    },
    "label": {
+    "archetype": "centered_motif",
+    "title_position": "bottom",
+    "title_scale": "large",
+    "typeface": "handwritten",
+    "art_style": "line",
+    "moods": [
+     "dreamy",
+     "hopeful",
+     "whimsical"
+    ],
+    "is_cover": true,
+    "genre_guess": "fantasy"
+   },
+   "label_model": {
     "archetype": "split",
     "title_position": "bottom",
     "title_scale": "large",
@@ -6055,7 +6336,13 @@
     ],
     "is_cover": true,
     "genre_guess": "fantasy"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "archetype"
+   ]
   },
   {
    "id": "ol12949727",
@@ -6834,6 +7121,19 @@
    "label": {
     "archetype": "full_bleed",
     "title_position": "top",
+    "title_scale": "large",
+    "typeface": "serif",
+    "art_style": "photo",
+    "moods": [
+     "hopeful",
+     "serene"
+    ],
+    "is_cover": true,
+    "genre_guess": "fantasy"
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "top",
     "title_scale": "medium",
     "typeface": "serif",
     "art_style": "photo",
@@ -6843,7 +7143,13 @@
     ],
     "is_cover": true,
     "genre_guess": "fantasy"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "title_scale"
+   ]
   },
   {
    "id": "ol12773861",
@@ -7099,6 +7405,20 @@
     "title_position": "middle",
     "title_scale": "large",
     "typeface": "serif",
+    "art_style": "photo",
+    "moods": [
+     "dark",
+     "mysterious",
+     "tense"
+    ],
+    "is_cover": true,
+    "genre_guess": "fantasy"
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "middle",
+    "title_scale": "large",
+    "typeface": "serif",
     "art_style": "painterly",
     "moods": [
      "dark",
@@ -7107,7 +7427,13 @@
     ],
     "is_cover": true,
     "genre_guess": "fantasy"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "art_style"
+   ]
   },
   {
    "id": "ol15158664",
@@ -7830,7 +8156,25 @@
     ],
     "is_cover": true,
     "genre_guess": "fantasy"
-   }
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "top",
+    "title_scale": "large",
+    "typeface": "display",
+    "art_style": "painterly",
+    "moods": [
+     "energetic",
+     "playful",
+     "whimsical"
+    ],
+    "is_cover": true,
+    "genre_guess": "fantasy"
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": []
   },
   {
    "id": "ol13312488",
@@ -8279,6 +8623,19 @@
    },
    "label": {
     "archetype": "full_bleed",
+    "title_position": "bottom",
+    "title_scale": "medium",
+    "typeface": "sans",
+    "art_style": "line",
+    "moods": [
+     "playful",
+     "whimsical"
+    ],
+    "is_cover": true,
+    "genre_guess": "literary"
+   },
+   "label_model": {
+    "archetype": "full_bleed",
     "title_position": "middle",
     "title_scale": "medium",
     "typeface": "sans",
@@ -8289,7 +8646,13 @@
     ],
     "is_cover": true,
     "genre_guess": "literary"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "title_position"
+   ]
   },
   {
    "id": "ol11695174",
@@ -9130,7 +9493,25 @@
     ],
     "is_cover": true,
     "genre_guess": "thriller"
-   }
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "top",
+    "title_scale": "large",
+    "typeface": "sans",
+    "art_style": "photo",
+    "moods": [
+     "dark",
+     "mysterious",
+     "tense"
+    ],
+    "is_cover": true,
+    "genre_guess": "thriller"
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": []
   },
   {
    "id": "ol14614757",
@@ -9317,6 +9698,20 @@
    "label": {
     "archetype": "full_bleed",
     "title_position": "top",
+    "title_scale": "dominant",
+    "typeface": "display",
+    "art_style": "abstract",
+    "moods": [
+     "dark",
+     "energetic",
+     "playful"
+    ],
+    "is_cover": true,
+    "genre_guess": "romance"
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "top",
     "title_scale": "large",
     "typeface": "display",
     "art_style": "abstract",
@@ -9327,7 +9722,14 @@
     ],
     "is_cover": true,
     "genre_guess": "literary"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "title_scale",
+    "genre_guess"
+   ]
   },
   {
    "id": "ol15105883",
@@ -9393,7 +9795,25 @@
     ],
     "is_cover": true,
     "genre_guess": "thriller"
-   }
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "bottom",
+    "title_scale": "large",
+    "typeface": "sans",
+    "art_style": "photo",
+    "moods": [
+     "eerie",
+     "mysterious",
+     "tense"
+    ],
+    "is_cover": true,
+    "genre_guess": "thriller"
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": []
   },
   {
    "id": "ol11466695",
@@ -10431,6 +10851,19 @@
     "archetype": "full_bleed",
     "title_position": "bottom",
     "title_scale": "medium",
+    "typeface": "handwritten",
+    "art_style": "line",
+    "moods": [
+     "energetic",
+     "playful"
+    ],
+    "is_cover": true,
+    "genre_guess": "comedy"
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "bottom",
+    "title_scale": "medium",
     "typeface": "display",
     "art_style": "line",
     "moods": [
@@ -10439,7 +10872,13 @@
     ],
     "is_cover": true,
     "genre_guess": "comedy"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "typeface"
+   ]
   },
   {
    "id": "ol12745555",
@@ -11078,6 +11517,19 @@
     "aspect": 1.493
    },
    "label": {
+    "archetype": "framed",
+    "title_position": "top",
+    "title_scale": "large",
+    "typeface": "handwritten",
+    "art_style": "line",
+    "moods": [
+     "playful",
+     "whimsical"
+    ],
+    "is_cover": true,
+    "genre_guess": "comedy"
+   },
+   "label_model": {
     "archetype": "pattern",
     "title_position": "top",
     "title_scale": "medium",
@@ -11089,7 +11541,14 @@
     ],
     "is_cover": true,
     "genre_guess": "comedy"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "archetype",
+    "title_scale"
+   ]
   },
   {
    "id": "ol10323405",
@@ -11405,6 +11864,19 @@
     "aspect": 1.534
    },
    "label": {
+    "archetype": "framed",
+    "title_position": "top",
+    "title_scale": "large",
+    "typeface": "handwritten",
+    "art_style": "line",
+    "moods": [
+     "playful",
+     "whimsical"
+    ],
+    "is_cover": true,
+    "genre_guess": "comedy"
+   },
+   "label_model": {
     "archetype": "pattern",
     "title_position": "top",
     "title_scale": "medium",
@@ -11416,7 +11888,14 @@
     ],
     "is_cover": true,
     "genre_guess": "comedy"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "archetype",
+    "title_scale"
+   ]
   },
   {
    "id": "ol12625278",
@@ -11733,6 +12212,19 @@
     "aspect": 1.538
    },
    "label": {
+    "archetype": "full_bleed",
+    "title_position": "middle",
+    "title_scale": "medium",
+    "typeface": "serif",
+    "art_style": "photo",
+    "moods": [
+     "hopeful",
+     "serene"
+    ],
+    "is_cover": true,
+    "genre_guess": "literary"
+   },
+   "label_model": {
     "archetype": "centered_motif",
     "title_position": "middle",
     "title_scale": "medium",
@@ -11744,7 +12236,13 @@
     ],
     "is_cover": true,
     "genre_guess": "literary"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "archetype"
+   ]
   },
   {
    "id": "ol12065834",
@@ -12125,6 +12623,19 @@
     "aspect": 1.488
    },
    "label": {
+    "archetype": "framed",
+    "title_position": "top",
+    "title_scale": "medium",
+    "typeface": "sans",
+    "art_style": "photo",
+    "moods": [
+     "melancholic",
+     "mysterious"
+    ],
+    "is_cover": true,
+    "genre_guess": "literary"
+   },
+   "label_model": {
     "archetype": "split",
     "title_position": "top",
     "title_scale": "medium",
@@ -12136,7 +12647,13 @@
     ],
     "is_cover": true,
     "genre_guess": "literary"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "archetype"
+   ]
   },
   {
    "id": "ol14537149",
@@ -12386,6 +12903,19 @@
     "archetype": "full_bleed",
     "title_position": "top",
     "title_scale": "large",
+    "typeface": "handwritten",
+    "art_style": "painterly",
+    "moods": [
+     "dark",
+     "mysterious"
+    ],
+    "is_cover": true,
+    "genre_guess": "literary"
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "top",
+    "title_scale": "large",
     "typeface": "sans",
     "art_style": "painterly",
     "moods": [
@@ -12394,7 +12924,13 @@
     ],
     "is_cover": true,
     "genre_guess": "literary"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "typeface"
+   ]
   },
   {
    "id": "ol11661835",
@@ -12459,7 +12995,24 @@
     ],
     "is_cover": true,
     "genre_guess": "literary"
-   }
+   },
+   "label_model": {
+    "archetype": "full_bleed",
+    "title_position": "top",
+    "title_scale": "small",
+    "typeface": "serif",
+    "art_style": "photo",
+    "moods": [
+     "hopeful",
+     "serene"
+    ],
+    "is_cover": true,
+    "genre_guess": "literary"
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": []
   },
   {
    "id": "ol9348701",
@@ -13750,6 +14303,20 @@
     "aspect": 1.462
    },
    "label": {
+    "archetype": "centered_motif",
+    "title_position": "top",
+    "title_scale": "large",
+    "typeface": "handwritten",
+    "art_style": "flat_vector",
+    "moods": [
+     "energetic",
+     "playful",
+     "whimsical"
+    ],
+    "is_cover": true,
+    "genre_guess": "literary"
+   },
+   "label_model": {
     "archetype": "framed",
     "title_position": "top",
     "title_scale": "large",
@@ -13762,7 +14329,14 @@
     ],
     "is_cover": true,
     "genre_guess": "literary"
-   }
+   },
+   "label_checked": true,
+   "label_checked_by": "claude-review-20261003",
+   "label_checked_at": "2026-10-03",
+   "label_corrected_fields": [
+    "archetype",
+    "art_style"
+   ]
   }
  ]
 }

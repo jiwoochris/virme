@@ -103,6 +103,7 @@ class Service:
                      include_others: bool | None = None) -> dict[str, Any]:
         result = self.query(keyword, include_others=include_others)
         cols = self.columns()
+        # 배경 사실은 번호 붙은 요약 기록으로 넘어가고, evidence_ids 의 그 자리에는 요약 기록 ID 가 든다 (verify 가 다시 찾는다)
         prompt = story.story_prompt(result, genre, version, variation, columns=columns.note_for_story(cols))
         # 이 프롬프트는 브라우저가 OpenRouter 로 보낸다. 넘기기 전에 마지막 검사를 거치고 로그에 남긴다
         prompt["system"], prompt["user"] = self.outbound.send("browser", prompt["system"], prompt["user"], purpose="이야기 집필")
@@ -141,7 +142,11 @@ class Service:
 
     def verify(self, paragraphs: list[str], evidence_ids: list[str], mode: str = "blur", title: str | None = None,
                extra_counts: list[int] | None = None, kind: str = "story") -> dict[str, Any]:
-        recs = [r for r in (self.store.record(i) for i in evidence_ids) if r is not None]
+        # 근거 목록은 취재 노트의 번호 순서다. 기록 ID(`r…`)는 기록으로, 요약 기록 ID(`s…`)는 지금 계산한 컬럼의 요약으로
+        # 바꾸고, 찾지 못한 자리는 None 으로 남겨 뒤 번호가 밀리지 않게 한다
+        summaries = {s["id"]: s for s in self.columns().get("summaries", [])} if any(
+            i.startswith("s") for i in evidence_ids) else {}
+        recs = [summaries.get(i) if i.startswith("s") else self.store.record(i) for i in evidence_ids]
         rewrite = context = None
         if openrouter_key():
             from .llm import chat_json, chat_text
@@ -385,3 +390,87 @@ class Service:
             v["label"] = done.get(v["id"])
             items.append(v)
         return {"keyword": keyword, "items": items, "labeled": len(done)}
+
+    # ---------- 책 만들기 (웹 화면에서, 백그라운드) ----------
+    BOOK_FILES = ("cover.png", "opener.png", "spread.png", "book.pdf")
+
+    def book_start(self, keyword: str, story_text: str, genre: int | None = None, title: str | None = None,
+                   author: str | None = None, offline: bool = False) -> dict[str, Any]:
+        """노벨 화면에서 쓴 이야기로 책을 만든다. 그림을 그리는 데 25~55초 걸려서 백그라운드에서 돌리고 작업 번호를 준다.
+        같은 입력으로 돌고 있거나 끝난 작업이 있으면 그 작업을 그대로 돌려준다."""
+        import hashlib
+
+        jobs: dict[str, dict[str, Any]] = self.__dict__.setdefault("_book_jobs", {})
+        job_id = hashlib.sha1(repr((self.profile, keyword, story_text, genre, title, author, offline)).encode()).hexdigest()[:12]
+        with self._lock:
+            st = jobs.get(job_id)
+            if st and st["state"] in ("running", "done"):
+                return self.book_status(job_id) or {}
+            lines: list[str] = []
+            st = {"state": "running", "lines": lines, "started": time.time(), "keyword": keyword}
+            jobs[job_id] = st
+
+        def log(msg: str) -> None:
+            lines.append(str(msg))
+            del lines[:-20]
+
+        def run() -> None:
+            try:
+                res = self.make_book(keyword, story_text, genre=genre, title=title, author=author or "나",
+                                     offline=offline, log=log)
+                st["book_id"] = res["brief_id"]
+                st["state"] = "done"
+            except Exception as err:  # 화면에 이유를 보여 준다
+                st.update(state="error", error=str(err)[:400])
+            finally:
+                st["elapsed"] = round(time.time() - st["started"], 1)
+
+        threading.Thread(target=run, daemon=True).start()
+        return self.book_status(job_id) or {}
+
+    def _book_dir(self, book_id: str) -> Path:
+        from .book import books_dir
+
+        return books_dir(self.profile) / book_id
+
+    def book_status(self, job_or_book_id: str) -> dict[str, Any] | None:
+        """작업 번호(12자리)나 책 번호(10자리, 브리프 번호)로 진행 상태와 결과 요약. 파일 경로 대신 내려받을 주소를 준다."""
+        import json
+
+        st = dict(self.__dict__.get("_book_jobs", {}).get(job_or_book_id) or {})
+        if not st:
+            if not (self._book_dir(job_or_book_id) / "brief.json").exists():
+                return None
+            st = {"state": "done", "book_id": job_or_book_id}
+        out: dict[str, Any] = {"id": job_or_book_id, "state": st["state"], "lines": list(st.get("lines", []))[-6:]}
+        if st.get("state") == "running":
+            out["elapsed"] = round(time.time() - st["started"], 1)
+        elif "elapsed" in st:
+            out["elapsed"] = st["elapsed"]
+        if st.get("error"):
+            out["error"] = st["error"]
+        bid = st.get("book_id")
+        if st["state"] == "done" and bid:
+            d = self._book_dir(bid)
+            try:
+                b = json.loads((d / "brief.json").read_text("utf-8"))
+            except (OSError, ValueError):
+                b = {}
+            art = b.get("art") or {}
+            out["book_id"] = bid
+            out["book"] = {
+                "title": b.get("title"), "author": b.get("author"), "genre": b.get("genre_name"),
+                "archetype": b.get("archetype"), "typeface": b.get("typeface"), "art_style": b.get("art_style"),
+                "moods": b.get("moods", []), "pages": (b.get("render") or {}).get("pages"),
+                "art": {"cover": art.get("cover"), "illustration": art.get("illustration"),
+                        "cost_usd": art.get("cost_usd")},
+                "seconds": b.get("seconds"),
+            }
+            out["files"] = {n: f"/book/{bid}/{n}" for n in self.BOOK_FILES if (d / n).exists()}
+        return out
+
+    def book_file(self, book_id: str, name: str) -> Path | None:
+        if name not in self.BOOK_FILES:
+            return None
+        path = self._book_dir(book_id) / name
+        return path if path.exists() else None

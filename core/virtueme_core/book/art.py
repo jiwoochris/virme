@@ -2,9 +2,12 @@
 
 키가 있으면 OpenRouter 이미지 모델(기본 `google/gemini-3.1-flash-image-preview`, 1K, 장당 약 $0.068)로 그린다.
 - 표지 그림에는 브리프가 고른 참고 표지 가운데 그림 양식이 같은 것 1~3장을 512px 로 줄여 스타일 참고로 넘긴다.
-- 본문 삽화에는 방금 그린 표지 그림을 참고로 넘겨 표지와 같은 그림체로 맞춘다.
+- 장마다 삽화 한 장(최대 4장)을 그린다. 삽화에는 방금 그린 표지 그림을 "같은 화가의 연작" 참고로 넘겨 그림체를 맞추고,
+  장마다 따로 캐시해 같은 장면은 다시 사지 않는다. 삽화는 병렬로 그린다.
 - 그림에는 글자를 넣지 않게 지시하고, 받은 그림은 비전 모델(gemini-2.5-flash)이 글자가 있는지 한 번 더 본다.
-  글자가 보이면 두 번까지 다시 그리고, 그래도 있으면 아래 오프라인 그림으로 바꾼다.
+  글자가 보이면 두 번까지 다시 그리고, 그래도 있으면 아래 오프라인 그림으로 바꾼다. 다만 표지가 AI 그림인 책에서 삽화가
+  끝내 실패하면 그림체가 어긋나지 않게 그 장은 삽화 없이 간다(`skipped`).
+- 전면 그림 표지는 그림이 가로로 곧게 갈려 위쪽이 빈 띠로 남았는지(`hard_band`)도 재서, 그렇다면 다시 그린다.
 
 키가 없거나 실패하면 팔레트와 정서 곡선으로 절차적 그림을 만든다 (`procedural`). 시드는 브리프 번호로 정하므로
 같은 브리프면 같은 그림이 나온다. 정서 곡선을 겹친 물결로 그리므로, 이 그림도 기록에서 나온 그림이다.
@@ -16,6 +19,8 @@ import io
 import json
 import math
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable
 
@@ -25,7 +30,7 @@ from PIL import Image, ImageDraw, ImageFilter
 from ..config import LLM_MODEL, openrouter_key
 from ..llm import LLMUnavailable
 from . import net
-from .collect import refs_dir
+from .collect import ref_image
 from .features import rgb_of
 
 IMAGE_MODEL = os.environ.get("VIRTUEME_BOOK_IMAGE_MODEL", "google/gemini-3.1-flash-image-preview")
@@ -106,16 +111,17 @@ def procedural(brief: dict[str, Any], size: tuple[int, int], kind: str = "cover"
 
 # ---------------- AI 그림 ----------------
 def _ref_images(brief: dict[str, Any], n: int = 3) -> tuple[list[str], list[str]]:
-    root = refs_dir()
     refs = brief.get("references") or []
     same = [r for r in refs if (r.get("label") or {}).get("art_style") == brief.get("art_style")]
-    picked = (same + [r for r in refs if r not in same])[:n]
+    picked = same + [r for r in refs if r not in same]
     urls, ids = [], []
     for r in picked:
-        p = root / "img" / f"{r['id']}.jpg"
-        if p.exists():
+        p = ref_image(r["id"])
+        if p is not None:
             urls.append(net.image_data_url(p, max_side=512, quality=80))
             ids.append(r["id"])
+        if len(urls) >= n:
+            break
     return urls, ids
 
 
@@ -133,13 +139,41 @@ def has_text(img_bytes: bytes, outbound: Any) -> tuple[bool, str, float]:
     return bool(data.get("has_text")), str(data.get("where") or ""), float(usage.get("cost") or 0)
 
 
+def hard_band(img: Image.Image, share: float = 0.95, jump: float = 60.0, flat: float = 8.0) -> float | None:
+    """그림을 가로로 가르는 곧은 경계가 있고 그 한쪽이 빈 띠(가로 표준편차 flat 미만)면 그 높이(0~1), 없으면 None.
+    256px 로 줄인 명도에서 위아래 3줄 평균의 차이가 22 를 넘는 칸이 폭의 share 이상이고 차이의 중앙값이 jump 이상인 줄을
+    찾는다. 하늘과 바다가 만나는 수평선처럼 양쪽에 결이 있는 경계는 걸리지 않는다 (2026-10-03 표지 11장으로 맞춤)."""
+    g = np.asarray(img.convert("L").resize((256, 256)), dtype=float)
+    for y in range(26, 230):
+        d = np.abs(g[y - 3:y].mean(axis=0) - g[y + 1:y + 4].mean(axis=0))
+        if (d > 22).mean() < share or float(np.median(d)) < jump:
+            continue
+        above, below = g[max(0, y - 40):y - 2], g[y + 3:y + 43]
+        if min(above.std(axis=1).mean(), below.std(axis=1).mean()) < flat:
+            return round(y / 256, 3)
+    return None
+
+
+STYLE_MATCH = ("The attached image is the cover artwork of this same book. Draw this illustration as part of the same "
+               "series: same medium, brush or line quality, colour palette, lighting and level of detail, so the two "
+               "clearly come from one illustrator. Do not copy its composition or subject. ")
+
+
+def illustration_names(brief: dict[str, Any]) -> list[tuple[int, str, str]]:
+    """[(장 번호, 파일 이름, 프롬프트)] 삽화가 있는 장만."""
+    return [(ch["index"], f"illustration-{ch['index']}", ch["illustration_prompt"])
+            for ch in brief.get("chapters") or [] if ch.get("illustration_prompt")]
+
+
 def make_art(brief: dict[str, Any], out_dir: Path, profile: str | None = None, offline: bool = False,
-             fresh: bool = False, log: Callable[[str], None] = print) -> dict[str, Any]:
-    """cover_art.png 와 illustration.png 를 만든다. 반환: 무엇으로 만들었는지와 비용."""
+             fresh: bool = False, log: Callable[[str], None] = print, workers: int = 4) -> dict[str, Any]:
+    """cover_art.png 와 장마다 illustration-<장>.png 를 만든다. 반환: 무엇으로 만들었는지와 비용."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    report: dict[str, Any] = {"model": None, "cost_usd": 0.0, "cover": None, "illustration": None, "text_checks": []}
+    report: dict[str, Any] = {"model": None, "cost_usd": 0.0, "cover": None, "illustrations": {}, "text_checks": [],
+                              "generated": 0, "cached": 0}
     use_ai = not offline and openrouter_key() is not None
     outbound = net.outbound_for(profile) if use_ai else None
+    lock = threading.Lock()
 
     cache_path = out_dir / "art_cache.json"
     cache = json.loads(cache_path.read_text("utf-8")) if cache_path.exists() and not fresh else {}
@@ -148,7 +182,9 @@ def make_art(brief: dict[str, Any], out_dir: Path, profile: str | None = None, o
         assert outbound is not None
         key = hashlib.sha1(f"{IMAGE_MODEL}|{aspect}|{prompt}|{ref_ids}".encode()).hexdigest()
         if cache.get(name) == key and (out_dir / f"{name}.png").exists():
-            report["text_checks"].append({"image": name, "cached": True})
+            with lock:
+                report["text_checks"].append({"image": name, "cached": True})
+                report["cached"] += 1
             return True  # 같은 프롬프트로 이미 그린 AI 그림은 다시 사지 않는다
         p = prompt
         for attempt in range(3):
@@ -158,17 +194,30 @@ def make_art(brief: dict[str, Any], out_dir: Path, profile: str | None = None, o
             except (LLMUnavailable, RuntimeError) as err:
                 log(f"  {name} 그림 실패: {err}")
                 return False
-            report["cost_usd"] += float(usage.get("cost") or 0)
+            cost = float(usage.get("cost") or 0)
             try:
                 found, where, c = has_text(data, outbound)
-                report["cost_usd"] += c
+                cost += c
             except (LLMUnavailable, RuntimeError) as err:
                 found, where = False, f"검사 실패: {err}"
-            report["text_checks"].append({"image": name, "attempt": attempt + 1, "has_text": found, "where": where})
+            band = None
+            if name == "cover_art" and brief.get("archetype") == "full_bleed":
+                band = hard_band(Image.open(io.BytesIO(data)))
+            with lock:
+                report["cost_usd"] += cost
+                report["generated"] += 1
+                report["text_checks"].append({"image": name, "attempt": attempt + 1, "has_text": found, "where": where,
+                                              "hard_band": band})
+            if not found and band is not None and attempt < 2:
+                log(f"  {name} 그림이 높이 {band:.0%} 에서 가로로 갈림, 다시 그림")
+                p = prompt + (" IMPORTANT: the previous attempt left an empty band across the picture. Paint one "
+                              "continuous scene from the top edge to the bottom edge.")
+                continue
             if not found:
                 Image.open(io.BytesIO(data)).convert("RGB").save(out_dir / f"{name}.png")
-                cache[name] = key
-                cache_path.write_text(json.dumps(cache), "utf-8")
+                with lock:
+                    cache[name] = key
+                    cache_path.write_text(json.dumps(cache), "utf-8")
                 return True
             log(f"  {name} 그림에 글자가 있음({where}), 다시 그림")
             p = prompt + " IMPORTANT: the previous attempt contained lettering. Remove every letter and glyph."
@@ -176,7 +225,7 @@ def make_art(brief: dict[str, Any], out_dir: Path, profile: str | None = None, o
 
     arch = brief.get("archetype")
     if brief.get("art_prompt"):
-        aspect = "2:3" if arch in ("full_bleed", "pattern") else "1:1"
+        aspect = "2:3" if arch in ("full_bleed", "pattern", "split") else "1:1"
         ok = False
         if use_ai:
             refs, ids = _ref_images(brief)
@@ -190,23 +239,40 @@ def make_art(brief: dict[str, Any], out_dir: Path, profile: str | None = None, o
             procedural(brief, size, "cover").save(out_dir / "cover_art.png")
             cache.pop("cover_art", None)
             report["cover"] = "procedural"
-    if brief.get("illustration_prompt"):
-        ok = False
-        if use_ai:
-            cover = out_dir / "cover_art.png"
-            if report["cover"] == "ai" and cover.exists():
-                refs, ids = [net.image_data_url(cover, 512)], ["cover_art"]
-            else:
-                refs, ids = _ref_images(brief, 1)
-            ok = gen(brief["illustration_prompt"] + " Match the rendering style of the attached image.", refs, ids,
-                     "3:2", "illustration")
-        if ok:
-            report["illustration"] = "ai"
+
+    jobs = illustration_names(brief)
+    cover = out_dir / "cover_art.png"
+    if use_ai and report["cover"] == "ai" and cover.exists():
+        style_refs, style_ids, note = [net.image_data_url(cover, 512)], ["cover_art"], STYLE_MATCH
+    elif use_ai:
+        style_refs, style_ids = _ref_images(brief, 1)
+        note = "Match the rendering style of the attached image. " if style_refs else ""
+    else:
+        style_refs, style_ids, note = [], [], ""
+
+    def one(job: tuple[int, str, str]) -> tuple[str, str]:
+        idx, name, prompt = job
+        if use_ai and gen(prompt + " " + note, style_refs, style_ids, "3:2", name):
+            return name, "ai"
+        if use_ai and report["cover"] == "ai":
+            # 표지가 AI 그림인데 이 삽화만 절차적 그림이면 그림체가 어긋난다. 이 장은 삽화 없이 간다
+            (out_dir / f"{name}.png").unlink(missing_ok=True)
+            with lock:
+                cache.pop(name, None)
+            return name, "skipped"
+        procedural({**brief, "brief_id": f"{brief.get('brief_id')}-{idx}"}, ILLUS_SIZE, "illustration").save(
+            out_dir / f"{name}.png")
+        with lock:
+            cache.pop(name, None)
+        return name, "procedural"
+
+    if jobs:
+        with ThreadPoolExecutor(max(1, min(workers, len(jobs)))) as ex:
+            for name, how in ex.map(one, jobs):
+                report["illustrations"][name] = how
+        if any(v == "ai" for v in report["illustrations"].values()):
             report["model"] = IMAGE_MODEL
-        else:
-            procedural(brief, ILLUS_SIZE, "illustration").save(out_dir / "illustration.png")
-            cache.pop("illustration", None)
-            report["illustration"] = "procedural"
+    report["style_reference"] = style_ids
     if use_ai or cache_path.exists():
         cache_path.write_text(json.dumps(cache), "utf-8")
     report["cost_usd"] = round(report["cost_usd"], 4)

@@ -148,3 +148,53 @@ def test_josa():
     assert columns.josa("엄마", "이가") == "엄마가"
     assert columns.josa("0시 08분", "으로") == "0시 08분으로"
     assert columns.josa("서울", "으로") == "서울로"
+
+
+def test_summaries_are_stable_numbered_and_self_consistent(store):
+    """배경 사실은 ID 가 고정된 요약 기록이 되고, 요약 문장을 그대로 인용하면 검사기가 values 로 통과시킨다."""
+    from virtueme_core.verify import verify_story
+
+    cols = columns.compute(store, emotions={})
+    again = columns.compute(store, emotions={})
+    ids = [s["id"] for s in cols["summaries"]]
+    assert ids == [s["id"] for s in again["summaries"]] and len(set(ids)) == len(ids)
+    assert all(i.startswith("s") and len(i) == 12 for i in ids)
+    assert {d["id"] for d in cols["discoveries"]} <= set(ids)
+    abouts = {s["about"] for s in cols["summaries"]}
+    assert {"발견", "인물", "장소", "리듬"} <= abouts
+    steps = next(s for s in cols["summaries"] if s["text"].startswith("하루 평균 걸음 수:"))
+    assert {"value": 3000, "unit": "보"} in steps["values"]["numbers"] and steps["values"]["months"] == [6, 7, 8]
+    for i, s in enumerate(cols["summaries"]):
+        out = verify_story([f'<em ref="{i + 1}">{s["text"]}</em>'], cols["summaries"], mode="plain")
+        assert out["anchors"][0]["status"] == "ok", (s["text"], out["anchors"][0]["failed_claims"])
+        assert out["anchors"][0]["summary_id"] == s["id"]
+
+
+def test_note_numbers_summaries_after_records(svc):
+    res = svc.query("러닝")
+    cols = columns.note_for_story(svc.columns())
+    note, ids = story.story_context(res, "v2", cols)
+    n_rec = len(note["records"])
+    sums = note["background"]["summaries"]
+    assert sums and [s["n"] for s in sums] == list(range(n_rec + 1, n_rec + len(sums) + 1))
+    assert all(i.startswith("r") for i in ids[:n_rec]) and all(i.startswith("s") for i in ids[n_rec:])
+    assert len(ids) == n_rec + len(sums)
+    # 날짜는 사람이 읽는 꼴로 넘긴다 (ISO 날짜는 밖으로 나가는 글 검사에서 계좌번호로 가려진다)
+    assert "2026-" not in str(note["background"])
+    p = story.story_prompt(res, genre=0, seed=1, columns=cols)
+    assert p["evidence_ids"] == ids and "요약 기록의 사실" in p["user"]
+
+
+def test_service_verify_resolves_summary_ids(svc):
+    """노벨 화면이 돌려준 evidence_ids 의 요약 기록 ID 를 지금 계산한 컬럼으로 찾아 대조한다. 번호는 밀리지 않는다."""
+    cols = svc.columns()
+    s = next(x for x in cols["summaries"] if x["values"].get("percents"))
+    pct = s["values"]["percents"][0]
+    rid = next(r.id for r in svc.store.records())
+    ids = [rid, "s000000000000", s["id"]]          # 가운데는 지금 컬럼에 없는 요약 (데이터가 바뀐 경우)
+    good = f'<em ref="3">{pct:.0f}%</em>'
+    bad = f'<em ref="3">{pct + 30:.0f}%</em>'
+    out = svc.verify([good, bad, '<em ref="2">50%</em>'], ids, mode="blur")
+    assert [a["status"] for a in out["anchors"]] == ["ok", "failed", "failed"]
+    assert out["anchors"][0]["summary_id"] == s["id"]
+    assert out["stats"]["summary_anchors"] == 1

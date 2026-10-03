@@ -21,6 +21,14 @@
 .vx-pop{position:fixed;z-index:1000;max-width:340px;padding:10px 12px;border-radius:10px;background:#171923;
   border:1px solid rgba(217,179,106,.4);box-shadow:0 12px 30px rgba(0,0,0,.45);font-size:12px;line-height:1.6;color:#D8DBE4}
 .vx-pop .d{font-family:var(--mono);font-size:10.5px;color:var(--dim);display:block;margin-bottom:4px}
+.vx.vx-summary{border-bottom:3px double rgba(217,179,106,.65)}
+.vx.vx-summary:hover{background:rgba(217,179,106,.16)}
+.vx-unsupported{border-bottom:1px dashed rgba(232,163,127,.75);cursor:help}
+.vx-pop .vals{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 2px}
+.vx-pop .vals span{font-size:10.5px;padding:1px 7px;border-radius:999px;border:1px solid rgba(217,179,106,.35);color:var(--gold)}
+.vx-pop button{margin-top:8px;font-size:11px;padding:4px 10px}
+.vx-pop ul{list-style:none;margin:8px 0 0;padding:0;max-height:220px;overflow-y:auto}
+.vx-pop li{padding:5px 0;border-top:1px solid rgba(255,255,255,.07)}
 .vx-mode{font-size:11.5px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--sub)}
 `
   function injectCss () {
@@ -125,27 +133,82 @@
     return s
   }
 
-  /* 기록과 맞지 않은 값: 규칙 검사 실패 + 문맥 검사 불일치 + 앵커 밖의 틀린 날짜 */
-  function badCount (stats) { return (stats.failed || 0) + (stats.context_mismatch || 0) + (stats.loose_unsupported || 0) }
+  /* 기록과 맞지 않은 값: 규칙 검사 실패 + 문맥 검사 불일치 + 앵커 밖의 틀린 날짜.
+     앵커 밖 숫자(비율·걸음 수·금액 등)는 글을 바꾸지 않고 점선 표시만 하므로 따로 센다 */
+  function looseNumbers (stats) { return stats.loose_numeric_unsupported || 0 }
+  function badCount (stats) {
+    return (stats.failed || 0) + (stats.context_mismatch || 0) + Math.max(0, (stats.loose_unsupported || 0) - looseNumbers(stats))
+  }
   function legend (stats, modeName) {
     const ok = (stats.ok || 0) + (stats.ref_fixed || 0) + (stats.unreferenced_ok || 0)
     const bad = badCount(stats)
     const how = { blur: '흐리게 바꿈', plain: '강조만 뺌', rewrite: '문장을 다시 씀' }[modeName] || ''
     return `<div class="vx-legend"><b>금색</b>은 이야기가 인용한 기록과 날짜·시각·횟수·낱말을 한 기록 안에서 대조해 통과한 값 ${ok}개입니다.` +
       (bad ? ` 기록과 맞지 않은 값 ${bad}개는 <i>${how}</i>.` : ' 기록과 맞지 않은 값은 없었습니다.') +
-      ` 금색 값을 누르면 그 기록을 보여 줍니다.</div>`
+      (looseNumbers(stats) ? ` <i>점선 밑줄</i>은 기록에서 확인되지 않은 숫자 ${looseNumbers(stats)}개입니다.` : '') +
+      ` 금색 값을 누르면 그 기록을, 겹밑줄 값을 누르면 여러 기록을 센 요약을 보여 줍니다.</div>`
   }
 
   let pop = null
   function hidePop () { if (pop) { pop.remove(); pop = null } }
+  /* 요약 기록(s + 11자리): GET /columns 의 summaries. 한 번 받아 두고 쓴다 */
+  let summaries = null
+  async function summaryOf (sid) {
+    if (!summaries) {
+      const cols = await call('/columns')
+      summaries = new Map((cols.summaries || []).map((x) => [x.id, x]))
+    }
+    return summaries.get(sid) || null
+  }
+  function valueChips (v) {
+    const out = []
+    const md = (d) => { const [, m, dd] = String(d).split('-').map(Number); return `${m}월 ${dd}일` }
+    ;(v.dates || []).forEach((d) => out.push(md(d)))
+    ;(v.numbers || []).forEach((n) => out.push(`${Number(n.value).toLocaleString()}${n.unit || ''}`))
+    ;(v.percents || []).forEach((p) => out.push(`${Math.round(p)}%`))
+    ;(v.times || []).forEach((t) => out.push(t))
+    return out
+  }
+  async function recordLine (rid, people) {
+    const rec = await call('/records/' + rid)
+    const body = rec.text ? relabel(rec.text, people) : '사진 · ' + (rec.photo_tags || []).join(', ')
+    return `<li><span class="d">${esc(rec.date_ko)} ${esc(rec.weekday)}요일 ${esc(rec.time)} · ${esc(rec.source)}</span>${esc(body)}</li>`
+  }
+  async function showSummary (el, sid, people) {
+    const s = await summaryOf(sid)
+    if (!pop) return
+    if (!s) { pop.textContent = '요약 기록을 찾지 못했습니다'; return }
+    const ev = s.evidence || []
+    const chips = valueChips(s.values || {})
+    pop.innerHTML = `<span class="d">요약 기록 · ${esc(s.about || '')} · 여러 기록을 센 값</span>${esc(relabel(s.text, people))}` +
+      (chips.length ? `<div class="vals">${chips.map((c) => `<span>${esc(c)}</span>`).join('')}</div>` : '') +
+      (ev.length ? `<button type="button">근거 기록 ${ev.length}건 보기</button>` : '')
+    const btn = pop.querySelector('button'); if (!btn) return
+    btn.onclick = async (e) => {
+      e.stopPropagation()
+      btn.disabled = true; btn.textContent = '기록을 불러오는 중'
+      try {
+        const lines = await Promise.all(ev.slice(0, 8).map((id) => recordLine(id, people).catch(() => '')))
+        if (!pop) return
+        btn.remove()
+        pop.insertAdjacentHTML('beforeend', `<ul>${lines.join('')}</ul>`)
+      } catch (err) { btn.textContent = '기록을 불러오지 못했습니다' }
+    }
+  }
   async function showRecord (el, people) {
     hidePop()
-    const rid = el.getAttribute('data-rid'); if (!rid) return
+    const rid = el.getAttribute('data-rid'), sid = el.getAttribute('data-sid')
+    if (!rid && !sid) return
     pop = document.createElement('div'); pop.className = 'vx-pop'; pop.textContent = '기록을 불러오는 중'
+    pop.addEventListener('click', (e) => e.stopPropagation())
     document.body.appendChild(pop)
     const r = el.getBoundingClientRect()
     pop.style.left = Math.max(8, Math.min(window.innerWidth - 350, r.left)) + 'px'
     pop.style.top = (r.bottom + 8) + 'px'
+    if (sid) {
+      try { await showSummary(el, sid, people) } catch (e) { if (pop) pop.textContent = '요약 기록을 불러오지 못했습니다' }
+      return
+    }
     try {
       const rec = await call('/records/' + rid)
       if (!pop) return
@@ -155,12 +218,17 @@
   }
   function bindRecordClicks (root, peopleGetter) {
     root.addEventListener('click', e => {
-      const el = e.target.closest && e.target.closest('.vx[data-rid]')
+      const el = e.target.closest && e.target.closest('.vx[data-rid], .vx[data-sid]')
       if (el) { e.stopPropagation(); showRecord(el, peopleGetter()) } else hidePop()
     })
-    window.addEventListener('scroll', hidePop, true)
+    window.addEventListener('scroll', (e) => { if (!pop || !pop.contains(e.target)) hidePop() }, true)
+    // 앵커 밖의 확인되지 않은 숫자: 풍선 도움말을 화면 문구로 맞춘다
+    root.addEventListener('mouseover', e => {
+      const el = e.target.closest && e.target.closest('.vx-unsupported')
+      if (el) el.title = '기록에서 확인되지 않은 숫자'
+    })
   }
 
-  window.VX = { detect, call, fmtPending, unalias, relabel, mode, modeSelect, legend, badCount, bindRecordClicks, esc, JO, saveStory, loadStory,
+  window.VX = { detect, call, base: () => base, looseNumbers, fmtPending, unalias, relabel, mode, modeSelect, legend, badCount, bindRecordClicks, esc, JO, saveStory, loadStory,
     saveTalk, loadTalk }
 })()

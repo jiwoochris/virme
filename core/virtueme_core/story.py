@@ -26,10 +26,23 @@ RULE_PEOPLE = (
     "\"(나)\"는 기록 주인의 이름을 가린 표기이고 \"(누군가)\"는 다른 사람의 이름을 가린 표기다. 둘 다 그대로 쓰지 말고 "
     "문맥에 맞게 나·너·그 사람으로 바꿔라."
 )
+BACKGROUND_RULE_V1 = (
+    "\n\n취재 노트의 background 는 키워드와 상관없이 기록 전체에서 계산한 인물·장소·생활 리듬·발견이다. 등장인물과 무대는 "
+    "여기서 골라라. about 이 \"발견\"인 요약 가운데 하나를 주인공이 뒤늦게 알아차리는 장면으로 써라. 주인공이 처음부터 알고 "
+    "있던 것처럼 쓰지 말고, 어렴풋이 기억하던 것이 분명해지는 순간으로 써라."
+)
 BACKGROUND_RULE = (
     "\n\n취재 노트의 background 는 키워드와 상관없이 기록 전체에서 계산한 인물·장소·생활 리듬·발견이다. 등장인물과 무대는 "
-    "여기서 골라라. discoveries 가운데 하나를 주인공이 뒤늦게 알아차리는 장면으로 써라. 주인공이 처음부터 알고 있던 것처럼 "
-    "쓰지 말고, 어렴풋이 기억하던 것이 분명해지는 순간으로 써라. background 의 값은 번호가 없으므로 <em> 으로 감싸지 마라."
+    "여기서 골라라. background.summaries 는 계산한 사실을 적은 요약 기록이고 records 처럼 번호(n)가 붙어 있다. about 이 "
+    "\"발견\"인 요약 가운데 하나를 주인공이 뒤늦게 알아차리는 장면으로 써라. 주인공이 처음부터 알고 있던 것처럼 쓰지 말고, "
+    "어렴풋이 기억하던 것이 분명해지는 순간으로 써라.\n"
+    "요약 기록의 사실(숫자, 비율, 걸음 수, 날짜, 달, 시각, 장소 이름, 순위)을 쓸 때도 <em ref=\"번호\">…</em> 으로 감싸고 "
+    "ref 에는 그 요약 기록의 번호를 써라. 예: 50번 요약이 걸음 수라면 <em ref=\"50\">6월 하루 평균 4,102보</em>. 대사 속이라도 같다. "
+    "숫자는 요약에 적힌 값을 그대로 쓰거나 반올림만 해라(4,102보 → 4천 보). 요약 기록 앵커는 규칙 7의 횟수와 따로 세고 "
+    "두세 번이면 충분하다.\n"
+    "records 와 summaries 어디에도 없는 숫자·비율·걸음 수·금액·날짜·시각·비교(작년, 지난해, 지난달보다, 몇 배, 몇 퍼센트, "
+    "평소의 절반)는 지어내지 마라. 비교는 요약 기록 한 건 안에 있는 두 값 사이에서만 하고, 그때도 두 값을 감싸라. "
+    "기록이 이 기간 것뿐이므로 작년·지난해와 견주는 말은 쓰지 마라. 수치가 필요 없는 장면은 수치 없이 써라."
 )
 INSUFFICIENT = "\n\n근거가 부족하다. 기록의 흔적을 사실처럼 단정하지 말고 <em>은 한 번 이하로만 써라."
 AVATAR_RULE2_V2 = (
@@ -78,7 +91,9 @@ def story_context(result: dict[str, Any], version: str = "v2",
     """서사 오브젝트와 근거 기록으로 취재 노트를 만든다. 반환: (노트, 번호 순 기록 ID).
 
     columns 는 `columns.note_for_story` 결과다. 키워드와 무관한 인물·장소·리듬·발견을 `background` 로 붙인다.
-    background 에는 번호가 없으므로 집필 규칙 7번에 따라 <em> 으로 감쌀 수 없고, 인물과 무대를 정하는 데만 쓴다.
+    배경의 숫자·날짜·비율은 요약 기록(`background.summaries`)으로 들어가고, 기록 번호 뒤에 이어서 번호를 받는다
+    (기록 48건이면 요약은 49번부터). 반환하는 ID 목록도 같은 순서라서 요약 자리에는 요약 기록 ID(`s…`)가 들어가고,
+    검사기(`Service.verify`)가 이 ID 로 지금 계산한 컬럼 값을 찾아 대조한다.
     """
     no = result["narrative_object"]
     st = no.get("stats") or {}
@@ -103,12 +118,24 @@ def story_context(result: dict[str, Any], version: str = "v2",
         "records": [_record_line(i + 1 if numbered else None, v, synthetic) for i, v in enumerate(recs)],
         "people": {a: (r or "관계 모름: 친구나 그 사람으로 부를 것") for a, r in (result.get("people") or {}).items()},
     }
+    ids = [v["id"] for v in recs]
     if columns:
-        note["background"] = columns
+        bg = {k: v for k, v in columns.items() if k != "summaries"}
+        if numbered:
+            bg["summaries"] = []
+            for s in columns.get("summaries", []):
+                # 날짜는 "7월 9일"로 바꿔 넘긴다. ISO 날짜(2026-07-09)는 밖으로 나가는 글 검사에서 계좌번호로 가려진다
+                values = {k: ([patterns.ko_date(d) for d in v] if k == "dates" else v) for k, v in s["values"].items()}
+                bg["summaries"].append({"n": len(ids) + 1, "kind": "요약", "about": s["about"], "text": s["text"],
+                                        "values": values})
+                ids.append(s["id"])
+        else:  # v1 은 번호가 없으므로 문장만 넘긴다
+            bg["summaries"] = [{"kind": "요약", "about": s["about"], "text": s["text"]} for s in columns.get("summaries", [])]
+        note["background"] = bg
         for c in columns.get("cast", []):
             if c["who"].startswith("지인"):
                 note["people"].setdefault(c["who"], "관계 모름: 친구나 그 사람으로 부를 것")
-    return note, [v["id"] for v in recs]
+    return note, ids
 
 
 def story_prompt(result: dict[str, Any], genre: int | None = None, version: str = "v2", variation: int = 0,
@@ -122,7 +149,7 @@ def story_prompt(result: dict[str, Any], genre: int | None = None, version: str 
             + (f"\n오늘의 비틀기(반드시 반영): {spark}" if spark else "")
             + f"\n근거 등급: {grade}\n\n취재 노트(JSON):\n{json.dumps(note, ensure_ascii=False)}")
     if columns:
-        user += BACKGROUND_RULE
+        user += BACKGROUND_RULE if version == "v2" else BACKGROUND_RULE_V1
     if grade == "근거 부족":
         user += INSUFFICIENT
     if variation > 0:

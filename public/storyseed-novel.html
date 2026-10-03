@@ -165,6 +165,29 @@ button:focus-visible{outline:2px solid rgba(255,61,154,.5);outline-offset:2px}
 .insuf .force{margin-top:18px;font-size:12.5px;padding:9px 16px}
 #ctxPre:not([hidden]){display:block;margin-top:10px;max-height:260px;overflow:auto;font-family:var(--mono);font-size:10.5px;
   line-height:1.5;color:var(--mut);white-space:pre-wrap;background:rgba(0,0,0,.25);border-radius:8px;padding:10px}
+/* ── 책으로 만들기 (core: POST /book) ── */
+.bookbox{max-width:760px;margin:20px auto 0;padding:22px 24px;border:1px solid var(--line);border-radius:var(--r);
+  background:rgba(255,255,255,.035);box-shadow:0 24px 60px rgba(0,0,0,.25)}
+.grid:not(.solo)~.bookbox{max-width:none}
+.bookbox h3{font-size:11.5px;font-weight:700;letter-spacing:.05em;color:var(--mut);margin:0 0 10px}
+.bookrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.bookrow input,.bookrow select{flex:0 1 auto;min-width:0;width:auto;font-size:13px;padding:9px 12px}
+.bookrow input{width:170px}
+#bookGo{font-weight:700;border:none;background:var(--grad);color:#fff;box-shadow:0 4px 14px rgba(255,61,154,.25)}
+#bookGo:hover:not(:disabled){color:#fff}
+.booknote{margin:10px 0 0;font-size:12px;color:var(--dim);line-height:1.7}
+.bookprog{margin-top:12px;font-size:13px;color:var(--sub)}
+.bookprog i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--pink2);margin-right:9px;animation:pu 1.1s ease-in-out infinite}
+.bookprog small{display:block;margin-top:4px;font-family:var(--mono);font-size:10.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bookshots{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.bookshots figure{margin:0}
+.bookshots figure.wide{grid-column:1/-1}
+.bookshots img{display:block;width:100%;height:auto;border-radius:6px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.bookshots figcaption{margin-top:6px;font-size:11.5px;color:var(--mut)}
+.bookmeta{margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;color:var(--mut)}
+.bookmeta a{color:var(--ink);text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600}
+.bookmeta a:hover{border-color:#fff}
+@media(max-width:560px){.bookshots{grid-template-columns:1fr}.bookrow input{width:100%}}
 </style>
 </head>
 <body style="background:#070A10;color:#EEF0F5">
@@ -216,6 +239,7 @@ button:focus-visible{outline:2px solid rgba(255,61,154,.5);outline-offset:2px}
     <pre id="ctxPre" hidden></pre>
   </div>
 </div>
+<div class="bookbox" id="bookBox" hidden></div>
 
 </div>
 
@@ -891,7 +915,7 @@ async function renderAI(kw){
 }
 
 function render(kw){
-  LASTKW=kw;
+  LASTKW=kw;bookHide();
   if(MODE==='ai'||SOURCE==='core'){renderAI(kw);return}
   const g=gather(kw);
   if(!g.ok){renderRefusal(kw,g);return}
@@ -962,13 +986,15 @@ async function renderCore(kw,my){
   $('paper').className='paper';
   $('paper').innerHTML=paperHTML(VX.unalias(v.title_html||VX.esc(st.title),g.people),tag,
     v.paragraphs_html.map(p=>`<p>${VX.unalias(p,g.people)}</p>`).join('')+VX.legend(v.stats,m));
-  VX.saveStory(kw,{html:$('paper').innerHTML,narrative_id:no.narrative_id});
+  VX.saveStory(kw,{html:$('paper').innerHTML,narrative_id:no.narrative_id,genre:gi});
+  bookOffer(kw,gi);
 }
 function showCachedStory(kw,why){
   const c=VX.loadStory(kw);if(!c)return false;
   const d=new Date(c.saved);
   $('paper').className='paper';
   $('paper').innerHTML=c.html+`<div class="vx-legend">${why} ${d.getMonth()+1}월 ${d.getDate()}일 ${d.getHours()}시 ${String(d.getMinutes()).padStart(2,'0')}분에 만든 이야기를 보여 드립니다${c.narrative_id?` (서사 번호 #${esc(c.narrative_id)})`:''}.</div>`;
+  bookOffer(kw,c.genre);
   return true;
 }
 function sideFillCore(g){
@@ -1002,6 +1028,79 @@ function renderInsufficient(kw,g){
   if(g.core)sideFillCore(g);else sideClear();
   $('forceBtn').onclick=()=>{interrupt();FORCE_KW=kw;render(kw)};
   void $('paper').offsetWidth;
+}
+
+/* ============ 책으로 만들기: 검사를 마친 이야기 → core 가 표지·장 첫 쪽·펼침면·PDF 를 만든다 (25~55초) ============
+   책에 넣는 글은 화면에 보이는 그대로(가명은 관계로 바꾸고, 기록과 맞지 않은 값은 흐린 글자 그대로)다. */
+const BOOK_GENRES=['미스터리','로맨스','SF','판타지','스릴러','코미디','문학·에세이'];
+const LS_BOOK='vx_book_cache',LS_AUTHOR='vx_book_author';
+let BOOKSEQ=0,BOOKKW='';
+function bookCache(){try{return JSON.parse(localStorage.getItem(LS_BOOK)||'{}')}catch(e){return {}}}
+function bookHide(){BOOKSEQ++;$('bookBox').hidden=true;$('bookBox').innerHTML=''}
+function storyOnPaper(){
+  const t=$('paper').querySelector('.stitle');
+  const paras=[...$('paper').querySelectorAll('.body > p')].map(p=>p.textContent.replace(/\s+/g,' ').trim()).filter(Boolean);
+  return {title:t?t.textContent.trim():'',paras};
+}
+function bookOffer(kw,gi){
+  if(SOURCE!=='core'||!CORE)return;
+  BOOKSEQ++;BOOKKW=kw;
+  const g=Number.isInteger(gi)&&gi>=0?gi:0;
+  let author='';try{author=localStorage.getItem(LS_AUTHOR)||''}catch(e){}
+  const box=$('bookBox');box.hidden=false;
+  box.innerHTML=`<h3>책으로 만들기</h3>
+    <div class="bookrow">
+      <select id="bookGenre" title="표지와 본문 디자인을 고를 장르">${BOOK_GENRES.map((n,i)=>`<option value="${i}"${i===g?' selected':''}>${n}</option>`).join('')}</select>
+      <input id="bookAuthor" maxlength="20" placeholder="지은이 (비우면 '나')" value="${esc(author)}">
+      <button id="bookGo">책으로 만들기</button>
+    </div>
+    <p class="booknote">이 이야기로 신국판 표지, 장 첫 쪽, 삽화가 든 본문 펼침면과 PDF 를 만듭니다. 장르는 이야기의 장르가 기본값입니다. 그림을 그려서 30초~1분 걸리고, 그림 모델에는 이야기에서 뽑은 장면 설명만 갑니다.</p>
+    <div id="bookOut"></div>`;
+  $('bookGo').onclick=()=>bookMake(kw);
+  // 같은 키워드·같은 제목으로 만든 책이 있으면 바로 보여 준다 (발표 대비)
+  const st=storyOnPaper(),c=bookCache()[kw];
+  if(c&&c.title===st.title&&c.book_id)bookPoll(c.book_id,BOOKSEQ,true);
+}
+async function bookMake(kw){
+  const st=storyOnPaper();
+  if(!st.paras.length)return;
+  const genre=+$('bookGenre').value,author=$('bookAuthor').value.trim();
+  try{localStorage.setItem(LS_AUTHOR,author)}catch(e){}
+  const my=++BOOKSEQ;
+  $('bookGo').disabled=true;
+  $('bookOut').innerHTML=`<div class="bookprog"><i></i>책 만드는 중</div>`;
+  try{
+    const res=await VX.call('/book',{keyword:kw,story:st.paras.join('\n\n'),title:st.title||null,genre,author:author||null},30000);
+    bookPoll(res.id,my,false,st.title,kw);
+  }catch(e){bookFail(my,e.message)}
+}
+async function bookPoll(id,my,quiet,title,kw){
+  for(;;){
+    if(my!==BOOKSEQ)return;
+    let st;
+    try{st=await VX.call('/book/'+id,undefined,15000)}catch(e){if(quiet)return;bookFail(my,e.message);return}
+    if(my!==BOOKSEQ)return;
+    if(st.state==='done'){bookShow(st,my);if(kw){const all=bookCache();all[kw]={book_id:st.book_id,title};try{localStorage.setItem(LS_BOOK,JSON.stringify(all))}catch(e){}}return}
+    if(st.state==='error'){bookFail(my,st.error||'알 수 없는 오류');return}
+    $('bookOut').innerHTML=`<div class="bookprog"><i></i>책 만드는 중 · ${Math.round(st.elapsed||0)}초</div>`;
+    await new Promise(r=>setTimeout(r,1500));
+  }
+}
+function bookFail(my,msg){
+  if(my!==BOOKSEQ)return;
+  $('bookGo').disabled=false;
+  $('bookOut').innerHTML=`<div class="err" style="margin-top:12px">책을 만들지 못했습니다. ${esc(String(msg))}</div>`;
+}
+function bookShow(st,my){
+  if(my!==BOOKSEQ)return;
+  $('bookGo').disabled=false;$('bookGo').textContent='다시 만들기';
+  const base=VX.base(),f=st.files||{},b=st.book||{};
+  const img=(n,cap,cls)=>f[n]?`<figure class="${cls||''}"><a href="${base+f[n]}" target="_blank" rel="noopener"><img src="${base+f[n]}?t=${Date.now()}" alt="${cap}"></a><figcaption>${cap}</figcaption></figure>`:'';
+  const art=b.art||{};
+  const how=art.cover==='ai'?'AI 그림':art.cover==='procedural'?'절차적 그림(키 없음)':'';
+  $('bookOut').innerHTML=`<div class="bookshots">${img('cover.png','앞표지')}${img('opener.png','장 첫 쪽')}${img('spread.png','본문 펼침면','wide')}</div>
+    <div class="bookmeta">${f['book.pdf']?`<a href="${base+f['book.pdf']}" download="${esc((b.title||'책').replace(/[\\/:*?"<>|]/g,''))}.pdf">PDF 내려받기</a>`:''}
+      <span>${esc(b.genre||'')}${b.pages?` · ${b.pages}쪽`:''}${how?` · ${how}`:''}${art.cost_usd?` · $${art.cost_usd.toFixed(3)}`:''}${b.seconds?` · ${Math.round(b.seconds)}초`:''}</span></div>`;
 }
 
 /* ============ 바인딩 ============ */

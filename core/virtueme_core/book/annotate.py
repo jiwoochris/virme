@@ -108,11 +108,17 @@ def annotate(use_llm: bool = True, limit: int | None = None, workers: int = 4,
         log(f"  라벨 비용 ${cost:.4f}")
     elif use_llm:
         log("OPENROUTER_API_KEY 가 없어 측정값만 남깁니다 (라벨 없음)")
+    # 사람이 검수한 라벨은 덮어쓰지 않는다 (review.py)
+    prev = {r["id"]: r for r in load_references()}
     refs = []
     for it in items:
         if it["id"] not in feats:
             continue
         lab = cache.get(_cache_key(it["id"]))
+        old = prev.get(it["id"]) or {}
+        if old.get("label_checked"):
+            refs.append({**old, "features": feats[it["id"]]})
+            continue
         refs.append({
             "id": it["id"], "genre": it["genre"], "lang": it["lang"],
             "provenance": {k: it.get(k) for k in ("title", "original_title", "author", "publisher", "year",

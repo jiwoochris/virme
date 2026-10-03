@@ -42,6 +42,21 @@
   .ob .pre { color: var(--sub); font-size: 12px; white-space: pre-wrap; margin: 4px 0 0; }
   .ob pre { max-height: 320px; overflow: auto; background: #0b0c11; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: 12px/1.6 ui-monospace, Menlo, monospace; color: var(--sub); white-space: pre-wrap; }
   .ob button { padding: 3px 8px; font-size: 12px; }
+  .hint { margin: 0 0 12px; padding: 10px 12px; border: 1px solid rgba(232,163,127,.35); border-radius: 10px; color: var(--sub); font-size: 12.5px; }
+  .hint b { color: var(--warn); font-weight: 600; }
+  #placeTable td.pname b { display: block; font-weight: 600; }
+  #placeTable td.pname small { color: var(--mut); font: 11px ui-monospace, Menlo, monospace; }
+  #placeTable td.pmeta { color: var(--sub); font-size: 12px; white-space: nowrap; }
+  #placeTable .grp { color: var(--mut); font-size: 12px; padding-top: 14px; }
+  #placeTable .saved { color: var(--mut); font-size: 12px; }
+  @media (max-width: 640px) {
+    #placeTable thead { display: none; }
+    #placeTable tr { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    #placeTable td { border: 0; padding: 0; }
+    #placeTable td.pmeta { grid-column: 1 / -1; white-space: normal; }
+    #placeTable td.pin { grid-column: 1; }
+    #placeTable td.grp { grid-column: 1 / -1; }
+  }
 </style>
 </head>
 <body>
@@ -141,6 +156,14 @@
     <tbody id="people"><tr><td colspan="5" class="names">불러오는 중</td></tr></tbody>
   </table>
 
+  <h2 id="places">3-2. 장소 이름 붙이기</h2>
+  <p class="sub">휴대폰 타임라인 내보내기에는 장소 이름이 없어서, 집·직장이 아닌 곳은 "이름 없는 장소"나 근처에서 찍은 사진으로 부릅니다. 이름을 붙이면 발견 문장과 이야기에서 그 이름으로 부릅니다. 이름을 비우고 저장하면 붙인 이름을 지웁니다.</p>
+  <p class="hint"><b>주소는 적지 마세요.</b> 이 이름은 이야기를 쓸 때 밖(OpenRouter)으로 나갈 수 있습니다. 집 주소, 동·호수, 번지 대신 "단골 카페", "망원한강공원"처럼 부르는 이름을 적어 주세요. 집과 직장은 늘 "집"·"직장"으로만 부릅니다.</p>
+  <table id="placeTable">
+    <thead><tr><th>장소</th><th>간 날 · 기간 · 주로 간 때</th><th>부를 이름</th><th></th></tr></thead>
+    <tbody id="placeRows"><tr><td colspan="4" class="names">불러오는 중</td></tr></tbody>
+  </table>
+
   <h2>4. 밖으로 나간 글</h2>
   <p class="sub">core 가 OpenRouter 로 보낸 요청과, 이야기·대화용으로 브라우저에 넘겨 브라우저가 보낸 프롬프트를 모두 이 컴퓨터에 남깁니다 (30일 보관). 보내기 직전에 가명표의 실명과 전화번호 같은 값이 남아 있는지 한 번 더 찾아 바꾸고, 바꾼 일이 있으면 아래에 표시합니다.</p>
   <div class="status" id="obSummary">불러오는 중</div>
@@ -215,7 +238,7 @@ async function pollBuild() {
     st.state === 'done' ? `\n처리 완료 (${st.elapsed}초)` : st.state === 'error' ? `\n오류: ${st.error}` : '');
   log.scrollTop = log.scrollHeight;
   $('#buildBtn').disabled = st.state === 'running';
-  if (st.state === 'running') { polling = setTimeout(pollBuild, 2000); } else { polling = null; refreshStatus(); loadPeople(); }
+  if (st.state === 'running') { polling = setTimeout(pollBuild, 2000); } else { polling = null; refreshStatus(); loadPeople(); loadPlaces(); }
 }
 $('#buildBtn').onclick = async () => {
   await fetch('build', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -236,6 +259,59 @@ async function loadPeople() {
         body: JSON.stringify({ alias: tr.dataset.alias, relation: $('input', tr).value.trim() }) });
       $('button', tr).textContent = r.ok ? '저장됨' : '실패';
     };
+  });
+}
+
+// 장소: /columns 의 집·직장, 자주 간 곳, 처음 간 곳. 좌표는 보여 주지 않는다 (장소 키는 지도 ID 나 격자 해시)
+const ADDRESSY = /\d+\s*(번지|동|호)(?![가-힣])|[가-힣](로|길)\s*\d+|\d{2,}-\d+/;
+async function loadPlaces() {
+  const tb = $('#placeRows');
+  let p;
+  try {
+    const r = await fetch('columns');
+    p = (await r.json()).places;
+  } catch (e) { tb.innerHTML = '<tr><td colspan="4" class="names">장소를 불러오지 못했습니다</td></tr>'; return; }
+  if (!p) { tb.innerHTML = '<tr><td colspan="4" class="names">아직 장소 기록이 없습니다 (지도 타임라인·사진 위치)</td></tr>'; return; }
+  const seen = new Set();
+  const groups = [['집·직장', p.anchors || []], ['자주 간 곳', p.regular || []], ['처음 간 곳', p.first_visits || []]];
+  const md = (d) => { const [, m, dd] = String(d).split('-').map(Number); return `${m}월 ${dd}일`; };
+  let html = '';
+  for (const [label, list] of groups) {
+    const rows = list.filter((x) => !seen.has(x.key) && seen.add(x.key));
+    if (!rows.length) continue;
+    html += `<tr><td colspan="4" class="grp">${label}</td></tr>`;
+    html += rows.map((x) => {
+      const fixed = x.name === '집' || x.name === '직장';
+      const period = x.first === x.last ? md(x.first) : `${md(x.first)} ~ ${md(x.last)}`;
+      return `<tr data-key="${esc(x.key)}">
+        <td class="pname"><b>${esc(x.name)}</b><small>${esc(x.key)}</small></td>
+        <td class="pmeta">${x.visits}일 · ${period}${x.time_band ? ' · ' + esc(x.time_band) : ''}</td>
+        ${fixed ? '<td class="pin saved" colspan="2">바꾸지 않음</td>'
+          : `<td class="pin"><input type="text" maxlength="40" value="${x.named ? esc(x.name) : ''}" placeholder="예: 단골 카페"></td><td><button>저장</button></td>`}
+      </tr>`;
+    }).join('');
+  }
+  tb.innerHTML = html || '<tr><td colspan="4" class="names">아직 장소 기록이 없습니다</td></tr>';
+  tb.querySelectorAll('tr[data-key]').forEach((tr) => {
+    const btn = $('button', tr); if (!btn) return;
+    const input = $('input', tr);
+    btn.onclick = async () => {
+      const name = input.value.trim();
+      if (ADDRESSY.test(name) && !confirm('주소처럼 보입니다. 이 이름은 이야기를 쓸 때 밖으로 나갈 수 있습니다. 그래도 저장할까요?')) return;
+      btn.disabled = true;
+      try {
+        const r = await fetch('places/name', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: tr.dataset.key, name: name || null }) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        const all = Object.values(d.places || {}).flat().filter((x) => x && x.key);
+        const now = all.find((x) => x.key === tr.dataset.key);
+        btn.textContent = name ? '저장됨' : '지움';
+        $('b', tr).textContent = now ? now.name : (name || '이름 없는 장소');
+      } catch (e) { btn.textContent = '실패'; }
+      finally { btn.disabled = false; }
+    };
+    input.addEventListener('input', () => { btn.textContent = '저장'; });
   });
 }
 
@@ -288,7 +364,7 @@ $('#delBtn').onclick = async () => {
   finally { $('#delBtn').disabled = false; }
 };
 
-refreshStatus(); loadPeople(); pollBuild(); loadOutbound();
+refreshStatus(); loadPeople(); pollBuild(); loadOutbound(); loadPlaces();
 </script>
 </body>
 </html>

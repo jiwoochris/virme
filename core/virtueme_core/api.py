@@ -54,8 +54,17 @@ class MusicBody(QueryBody):
     total_sec: int = Field(default=60, ge=20, le=180)
 
 
+class BookBody(BaseModel):
+    keyword: str = Field(min_length=1, max_length=40)
+    story: str = Field(min_length=20, max_length=20000)
+    genre: int | None = Field(default=None, ge=-1, le=6)
+    title: str | None = Field(default=None, max_length=80)
+    author: str | None = Field(default=None, max_length=40)
+    offline: bool = False
+
+
 class PlaceNameBody(BaseModel):
-    key: str = Field(min_length=3, max_length=80, pattern=r"^(id|ll):")
+    key: str = Field(min_length=3, max_length=80, pattern=r"^(id|pt):")
     name: str | None = Field(default=None, max_length=40)
 
 
@@ -248,6 +257,31 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
     def music_file(music_id: str = PathParam(pattern=r"^[0-9a-f]{12}$"),
                    name: str = PathParam(pattern=r"^(music\.m4a|music\.wav|features\.json|plan\.json|video(-object|-situation)?\.mp4)$")):
         got = service.music_file(music_id, name)
+        if not got:
+            raise HTTPException(404, "아직 만들지 않았습니다")
+        return FileResponse(got)
+
+    # ---------- 책: 노벨 화면의 이야기 → 표지·장 첫 쪽·펼침면·PDF (그림 때문에 25~55초, 백그라운드) ----------
+    @app.post("/book")
+    def book_start(body: BookBody) -> dict[str, Any]:
+        _ready()
+        try:
+            return service.book_start(body.keyword.strip(), body.story, body.genre, (body.title or "").strip() or None,
+                                      (body.author or "").strip() or None, body.offline)
+        except ValueError as err:
+            raise HTTPException(400, str(err)) from err
+
+    @app.get("/book/{book_id}")
+    def book_status(book_id: str = PathParam(pattern=r"^[0-9a-f]{10}([0-9a-f]{2})?$")) -> dict[str, Any]:
+        got = service.book_status(book_id)
+        if not got:
+            raise HTTPException(404, "그런 책이 없습니다")
+        return got
+
+    @app.get("/book/{book_id}/{name}")
+    def book_file(book_id: str = PathParam(pattern=r"^[0-9a-f]{10}$"),
+                  name: str = PathParam(pattern=r"^(cover|opener|spread)\.png$|^book\.pdf$")):
+        got = service.book_file(book_id, name)
         if not got:
             raise HTTPException(404, "아직 만들지 않았습니다")
         return FileResponse(got)

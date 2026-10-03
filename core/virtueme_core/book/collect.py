@@ -46,6 +46,17 @@ def refs_dir() -> Path:
     return d
 
 
+def ref_image(ref_id: str) -> Path | None:
+    """참고 표지 이미지 경로. $VIRTUEME_DATA 에 없으면 core/data/book_refs (기본 데이터 폴더)에서 찾는다."""
+    from ..config import CORE_ROOT
+
+    for root in (DATA_DIR / "book_refs", CORE_ROOT / "data" / "book_refs"):
+        p = root / "img" / f"{ref_id}.jpg"
+        if p.exists():
+            return p
+    return None
+
+
 def _search(client: httpx.Client, q: str, korean: bool, limit: int, page: int = 1) -> list[dict[str, Any]]:
     fields = "key,title,author_name,publisher,first_publish_year,cover_i"
     if korean:

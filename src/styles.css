@@ -346,3 +346,75 @@ button { cursor: pointer; }
 .music-videos { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .music-videos span { font-size: 10.5px; color: rgba(255,255,255,.5); margin-right: 2px; }
 .music-button.small { width: auto; margin-top: 0; padding: 6px 10px; font-size: 11px; }
+
+/* 발견: 소설 재료 컬럼 (ColumnsPanel.tsx) */
+.key-line.dashed { height: 0; border-top: 2px dashed; background: none; }
+.chart .turn-no { font-size: 10px; font-weight: 700; fill: #fff; }
+.turn-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font-size: 11.5px; color: #c3c2b7; line-height: 1.5; }
+.turn-list b { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-right: 6px; border: 1.5px solid #199e70; border-radius: 50%; font-size: 9.5px; color: #fff; }
+.insight-heading { grid-column: 1 / -1; margin: 18px 0 -4px; }
+.insight-heading h2 { margin: 0 0 4px; font-size: 18px; font-weight: 700; color: #fff; }
+.insight-heading p { margin: 0; font-size: 12.5px; line-height: 1.6; color: #c3c2b7; }
+.discoveries { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.discoveries > li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 10px; align-items: start; padding: 12px 14px; border: 1px solid rgba(255,255,255,.08); border-radius: 10px; background: rgba(255,255,255,.02); }
+.discoveries > li.open { grid-column: 1 / -1; border-color: rgba(255,255,255,.18); }
+.discoveries p { margin: 0; font-size: 13px; line-height: 1.6; color: #eceae4; }
+.disc-tag { font-size: 10.5px; padding: 2px 7px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); color: #c3c2b7; white-space: nowrap; }
+.disc-count { font-size: 11px; padding: 3px 9px; border-radius: 999px; border: 1px solid rgba(57,135,229,.6); background: rgba(57,135,229,.1); color: #fff; white-space: nowrap; }
+.disc-count:hover { background: rgba(57,135,229,.22); }
+.disc-count.static { border-color: rgba(25,158,112,.6); background: none; color: #c3c2b7; }
+.disc-detail { grid-column: 1 / -1; }
+.disc-records { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; font-size: 12px; line-height: 1.55; color: #d8dbe4; }
+.disc-records li { display: grid; grid-template-columns: 210px 1fr; gap: 10px; padding: 6px 0 0; border: 0; border-top: 1px solid rgba(255,255,255,.06); border-radius: 0; background: none; }
+.disc-when { color: #898781; font-variant-numeric: tabular-nums; }
+.disc-records-note { margin: 0; font-size: 11.5px; color: #898781; }
+.disc-records li.disc-records-note { display: block; }
+.cast { display: grid; gap: 10px; }
+.cast-row { display: grid; grid-template-columns: minmax(0, 1fr) 66px 150px; gap: 12px; align-items: center; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.cast-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; min-width: 0; }
+.cast-name strong { font-size: 13px; color: #fff; }
+.cast-name small { font-size: 11px; color: #898781; }
+.role-chip { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); color: #c3c2b7; white-space: nowrap; margin-left: 6px; }
+.cast-name .role-chip { margin-left: 0; }
+.role-chip.new { border-color: rgba(217,89,38,.75); color: #fff; }
+.role-chip.fade { border-color: rgba(137,135,129,.8); }
+.mini-bars { display: flex; align-items: flex-end; gap: 4px; height: 38px; }
+.mini-bars span { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; width: 18px; height: 100%; }
+.mini-bars i { display: block; width: 12px; min-height: 1px; background: #3987e5; border-radius: 2px 2px 0 0; }
+.mini-bars em { font-style: normal; font-size: 9px; color: #898781; margin-top: 2px; line-height: 1; }
+.cast-nums { display: grid; grid-template-columns: 48px 40px 52px; justify-content: end; text-align: right; gap: 6px; font-size: 11px; color: #898781; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cast-nums b { color: #fff; font-weight: 600; font-size: 12.5px; }
+.cast-foot { margin: 2px 0 0; font-size: 11px; color: #898781; line-height: 1.55; }
+.place-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+.place-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; font-size: 12.5px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.place-list strong { color: #fff; font-weight: 600; }
+.place-list span { color: #c3c2b7; font-variant-numeric: tabular-nums; }
+.place-note { margin: 8px 0 0; font-size: 12px; line-height: 1.6; color: #c3c2b7; }
+.place-note b { color: #fff; font-weight: 600; margin-right: 6px; }
+.place-note a { color: #7fb2ff; }
+.rhythm { display: grid; gap: 12px; }
+.month-title { font-size: 11.5px; color: #898781; margin-bottom: 6px; }
+.month-bars .bar-row { grid-template-columns: 36px 1fr 88px; }
+.genres { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.genres .bar-row { grid-template-columns: 112px 1fr 40px; }
+.genres p { margin: 2px 0 0 0; font-size: 11.5px; color: #898781; line-height: 1.5; }
+.genres li.top p { color: #c3c2b7; }
+.catalog { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px 24px; }
+.catalog ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.catalog li { display: grid; grid-template-columns: 14px 1fr; gap: 0 6px; font-size: 12px; line-height: 1.5; }
+.catalog li i { font-style: normal; font-size: 10px; color: #199e70; padding-top: 2px; }
+.catalog li.off i { color: #898781; }
+.cat-name { color: #fff; }
+.catalog li.off .cat-name { color: #c3c2b7; }
+.cat-src { grid-column: 2; color: #898781; font-size: 11px; }
+.catalog li.off .cat-src { color: #e8a37f; }
+@media (max-width: 860px) {
+  .discoveries { grid-template-columns: 1fr; }
+  .discoveries > li { grid-template-columns: 1fr auto; padding: 10px 12px; }
+  .discoveries li > .disc-tag { justify-self: start; }
+  .discoveries li > p { grid-column: 1 / -1; grid-row: 2; }
+  .disc-records li { grid-template-columns: 1fr; gap: 2px; }
+  .cast-row { grid-template-columns: 1fr 66px; }
+  .cast-nums { justify-content: start; text-align: left; }
+  .cast-nums { grid-column: 1 / -1; }
+}

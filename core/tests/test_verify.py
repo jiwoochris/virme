@@ -136,3 +136,71 @@ def test_rules_accept_relations_split_messages_and_place_suffix():
     # 다른 날 메시지의 낱말은 합쳐 주지 않는다 (짝 오류)
     far = '<em ref="1,3">8월 18일, 고양이와 제주</em>'
     assert verify_story([far], evidence, mode="plain")["anchors"][0]["status"] == "failed"
+
+
+STEPS = {"id": "s0000000000a", "about": "리듬", "text": "하루 평균 걸음 수: 6월 4,102보, 7월 7,132보, 8월 11,262보.",
+         "values": {"numbers": [{"value": 4102, "unit": "보"}, {"value": 7132, "unit": "보"}, {"value": 11262, "unit": "보"}],
+                    "months": [6, 7, 8]},
+         "evidence": ["rhealth00001", "rhealth00002"]}
+NIGHT = {"id": "s0000000000b", "about": "발견", "text": "밤 11시 이후에 남긴 기록의 비율이 기간 처음 무렵 50%, 끝 무렵 4%였습니다.",
+         "values": {"percents": [49.7, 4.0], "times": ["23:00"]}, "evidence": []}
+SLEEP = {"id": "s0000000000c", "about": "발견", "text": "잠든 시각의 평균이 1시 47분에서 0시 08분으로 1.7시간 앞당겨졌습니다.",
+         "values": {"numbers": [{"value": 1.7, "unit": "시간"}], "times": ["01:47", "00:08"]}, "evidence": []}
+WITH_SUMMARIES = EVIDENCE + [STEPS, NIGHT, SLEEP]   # 요약은 5·6·7번
+
+
+def test_summary_anchor_checks_values():
+    paras = ['<em ref="5">6월 하루 평균 4천 보</em>였던 내가 <em ref="5">8월엔 만 보</em>를 넘겼다.',
+             '<em ref="6">밤 11시 이후 기록이 절반</em>이던 때가 있었다. <em ref="7">새벽 2시 가까이</em> 잠들던 때.',
+             '<em ref="5">걸음 수가 세 배 가까이</em> 늘었다.']
+    out = verify_story(paras, WITH_SUMMARIES, mode="blur")
+    assert [a["status"] for a in out["anchors"]] == ["ok"] * 5
+    assert out["anchors"][0]["summary_id"] == STEPS["id"] and out["anchors"][0]["record_id"] == "rhealth00001"
+    assert 'data-sid="s0000000000a"' in out["paragraphs_html"][0] and "요약 기록:" in out["paragraphs_html"][0]
+    assert out["stats"]["summary_anchors"] == 5
+    wrong = ['<em ref="5">6월 하루 평균 6천 보</em>', '<em ref="6">밤 기록이 38%</em>', '<em ref="5">작년보다 적은 걸음</em>',
+             '<em ref="5">걸음 수가 다섯 배</em>', '<em ref="5">9월 하루 평균 4,102보</em>']
+    got = verify_story(wrong, WITH_SUMMARIES, mode="blur")["anchors"]
+    assert [a["status"] for a in got] == ["failed"] * 5
+    assert got[1]["failed_claims"] == ["38%"] and got[2]["failed_claims"] == ["작년"]
+
+
+def test_summary_anchors_skip_context_check():
+    seen = []
+
+    def fn(system, body):
+        seen.append(body)
+        return {"checks": [{"c": 1, "v": "ok"}]}
+
+    out = verify_story(['<em ref="1">7월 1일 첫 러닝 3km</em>, 그리고 <em ref="5">8월 11,262보</em>.'], WITH_SUMMARIES,
+                       context_fn=fn)
+    assert [a["status"] for a in out["anchors"]] == ["ok", "ok"]
+    assert "[1]" in seen[0] and "[2]" not in seen[0]
+
+
+def test_loose_numeric_claims_outside_anchors():
+    """앵커 밖의 비율·걸음 수·배수·해 비교도 기록과 요약에 대조해 보고한다. 글은 바꾸지 않고 표시만 붙인다."""
+    story = '"작년 같은 때보다 38% 적어요." 하루 4천 보도 안 걷던 내가 이제 만 보를 걷는다. 걸음이 다섯 배로 늘었다.'
+    out = verify_story([story], WITH_SUMMARIES, mode="blur")
+    loose = {x["text"]: x["supported"] for x in out["loose"]}
+    assert loose == {"작년": False, "38%": False, "4천 보": True, "만 보": True, "다섯 배": False}
+    assert out["stats"]["loose_numeric"] == 5 and out["stats"]["loose_numeric_unsupported"] == 3
+    html_ = out["paragraphs_html"][0]
+    assert html_.count('class="vx-unsupported"') == 3 and "38%" in html_
+    # 요약이 없으면 같은 걸음 수도 확인할 수 없다
+    alone = verify_story([story], EVIDENCE, mode="blur")
+    assert alone["stats"]["loose_numeric_unsupported"] == 5
+
+
+def test_ordinary_counts_in_dialogue_are_not_loose_claims():
+    story = '"세 번만 더 뛰자." 그는 두 시간을 기다렸다. 빵을 절반 나눠 먹었다. 배가 고팠다. 그 사람만 보고 있었다.'
+    assert verify_story([story], EVIDENCE)["loose"] == []
+
+
+def test_placeholder_keeps_numbering_and_trace_numbers():
+    from virtueme_core.records import Record
+
+    health = Record(id="rh0000000001", ts="2026-06-10T23:00:00+09:00", source="health", kind="health", modality="text",
+                    text="건강: 걸음 4102", meta={"steps": 4102})
+    out = verify_story(['<em ref="2">6월 10일 4,102보</em>'], [None, health], mode="plain")
+    assert out["anchors"][0]["status"] == "ok"

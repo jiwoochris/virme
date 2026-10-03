@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { coreFetch, useCoreBase } from './coreApi'
 import { koDate, relabel, type NarrativeObject } from './narrative'
+import { ColumnsSections, strongTurns, type Columns, type TurningPoint } from './ColumnsPanel'
 
 /* 시각화 렌더러: 서사 오브젝트 + core 서버의 전체 정서 곡선·주제 묶음·관계 그래프·간극.
    색은 역할로만 쓴다 (dataviz 기준 팔레트의 어두운 단계, 2026-09-11 validate_palette.js 통과):
@@ -18,7 +19,7 @@ type People = Record<string, string | null>
 type MapPoint = { id: string; x: number; y: number; topic: string; date: string; source: string; text: string; ev: 'strong' | 'weak' | null }
 type MapTopic = { id: string; label: string; size: number; cx: number; cy: number }
 type SemMap = { points: MapPoint[]; topics: MapTopic[]; keyword: string | null }
-type Core = { series: DaySeries[]; topics: Topic[]; other: number; graph: { nodes: GraphNode[]; edges: GraphEdge[] }; map: SemMap | null; gaps: Gap[] | null; people: People; records: number }
+type Core = { series: DaySeries[]; topics: Topic[]; other: number; graph: { nodes: GraphNode[]; edges: GraphEdge[] }; map: SemMap | null; gaps: Gap[] | null; people: People; records: number; columns: Columns | null }
 
 async function getJson<T>(path: string): Promise<T> {
   const r = await coreFetch(path, { signal: AbortSignal.timeout(120000) })
@@ -30,6 +31,7 @@ async function getJson<T>(path: string): Promise<T> {
 export const InsightPanel = memo(function InsightPanel({ narrative, active }: { narrative: NarrativeObject | null; active: boolean }) {
   const [core, setCore] = useState<Core | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'offline'>('loading')
+  const base = useCoreBase()
   const keyword = narrative && narrative.evidence_grade !== '근거 부족' ? narrative.keyword : null
 
   useEffect(() => {
@@ -42,12 +44,13 @@ export const InsightPanel = memo(function InsightPanel({ narrative, active }: { 
       getJson<{ topics: Topic[]; other?: number }>('/clusters'),
       getJson<{ nodes: GraphNode[]; edges: GraphEdge[]; people?: People }>(`/graph?limit=34${keyword ? `&keyword=${encodeURIComponent(keyword)}` : ''}`),
       getJson<SemMap>(`/map${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ''}`).catch(() => null),
+      getJson<Columns>('/columns').catch(() => null),
     ])
-      .then(([h, e, t, g, m]) => {
+      .then(([h, e, t, g, m, cols]) => {
         if (cancelled) return
         const people = g.people ?? {}
         const named = { ...g, nodes: g.nodes.map((n) => ({ ...n, name: relabel(n.name, people) })) }
-        setCore((prev) => ({ series: e.series, topics: t.topics, other: t.other ?? 0, graph: named, map: m, gaps: prev?.gaps ?? null, people, records: h.records }))
+        setCore((prev) => ({ series: e.series, topics: t.topics, other: t.other ?? 0, graph: named, map: m, gaps: prev?.gaps ?? null, people, records: h.records, columns: cols }))
         setState('ready')
         // 간극은 처음 한 번 LLM 을 부르므로 따로, 늦게 받는다
         getJson<{ gaps: Gap[] }>('/gaps').then((x) => !cancelled && setCore((c) => (c ? { ...c, gaps: x.gaps } : c))).catch(() => {})
@@ -65,15 +68,17 @@ export const InsightPanel = memo(function InsightPanel({ narrative, active }: { 
     )
   }
   if (!core) return <div className="insight-empty"><p>기록을 불러오는 중입니다</p></div>
+  const turns = strongTurns(core.columns)
 
   return (
     <div className={`insight ${state === 'loading' ? 'refetching' : ''}`}>
       <Kpis narrative={narrative} core={core} />
       <section className="insight-card wide">
         <h2>날짜별 정서 흐름</h2>
-        <p className="insight-sub">하루 기록의 정서가를 7일 이동평균으로 이은 선입니다. 0 보다 위는 긍정, 아래는 부정입니다{narrative?.change_points?.length ? '. 세로선은 흐름이 꺾인 변화점(PELT)입니다' : ''}.</p>
-        <EmotionChart series={core.series} narrative={narrative} />
+        <p className="insight-sub">하루 기록의 정서가를 7일 이동평균으로 이은 선입니다. 0 보다 위는 긍정, 아래는 부정입니다{narrative?.change_points?.length ? '. 세로선은 흐름이 꺾인 변화점(PELT)입니다' : ''}{turns.length ? '. 번호가 달린 점선은 대화량·밤 기록·장소·지출·걸음 수 같은 여러 흐름이 함께 꺾인 전환점입니다' : ''}.</p>
+        <EmotionChart series={core.series} narrative={narrative} turns={turns} />
       </section>
+      <ColumnsSections cols={core.columns} people={core.people} importUrl={base ? `${base}/import` : null} />
       {core.map && core.map.points.length > 0 && (
         <section className="insight-card wide">
           <h2>의미 지도</h2>
@@ -222,7 +227,7 @@ function Tile({ label, value, foot }: { label: string; value: string; foot?: str
   return <div className="kpi"><span>{label}</span><strong>{value}</strong>{foot && <small>{foot}</small>}</div>
 }
 
-function EmotionChart({ series, narrative }: { series: DaySeries[]; narrative: NarrativeObject | null }) {
+function EmotionChart({ series, narrative, turns }: { series: DaySeries[]; narrative: NarrativeObject | null; turns: TurningPoint[] }) {
   const W = 920, H = 250, BAR = 70, PAD = { l: 40, r: 16, t: 14, b: 26 }
   const [hover, setHover] = useState<number | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -242,10 +247,11 @@ function EmotionChart({ series, narrative }: { series: DaySeries[]; narrative: N
   const h = hover != null ? series[hover] : null
   return (
     <div className="chart-wrap">
-      {narrative?.emotion && (
+      {(narrative?.emotion || turns.length > 0) && (
         <div className="legend">
           <span><i className="key-line" style={{ background: C.line }} />하루 정서 (7일 평균)</span>
-          <span><i className="key-dot" style={{ background: C.evidence }} />'{narrative.keyword}' 근거가 나온 날</span>
+          {narrative?.emotion && <span><i className="key-dot" style={{ background: C.evidence }} />'{narrative.keyword}' 근거가 나온 날</span>}
+          {turns.length > 0 && <span><i className="key-line dashed" style={{ borderColor: C.aqua }} />여러 흐름이 함께 꺾인 전환점</span>}
         </div>
       )}
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H + BAR}`} className="chart" role="img" tabIndex={0}
@@ -267,6 +273,17 @@ function EmotionChart({ series, narrative }: { series: DaySeries[]; narrative: N
             <g key={c.date}>
               <line x1={x(i)} x2={x(i)} y1={PAD.t} y2={H - PAD.b} stroke={C.sub} strokeWidth={1} opacity={0.5} />
               <text x={x(i) + 5} y={PAD.t + 10} className="annot">{koDate(c.date)} {c.direction} {c.delta.toFixed(2)}</text>
+            </g>
+          )
+        })}
+        {turns.map((t, k) => {
+          const i = idx.get(t.date); if (i == null) return null
+          return (
+            <g key={`turn-${t.date}`} data-testid="turning-point">
+              <title>{`전환점 ${k + 1} · ${koDate(t.date)} 무렵: ${t.columns.map((c) => `${c.series} ${c.direction}`).join(', ')}`}</title>
+              <line x1={x(i)} x2={x(i)} y1={PAD.t + 16} y2={H - PAD.b} stroke={C.aqua} strokeWidth={1.2} strokeDasharray="3 4" opacity={0.85} />
+              <circle cx={x(i)} cy={H - PAD.b - 9} r={8} fill="#15161d" stroke={C.aqua} strokeWidth={1.5} />
+              <text x={x(i)} y={H - PAD.b - 5.5} textAnchor="middle" className="turn-no">{k + 1}</text>
             </g>
           )
         })}
@@ -294,6 +311,13 @@ function EmotionChart({ series, narrative }: { series: DaySeries[]; narrative: N
           <br /><span>{koDate(h.date)} · 기록 {h.records}건{h.sparse ? ' · 기록이 적은 날' : ''}</span>
           {(ev.get(h.date) ?? 0) > 0 && <><br /><span><i className="key-line" style={{ background: C.evidence }} /> 근거 {ev.get(h.date)}건</span></>}
         </div>
+      )}
+      {turns.length > 0 && (
+        <ol className="turn-list">
+          {turns.map((t, k) => (
+            <li key={t.date}><b>{k + 1}</b> {koDate(t.date)} 무렵 · {t.columns.map((c) => `${c.series} ${c.direction}`).join(', ')}</li>
+          ))}
+        </ol>
       )}
       <details className="table-view">
         <summary>표로 보기</summary>

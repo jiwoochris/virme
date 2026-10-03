@@ -3,7 +3,7 @@
 여기서 "배운다"는 것은 이 분포를 세는 일이다. 모델 가중치를 고치지 않는다. 브리프는 이 분포를 장르의 기본값(사전 분포)으로
 쓰고, 분위기가 맞는 참고 표지 몇 장의 표를 더해 값을 고른다.
 
-- dist[field]     : 라벨 값별 비율 (라벨이 있는 표지만)
+- dist[field]     : 라벨 값별 비율 (라벨이 있는 표지만). 사람이 검수한 표지(`label_checked`)는 2배로 센다
 - lift[field]     : 이 장르 비율 / 전체 비율. 1.5 이상이면 이 장르에서 두드러지는 값
 - tone            : dark·mid·light 비율, 평균 명도·대비·색채도·윤곽 밀도·여백
 - palette         : 장르 표지들의 주요 색을 면적 가중 k-means 로 다시 묶은 6색
@@ -18,6 +18,7 @@ from typing import Any
 import numpy as np
 
 from .annotate import PKG_DIR, load_references, usable
+from .review import checked_weight
 from .features import hex_of, kmeans, lab_to_rgb, rgb_of, rgb_to_lab
 from .vocab import GENRE_KEYS, GENRE_KO, LABEL_FIELDS, MOODS
 
@@ -25,16 +26,20 @@ GRAMMAR_PATH = PKG_DIR / "grammar.json"
 FIELDS = list(LABEL_FIELDS) + ["moods"]
 
 
-def _dist(values: list[str]) -> dict[str, float]:
-    c = Counter(v for v in values if v)
+def _dist(values: list[tuple[str, float]]) -> dict[str, float]:
+    c: Counter[str] = Counter()
+    for v, w in values:
+        if v:
+            c[v] += w
     n = sum(c.values())
     return {k: round(v / n, 3) for k, v in c.most_common()} if n else {}
 
 
-def _values(refs: list[dict[str, Any]], field: str) -> list[str]:
+def _values(refs: list[dict[str, Any]], field: str) -> list[tuple[str, float]]:
+    """(값, 무게). 사람이 검수한 표지(label_checked)는 2배로 센다."""
     if field == "moods":
-        return [m for r in refs if r.get("label") for m in r["label"].get("moods") or []]
-    return [r["label"].get(field) for r in refs if r.get("label")]
+        return [(m, checked_weight(r)) for r in refs if r.get("label") for m in r["label"].get("moods") or []]
+    return [(r["label"].get(field), checked_weight(r)) for r in refs if r.get("label")]
 
 
 def genre_palette(refs: list[dict[str, Any]], k: int = 6) -> list[dict[str, Any]]:
@@ -71,6 +76,7 @@ def build_grammar(refs: list[dict[str, Any]] | None = None, path: Path | None = 
         genres[g] = {
             "name": GENRE_KO[g], "n": len(rs), "n_labeled": len(labeled),
             "n_korean": sum(1 for r in rs if r["lang"] == "ko"),
+            "n_checked": sum(1 for r in rs if r.get("label_checked")),
             "genre_agreement": round(sum(1 for x in guesses if x == g) / len(guesses), 3) if guesses else None,
             "dist": dist, "lift": lift,
             "tone": {
@@ -81,6 +87,7 @@ def build_grammar(refs: list[dict[str, Any]] | None = None, path: Path | None = 
             "palette": genre_palette(rs),
         }
     out = {"schema": "virtueme.book_grammar/1", "n": len(refs), "n_labeled": sum(1 for r in refs if r.get("label")),
+           "n_checked": sum(1 for r in refs if r.get("label_checked")),
            "overall": overall, "genres": genres}
     if path:
         path.write_text(json.dumps(out, ensure_ascii=False, indent=1), "utf-8")

@@ -14,6 +14,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import math
 import statistics
 from collections import Counter, defaultdict
@@ -205,7 +206,9 @@ def _place_key(r: Record) -> str | None:
     if pid:
         return f"id:{pid}"
     if r.lat is not None and r.lon is not None:
-        return f"ll:{round(r.lat, 3)},{round(r.lon, 3)}"   # 약 100m 격자
+        # 약 100m 격자. 키가 화면과 API 응답에 그대로 나가므로 좌표 대신 격자의 해시를 쓴다
+        cell = f"{round(r.lat, 3)},{round(r.lon, 3)}"
+        return "pt:" + hashlib.sha1(cell.encode()).hexdigest()[:10]
     return None
 
 
@@ -529,56 +532,107 @@ def _turning_points(series: dict[str, np.ndarray], dates: list[date]) -> list[di
 
 
 # ---------------------------------------------------------------- 발견
+def summary_id(about: str, column: str, subject: str = "") -> str:
+    """요약 기록 ID. 문장이 아니라 (종류, 컬럼, 대상)으로 만들어서, 관계 이름이나 숫자가 바뀌어도 같은 사실은 같은 ID 가 된다.
+    검사기는 이 ID 로 지금 계산한 값을 다시 찾아 대조한다. 기록 ID(`r…`)와 겹치지 않게 `s` 로 시작한다."""
+    return "s" + hashlib.sha1(f"{about}\x1f{column}\x1f{subject}".encode()).hexdigest()[:11]
+
+
+SLEEP_TERMS = ["취침", "잠", "수면", "잠자리"]   # 같은 사실을 이야기는 이렇게도 부른다
+
+
+def _pct(x: float) -> float:
+    return round(100 * x, 1)
+
+
+def _hhmm(h: float) -> str:
+    """25.78 처럼 이어 센 시각 → "01:47"."""
+    total = round((h % 24) * 60) % 1440
+    return f"{total // 60:02d}:{total % 60:02d}"
+
+
+def _ko_hm(h: float) -> str:
+    hm = _hhmm(h)
+    return f"{int(hm[:2])}시 {hm[3:]}분"
+
+
+def _vals(numbers: list[tuple[float, str]] | None = None, percents: list[float] | None = None,
+          dates: list[str] | None = None, months: list[int] | None = None, times: list[str] | None = None,
+          places: list[str] | None = None, terms: list[str] | None = None) -> dict[str, Any]:
+    """검사기가 읽는 값. 숫자는 (값, 단위), 비율은 0~100, 날짜는 ISO, 달은 정수, 시각은 "HH:MM"."""
+    out: dict[str, Any] = {}
+    if numbers:
+        out["numbers"] = [{"value": v, "unit": u} for v, u in numbers]
+    for k, v in (("percents", percents), ("dates", dates), ("months", months), ("times", times), ("places", places),
+                 ("terms", terms)):
+        if v:
+            out[k] = list(v)
+    return out
+
+
+def _month_num(m: str) -> int:
+    return int(m[5:7])
+
+
 def _discoveries(cols: dict[str, Any], by_id: dict[str, Record]) -> list[dict[str, Any]]:
-    """기억은 어렴풋하지만 데이터로는 분명한 사실. 숫자와 근거 기록을 붙인 문장으로 만든다."""
+    """기억은 어렴풋하지만 데이터로는 분명한 사실. 숫자와 근거 기록을 붙인 문장으로 만든다.
+
+    발견마다 `id`(요약 기록 ID)와 `values`(문장에 쓴 숫자·비율·날짜·달·시각·장소)를 함께 둔다. 이야기가 발견을 인용하면
+    검사기가 `values` 와 대조한다."""
     out: list[dict[str, Any]] = []
     rh = cols["rhythm"]
     a, b = rh.get("night_share_first_third"), rh.get("night_share_last_third")
     if a is not None and b is not None and abs(a - b) >= 0.08:
         more, less = ("처음", "끝") if a > b else ("끝", "처음")
-        out.append({"column": "rhythm.hours",
+        out.append({"column": "rhythm.hours", "subject": "night",
                     "text": f"밤 11시 이후에 남긴 기록의 비율이 기간 {more} 무렵 {max(a, b):.0%}, {less} 무렵 {min(a, b):.0%}였습니다.",
+                    "values": _vals(percents=[_pct(a), _pct(b)], times=["23:00"]),
                     "evidence": rh["night_evidence"]["first" if a > b else "last"]})
     if rh.get("bedtime_first_third") and rh.get("bedtime_last_third"):
         d = rh["bedtime_last_third"] - rh["bedtime_first_third"]
         if abs(d) >= 0.75:
-            def hhmm(h: float) -> str:
-                h %= 24
-                return f"{int(h)}시 {int(round((h % 1) * 60)):02d}분"
-            out.append({"column": "rhythm.sleep",
-                        "text": f"잠든 시각의 평균이 {hhmm(rh['bedtime_first_third'])}에서 {josa(hhmm(rh['bedtime_last_third']), '으로')} "
+            out.append({"column": "rhythm.sleep", "subject": "bedtime",
+                        "text": f"잠든 시각의 평균이 {_ko_hm(rh['bedtime_first_third'])}에서 {josa(_ko_hm(rh['bedtime_last_third']), '으로')} "
                                 f"{abs(d):.1f}시간 {'늦어졌습니다' if d > 0 else '앞당겨졌습니다'}.",
+                        "values": _vals(numbers=[(round(abs(d), 1), "시간")],
+                                        times=[_hhmm(rh["bedtime_first_third"]), _hhmm(rh["bedtime_last_third"])],
+                                        terms=SLEEP_TERMS),
                         "evidence": rh["health_evidence"]["first"][:4] + rh["health_evidence"]["last"][:4]})
     steps = rh.get("steps_monthly") or {}
     if len(steps) >= 2:
         ms = list(steps.items())
         lo, hi = min(ms, key=lambda kv: kv[1]), max(ms, key=lambda kv: kv[1])
         if lo[1] and hi[1] / lo[1] >= 1.4:
-            out.append({"column": "rhythm.move",
-                        "text": f"하루 평균 걸음 수가 가장 적은 달은 {int(lo[0][5:])}월({lo[1]:,}보), 가장 많은 달은 "
-                                f"{int(hi[0][5:])}월({hi[1]:,}보)입니다.",
-                        "evidence": rh["health_evidence"]["last"][:6]})
+            out.append({"column": "rhythm.move", "subject": "steps",
+                        "text": f"하루 평균 걸음 수가 가장 적은 달은 {_month_num(lo[0])}월({lo[1]:,}보), 가장 많은 달은 "
+                                f"{_month_num(hi[0])}월({hi[1]:,}보)입니다.",
+                        "values": _vals(numbers=[(lo[1], "보"), (hi[1], "보")], months=[_month_num(lo[0]), _month_num(hi[0])]),
+                        "evidence": rh["health_evidence"]["first"][:3] + rh["health_evidence"]["last"][:3]})
     for c in cols["cast"][:12]:
         who = c["relation"] or "이름을 가린 한 사람"
         if "새로 등장한 사람" in c["roles"] and c["turns"] >= 15:
             rank = cols["cast"].index(c) + 1
-            out.append({"column": "cast.arc", "alias": c["alias"],
+            out.append({"column": "cast.arc", "subject": f"new:{c['alias']}", "alias": c["alias"],
                         "text": f"{josa(who, '은는')} {patterns.ko_date(c['first'])}에 처음 대화에 나타나 대화 상대 가운데 "
                                 f"대화량 {rank}위가 됐습니다.",
+                        "values": _vals(numbers=[(rank, "위")], dates=[c["first"]], terms=[who]),
                         "evidence": c["evidence"]})
         if "연락이 끊긴 사람" in c["roles"]:
-            out.append({"column": "cast.arc", "alias": c["alias"],
+            out.append({"column": "cast.arc", "subject": f"silent:{c['alias']}", "alias": c["alias"],
                         "text": f"{josa(who, '과와')}의 대화는 {patterns.ko_date(c['last'])} 뒤로 {c['silent_days']}일 동안 없습니다.",
+                        "values": _vals(numbers=[(c["silent_days"], "일")], dates=[c["last"]], terms=[who]),
                         "evidence": c["evidence"]})
         if c["night_share"] >= 0.3 and c["turns"] >= 20 and not c["family"]:
-            out.append({"column": "cast.night", "alias": c["alias"],
+            out.append({"column": "cast.night", "subject": c["alias"], "alias": c["alias"],
                         "text": f"{josa(who, '과와')}의 대화는 {c['night_share']:.0%}가 밤 11시 이후였습니다.",
+                        "values": _vals(percents=[_pct(c["night_share"])], times=["23:00"], terms=[who]),
                         "evidence": c["evidence"]})
     pl = cols["places"]
     if pl["regular"]:
         p = pl["regular"][0]
-        out.append({"column": "place.anchor", "place_key": p["key"],
+        out.append({"column": "place.anchor", "subject": p["key"], "place_key": p["key"],
                     "text": f"집과 직장을 빼면 가장 자주 간 곳은 {p['name']}입니다. {p['visits']}일을 갔고 주로 {p['time_band']}에 갔습니다.",
+                    "values": _vals(numbers=[(p["visits"], "일")], places=[p["name"]], terms=[p["time_band"]]),
                     "evidence": p["evidence"]})
     for t in pl["trips"][:2]:
         uniq = list(dict.fromkeys(t["places"]))
@@ -587,29 +641,91 @@ def _discoveries(cols: dict[str, Any], by_id: dict[str, Record]) -> list[dict[st
         days = (date.fromisoformat(t["last"]) - date.fromisoformat(t["first"])).days + 1
         tail = (f" 간 곳은 {', '.join(named)}입니다." if named else "") + \
             (f" 그곳에서 {'·'.join(shot)} 사진을 남겼습니다." if shot else "")
-        out.append({"column": "place.first",
+        out.append({"column": "place.first", "subject": t["first"],
                     "text": f"{patterns.ko_date(t['first'])}부터 {days}일 동안 집에서 {t['km']}km 떨어진 곳에 있었습니다.{tail}",
+                    "values": _vals(numbers=[(days, "일"), (t["km"], "km")], dates=[t["first"], t["last"]],
+                                    places=named, terms=shot),
                     "evidence": t["evidence"]})
     ta = cols["taste"]
     told: set[str] = set()
     for key, label in (("search", "검색어"), ("video", "본 영상 제목"), ("spend", "결제한 가게 이름")):
         for bu in [b for b in (ta.get(key) or {}).get("bursts", []) if b["term"] not in told][:2]:
             told.add(bu["term"])
-            out.append({"column": f"taste.{key}",
+            w0, w1 = (date.fromisoformat(x) for x in bu["window"])
+            out.append({"column": f"taste.{key}", "subject": bu["term"],
                         "text": f"{label}에 나온 '{bu['term']}' {bu['count']}번 가운데 {bu['share']:.0%}가 "
-                                f"{_ko_period(date.fromisoformat(bu['window'][0]), date.fromisoformat(bu['window'][1]))}에 몰려 있습니다.",
+                                f"{_ko_period(w0, w1)}에 몰려 있습니다.",
+                        "values": _vals(numbers=[(bu["count"], "번")], percents=[_pct(bu["share"])],
+                                        dates=list(bu["window"]), months=sorted({w0.month, w1.month}), terms=[bu["term"]]),
                         "evidence": bu["evidence"]})
     if (ta.get("spend") or {}).get("new_categories"):
         cats = ta["spend"]["new_categories"][:3]
-        out.append({"column": "taste.spend", "text": f"기간 초반에는 없던 지출 업종이 생겼습니다: {', '.join(cats)}.",
+        out.append({"column": "taste.spend", "subject": "new_categories",
+                    "text": f"기간 초반에는 없던 지출 업종이 생겼습니다: {', '.join(cats)}.",
+                    "values": _vals(terms=cats),
                     "evidence": ta["spend"].get("new_category_evidence", [])})
     for t in cols["turning_points"]:
         if t["strength"] >= 2:
             moved = ", ".join(f"{c['series']} {c['direction']}" for c in t["columns"])
-            out.append({"column": "turn.points", "text": f"{patterns.ko_date(t['date'])} 무렵 여러 흐름이 함께 꺾였습니다: {moved}.",
+            out.append({"column": "turn.points", "subject": t["date"],
+                        "text": f"{patterns.ko_date(t['date'])} 무렵 여러 흐름이 함께 꺾였습니다: {moved}.",
+                        "values": _vals(dates=[t["date"]], terms=[c["series"] for c in t["columns"]]),
                         "evidence": []})
     for d in out:
         d["evidence"] = [i for i in d["evidence"] if i in by_id]
+        d["id"] = summary_id("발견", d["column"], d.pop("subject"))
+    return out
+
+
+def _summaries(cols: dict[str, Any], k_cast: int = 8, k_places: int = 5) -> list[dict[str, Any]]:
+    """취재 노트에 넘기는 인물·장소·리듬 사실을 번호 붙일 요약 기록으로 만든다. 발견 문장과 같은 모양
+    (`id`, `about`, `column`, `text`, `values`, `evidence`)이고, 검사기가 `values` 와 대조한다."""
+    out: list[dict[str, Any]] = [{**d, "about": "발견"} for d in cols["discoveries"]]
+
+    def add(about: str, column: str, subject: str, text: str, values: dict[str, Any], evidence: list[str]) -> None:
+        out.append({"id": summary_id(about, column, subject), "about": about, "column": column, "text": text,
+                    "values": values, "evidence": evidence})
+
+    for c in cols["cast"][:k_cast]:
+        who = c["relation"] or c["alias"]
+        f, l_ = date.fromisoformat(c["first"]), date.fromisoformat(c["last"])
+        add("인물", "cast.volume", c["alias"],
+            f"{who}: 첫 대화 {patterns.ko_date(f)}, 마지막 대화 {patterns.ko_date(l_)}, 대화한 날 {c['active_days']}일, "
+            f"밤 11시 이후 대화 {c['night_share']:.0%}" + (f", 역할: {', '.join(c['roles'])}" if c["roles"] else "") + ".",
+            _vals(numbers=[(c["active_days"], "일")], percents=[_pct(c["night_share"])], dates=[c["first"], c["last"]],
+                  months=sorted({f.month, l_.month}), times=["23:00"], terms=[who]),
+            c["evidence"])
+    pl = cols["places"]
+    for p in pl["regular"][:k_places]:
+        add("장소", "place.anchor", p["key"],
+            f"{p['name']}: {p['visits']}일 방문, 주로 {p['time_band']}, 처음 {patterns.ko_date(p['first'])}, "
+            f"마지막 {patterns.ko_date(p['last'])}.",
+            _vals(numbers=[(p["visits"], "일")], dates=[p["first"], p["last"]], places=[p["name"]], terms=[p["time_band"]]),
+            p["evidence"])
+    rh = cols["rhythm"]
+    nm = rh.get("night_share_monthly") or {}
+    if nm:
+        add("리듬", "rhythm.hours", "night_monthly",
+            "밤 11시 이후 기록 비율: " + ", ".join(f"{_month_num(m)}월 {v:.0%}" for m, v in nm.items()) + ".",
+            _vals(percents=[_pct(v) for v in nm.values()], months=[_month_num(m) for m in nm], times=["23:00"]),
+            rh["night_evidence"]["first"][:4] + rh["night_evidence"]["last"][:4])
+    steps = rh.get("steps_monthly") or {}
+    if steps:
+        add("리듬", "rhythm.move", "steps_monthly",
+            "하루 평균 걸음 수: " + ", ".join(f"{_month_num(m)}월 {v:,}보" for m, v in steps.items()) + ".",
+            _vals(numbers=[(v, "보") for v in steps.values()], months=[_month_num(m) for m in steps]),
+            rh["health_evidence"]["first"][:4] + rh["health_evidence"]["last"][:4])
+    sleep = rh.get("sleep_min_monthly") or {}
+    if sleep:
+        add("리듬", "rhythm.sleep", "sleep_monthly",
+            "하루 평균 수면 시간: " + ", ".join(f"{_month_num(m)}월 {v / 60:.1f}시간" for m, v in sleep.items()) + ".",
+            _vals(numbers=[(round(v / 60, 1), "시간") for v in sleep.values()], months=[_month_num(m) for m in sleep]),
+            rh["health_evidence"]["first"][:4] + rh["health_evidence"]["last"][:4])
+    if rh.get("bedtime_first_third") and rh.get("bedtime_last_third"):
+        add("리듬", "rhythm.sleep", "bedtime",
+            f"평균 취침 시각: 기간 처음 무렵 {_ko_hm(rh['bedtime_first_third'])}, 끝 무렵 {_ko_hm(rh['bedtime_last_third'])}.",
+            _vals(times=[_hhmm(rh["bedtime_first_third"]), _hhmm(rh["bedtime_last_third"])], terms=SLEEP_TERMS),
+            rh["health_evidence"]["first"][:4] + rh["health_evidence"]["last"][:4])
     return out
 
 
@@ -691,23 +807,35 @@ def compute(store, emotions: dict[str, tuple[float, float, str]] | None = None) 
     }
     by_id = {r.id: r for r in records}
     cols["discoveries"] = _discoveries(cols, by_id)
+    cols["summaries"] = _summaries(cols)
     cols["genre_hint"] = _genre_hint(cols)
     return cols
 
 
-def note_for_story(cols: dict[str, Any], people: dict[str, str | None] | None = None, k_cast: int = 5) -> dict[str, Any]:
-    """취재 노트에 덧붙일 배경 정보. 가명은 관계로 바꿔 부르도록 people 에 맞추고, 좌표·집 주소는 넣지 않는다."""
+def note_for_story(cols: dict[str, Any], people: dict[str, str | None] | None = None, k_cast: int = 5,
+                   k_discoveries: int = 6) -> dict[str, Any]:
+    """취재 노트에 덧붙일 배경 정보. 가명은 관계로 바꿔 부르도록 people 에 맞추고, 좌표·집 주소는 넣지 않는다.
+
+    숫자·날짜·비율이 든 사실은 모두 `summaries`(요약 기록)로 넘긴다. `story.story_context` 가 기록 번호 뒤에 이어서
+    번호를 붙이고, 이야기는 그 번호로 `<em ref>` 를 단다. `cast`·`places` 에는 이름과 역할만 남긴다."""
     if not cols or not cols.get("cast") and not cols.get("places"):
         return {}
-    cast = []
-    for c in cols["cast"][:k_cast]:
-        cast.append({"who": c["relation"] or c["alias"], "roles": c["roles"], "night_share": c["night_share"],
-                     "first": patterns.ko_date(c["first"]), "last": patterns.ko_date(c["last"])})
+    cast_ids = {c["alias"] for c in cols["cast"][:k_cast]}
+    place_keys = {p["key"] for p in cols["places"]["regular"][:5]}
+    disc = {d["id"] for d in cols["discoveries"][:k_discoveries]}
+    picked = []
+    for s in cols.get("summaries") or []:
+        keep = (s["id"] in disc if s["about"] == "발견"
+                else s["id"] in {summary_id("인물", "cast.volume", a) for a in cast_ids} if s["about"] == "인물"
+                else s["id"] in {summary_id("장소", "place.anchor", k) for k in place_keys} if s["about"] == "장소"
+                else True)
+        if keep:
+            picked.append({"id": s["id"], "about": s["about"], "text": s["text"], "values": s["values"]})
     places = [p["name"] for p in cols["places"]["regular"][:5]] + \
         [n for t in cols["places"]["trips"][:2] for n in t["places"] if "이름 없는" not in n][:3]
     return {
-        "cast": cast,
-        "places": places,
-        "rhythm": {"time_band": cols["rhythm"].get("time_band"), "night_share": cols["rhythm"].get("night_share")},
-        "discoveries": [d["text"] for d in cols["discoveries"][:6]],
+        "cast": [{"who": c["relation"] or c["alias"], "roles": c["roles"]} for c in cols["cast"][:k_cast]],
+        "places": list(dict.fromkeys(places)),
+        "time_band": cols["rhythm"].get("time_band"),
+        "summaries": picked,
     }
