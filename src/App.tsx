@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { captureStage, downloadPng } from './captureStage'
 import { experienceModes, type ExperienceModeId } from './experienceModes'
 import { InsightPanel } from './InsightPanel'
 import { MusicPanel, type AudioDrive } from './MusicPanel'
@@ -9,13 +10,44 @@ import { portraitAsset, visualStates } from './visualStates'
 import { visualModes, type VisualModeId } from './visualModes'
 import './styles.css'
 
+const PORTRAIT_STORAGE_KEY = 'virtueme:portrait-visible'
+
 export default function App() {
   const state = visualStates[0]
   const [experienceMode, setExperienceMode] = useState<ExperienceModeId>('novel')
   const [modeId, setModeId] = useState<VisualModeId>('place')
   const mode = visualModes.find((candidate) => candidate.id === modeId) ?? visualModes[0]
   const [modelStatus, setModelStatus] = useState<ModelLayerStatus>({ status: 'loading', active: false })
-  const [portraitVisible, setPortraitVisible] = useState(false)
+  const [portraitVisible, setPortraitVisible] = useState(() => {
+    try { return localStorage.getItem(PORTRAIT_STORAGE_KEY) === 'true' }
+    catch { return false }
+  })
+  const stageRef = useRef<HTMLDivElement>(null)
+  const captureInProgress = useRef(false)
+  const [saving, setSaving] = useState(false)
+  const [captureMessage, setCaptureMessage] = useState('')
+  useEffect(() => {
+    try { localStorage.setItem(PORTRAIT_STORAGE_KEY, String(portraitVisible)) }
+    catch { /* The toggle remains usable when storage is blocked. */ }
+  }, [portraitVisible])
+
+  const saveScreenshot = async () => {
+    if (!stageRef.current || captureInProgress.current) return
+    captureInProgress.current = true
+    setSaving(true)
+    setCaptureMessage('PNG를 준비하고 있습니다…')
+    const filename = `virtueme-${modeId}-portrait-${portraitVisible ? 'on' : 'off'}-${new Date().toISOString().replace(/[:.]/g, '-')}.png`
+    try {
+      const blob = await captureStage(stageRef.current)
+      downloadPng(blob, filename)
+      setCaptureMessage('PNG 다운로드를 시작했습니다.')
+    } catch (error) {
+      setCaptureMessage(error instanceof Error ? error.message : '화면 저장에 실패했습니다. 다시 시도해 주세요.')
+    } finally {
+      captureInProgress.current = false
+      setSaving(false)
+    }
+  }
   // 노벨 모드(iframe)가 core 서버에서 받은 서사 오브젝트. 시각화·비주얼 모드가 같은 값을 쓴다
   const [narrative, setNarrative] = useState<NarrativeObject | null>(null)
   const [features, setFeatures] = useState<PersonalFeatures | null>(null)
@@ -73,6 +105,7 @@ export default function App() {
               className={candidate.id === experienceMode ? 'active' : ''}
               aria-current={candidate.id === experienceMode ? 'page' : undefined}
               onClick={() => setExperienceMode(candidate.id)}
+              disabled={saving}
               key={candidate.id}
             >
               <span>{candidate.index}</span>
@@ -120,6 +153,7 @@ export default function App() {
                 type="button"
                 aria-current={candidate.id === mode.id ? 'true' : undefined}
                 onClick={() => setModeId(candidate.id)}
+                disabled={saving}
                 key={candidate.id}
               >
                 <span>{candidate.index}</span>
@@ -134,10 +168,22 @@ export default function App() {
             aria-pressed={portraitVisible}
             data-testid="portrait-toggle"
             onClick={() => setPortraitVisible((visible) => !visible)}
+            disabled={saving}
           >
             <span>PORTRAIT</span>
             <strong>{portraitVisible ? 'ON' : 'OFF'}</strong>
           </button>
+          <button
+            className="capture-button"
+            type="button"
+            onClick={saveScreenshot}
+            disabled={saving}
+            aria-label="화면 PNG 저장"
+            aria-busy={saving}
+          >
+            {saving ? '저장 중…' : '화면 PNG 저장'}
+          </button>
+          <p className="capture-message" role="status">{captureMessage || '현재 비주얼과 초상 설정을 함께 저장합니다.'}</p>
           <MusicPanel narrative={narrative} onDrive={setAudioDrive} onVideo={setMusicVideo} />
           <div className="single-example-meta">
             <span>LOOP</span><strong>12 SEC</strong>
@@ -147,6 +193,7 @@ export default function App() {
         </nav>
 
         <div
+          ref={stageRef}
           className={`portrait-stage mode-${mode.id} route-stylegan`}
           style={portraitStyle}
           data-testid="portrait-stage"

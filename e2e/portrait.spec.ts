@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test'
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/stylegan/health', (route) => route.fulfill({
+    json: { status: 'error', detail: 'offline UI fixture' },
+  }))
+})
+
 async function openVisual(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: /VISUAL 비주얼/ }).click()
 }
