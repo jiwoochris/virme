@@ -256,6 +256,42 @@ def cmd_book(args) -> int:
     return 0
 
 
+def cmd_share(args) -> int:
+    """공유 카드 목록·지우기·정적 사본 내보내기 (virtueme_core/share.py, COLUMNS.md 「공유 카드」)."""
+    svc = _svc(args)
+    sh = svc.shares
+    if args.action == "list":
+        rows = sh.list()
+        if not rows:
+            print("만든 공유 카드가 없습니다")
+        for s in rows:
+            c = s["reactions"]
+            print(f"{s['id']}\t{s['created']}\t{s['kind_ko']}\t반응 {c['total']}\t{(s.get('title') or '')[:30]}")
+        return 0
+    if not args.id:
+        print("공유 번호를 적어 주세요 (virtueme share list 로 확인)", file=sys.stderr)
+        return 2
+    if args.action == "delete":
+        ok = sh.delete(args.id)
+        print("지웠습니다" if ok else "그런 공유가 없습니다")
+        return 0 if ok else 1
+    if not args.dir:
+        print("내보낼 폴더를 적어 주세요: virtueme share export <번호> <폴더>", file=sys.stderr)
+        return 2
+    try:
+        files = sh.export(args.id, Path(args.dir), base_url=args.base_url, react_url=args.react_url)
+    except LookupError as err:
+        print(err, file=sys.stderr)
+        return 1
+    for f in files:
+        print(f)
+    if not args.base_url:
+        print("--base-url 이 없어 링크 미리보기 이미지가 상대 주소입니다. 메신저 미리보기를 보려면 올릴 주소를 붙여 다시 내보내세요.")
+    if not args.react_url:
+        print("--react-url 이 없어 이 사본은 반응을 받지 않습니다 (반응 수만 보여 줍니다).")
+    return 0
+
+
 def cmd_reset(args) -> int:
     path = profile_db_path(args.profile)
     if not args.yes:
@@ -348,6 +384,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--author", default="나")
     p.add_argument("--offline", action="store_true", help="그림 모델 없이 팔레트로 그린 무늬를 쓴다")
     p.set_defaults(func=cmd_book)
+
+    p = sub.add_parser("share", help="공유 카드 목록·지우기·정적 사본 내보내기 (index.html + 카드 PNG)")
+    p.add_argument("action", choices=["list", "delete", "export"])
+    p.add_argument("id", nargs="?", help="공유 번호 (12자리)")
+    p.add_argument("dir", nargs="?", help="export: 사본을 쓸 폴더")
+    p.add_argument("--base-url", default=None, help="export: 사본을 올릴 주소 (링크 미리보기 og:image 를 절대 주소로)")
+    p.add_argument("--react-url", default=None, help="export: 반응을 받을 core 서버 주소 (예: 터널 주소). 없으면 반응을 받지 않음")
+    p.set_defaults(func=cmd_share)
 
     p = sub.add_parser("reset", help="프로필 DB 삭제")
     p.add_argument("--yes", action="store_true")

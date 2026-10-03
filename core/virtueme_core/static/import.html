@@ -173,8 +173,12 @@
   </table>
   <div id="obRecent"></div>
 
+  <h2 id="shares">4-2. 공유한 카드</h2>
+  <p class="sub">발견 문장·책 표지·이야기 대목으로 만든 공유 카드입니다. 카드와 공유 페이지(<code>/s/번호</code>)는 이 컴퓨터에 있고, 링크를 받은 사람이 열면 카드 그림과 그 글이 보입니다. 지우면 그 링크는 더 이상 열리지 않습니다. 이미 내려받아 올린 그림이나 내보낸 사본은 따로 지워야 합니다.</p>
+  <div id="shareRows"><p class="out">불러오는 중</p></div>
+
   <h2>5. 내 기록 지우기</h2>
-  <p class="sub">이 프로필의 기록, 가명표, 계산 결과, 정답 라벨, 올린 파일, 음악·영상, 전송 로그를 모두 지웁니다. 되돌릴 수 없습니다. 웹 앱에 저장해 둔 이야기와 대화 답도 지운 기록의 것이면 더 이상 보여 주지 않습니다.</p>
+  <p class="sub">이 프로필의 기록, 가명표, 계산 결과, 정답 라벨, 올린 파일, 음악·영상, 전송 로그, 공유 카드를 모두 지웁니다. 되돌릴 수 없습니다. 웹 앱에 저장해 둔 이야기와 대화 답도 지운 기록의 것이면 더 이상 보여 주지 않습니다.</p>
   <div class="opts">
     <input type="text" id="delConfirm" placeholder="확인을 위해 프로필 이름을 적어 주세요" autocomplete="off">
     <button class="danger" id="delBtn">모두 지우기</button>
@@ -315,7 +319,7 @@ async function loadPlaces() {
   });
 }
 
-const CHANNEL = { core: 'core → OpenRouter', browser: '브라우저 → OpenRouter' };
+const CHANNEL = { core: 'core → OpenRouter', browser: '브라우저 → OpenRouter', share: '공유 카드 (링크를 연 사람이 봄)' };
 const num = (n) => Number(n || 0).toLocaleString('ko-KR');
 async function loadOutbound() {
   const d = await (await fetch('outbound?days=7')).json();
@@ -346,6 +350,31 @@ async function loadOutbound() {
   });
 }
 
+async function loadShares() {
+  const box = $('#shareRows');
+  let d;
+  try { d = await (await fetch('share')).json(); } catch (e) { box.innerHTML = '<p class="out err">공유 목록을 불러오지 못했습니다</p>'; return; }
+  const rows = d.shares || [];
+  if (!rows.length) { box.innerHTML = '<p class="out">아직 공유한 카드가 없습니다</p>'; return; }
+  box.innerHTML = rows.map((s) => {
+    const text = s.kind === 'passage' ? (s.lines || []).join(' ') : s.kind === 'book' ? `「${s.title || ''}」` : (s.text || '');
+    const r = s.reactions || { total: 0 };
+    return `<div class="ob share" data-id="${esc(s.id)}">
+      <div class="meta"><b>${esc(String(s.created).replace('T', ' '))}</b><span>${esc(s.kind_ko)}</span><span>반응 ${num(r.total)}개</span>
+        ${(s.privacy && s.privacy.replaced.length) ? `<span class="flag">바꿔 실음: ${esc(s.privacy.replaced.join(', '))}</span>` : ''}
+        <a href="s/${esc(s.id)}" target="_blank" rel="noopener" style="color:var(--acc)">페이지 열기</a>
+        <button class="danger">지우기</button></div>
+      <p class="pre">${esc(text)}</p></div>`;
+  }).join('');
+  box.querySelectorAll('.ob.share').forEach((row) => {
+    $('button', row).onclick = async () => {
+      if (!confirm('이 공유를 지울까요? 링크가 더 이상 열리지 않습니다.')) return;
+      const r = await fetch('share/' + row.dataset.id + '/delete', { method: 'POST' });
+      if (r.ok) loadShares(); else $('button', row).textContent = '실패';
+    };
+  });
+}
+
 $('#delBtn').onclick = async () => {
   const out = $('#delOut');
   out.className = 'out';
@@ -359,12 +388,12 @@ $('#delBtn').onclick = async () => {
     if (!r.ok) throw new Error(d.detail || ('HTTP ' + r.status));
     out.textContent = `기록 ${num(d.records)}건과 가명 ${num(d.people)}개를 지웠습니다` + (d.folders.length ? ` (${d.folders.join(', ')} 폴더 포함)` : '');
     $('#delConfirm').value = '';
-    refreshStatus(); loadPeople(); loadOutbound();
+    refreshStatus(); loadPeople(); loadOutbound(); loadShares();
   } catch (e) { out.className = 'out err'; out.textContent = String(e.message || e); }
   finally { $('#delBtn').disabled = false; }
 };
 
-refreshStatus(); loadPeople(); pollBuild(); loadOutbound(); loadPlaces();
+refreshStatus(); loadPeople(); pollBuild(); loadOutbound(); loadPlaces(); loadShares();
 </script>
 </body>
 </html>

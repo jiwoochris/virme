@@ -2,6 +2,8 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { coreFetch, useCoreBase } from './coreApi'
 import { koDate, relabel, type NarrativeObject } from './narrative'
 import { ColumnsSections, strongTurns, type Columns, type TurningPoint } from './ColumnsPanel'
+import { MyShares } from './SharePanel'
+import type { Share } from './share'
 
 /* 시각화 렌더러: 서사 오브젝트 + core 서버의 전체 정서 곡선·주제 묶음·관계 그래프·간극.
    색은 역할로만 쓴다 (dataviz 기준 팔레트의 어두운 단계, 2026-09-11 validate_palette.js 통과):
@@ -32,6 +34,8 @@ export const InsightPanel = memo(function InsightPanel({ narrative, active }: { 
   const [core, setCore] = useState<Core | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'offline'>('loading')
   const base = useCoreBase()
+  const [shares, setShares] = useState<Share[] | null>(null)
+  const [shareTick, setShareTick] = useState(0)
   const keyword = narrative && narrative.evidence_grade !== '근거 부족' ? narrative.keyword : null
 
   useEffect(() => {
@@ -59,6 +63,14 @@ export const InsightPanel = memo(function InsightPanel({ narrative, active }: { 
     return () => { cancelled = true }
   }, [active, keyword])
 
+  // 내 공유: 화면을 열 때마다, 그리고 이 화면에서 카드를 만들거나 지운 뒤에 다시 받는다 (노벨 모드에서 만든 것도 열 때 보인다)
+  useEffect(() => {
+    if (!active) return
+    let cancelled = false
+    getJson<{ shares: Share[] }>('/share').then((d) => !cancelled && setShares(d.shares)).catch(() => !cancelled && setShares([]))
+    return () => { cancelled = true }
+  }, [active, shareTick])
+
   if (state === 'offline') {
     return (
       <div className="insight-empty">
@@ -78,7 +90,14 @@ export const InsightPanel = memo(function InsightPanel({ narrative, active }: { 
         <p className="insight-sub">하루 기록의 정서가를 7일 이동평균으로 이은 선입니다. 0 보다 위는 긍정, 아래는 부정입니다{narrative?.change_points?.length ? '. 세로선은 흐름이 꺾인 변화점(PELT)입니다' : ''}{turns.length ? '. 번호가 달린 점선은 대화량·밤 기록·장소·지출·걸음 수 같은 여러 흐름이 함께 꺾인 전환점입니다' : ''}.</p>
         <EmotionChart series={core.series} narrative={narrative} turns={turns} />
       </section>
-      <ColumnsSections cols={core.columns} people={core.people} importUrl={base ? `${base}/import` : null} />
+      <ColumnsSections cols={core.columns} people={core.people} importUrl={base ? `${base}/import` : null} onShared={() => setShareTick((t) => t + 1)} />
+      <div className="insight-heading" id="my-shares">
+        <h2>내 공유</h2>
+        <p>밖에 보여 주려고 만든 카드를 날짜별로 모았습니다. 공유 페이지를 연 사람이 남긴 반응과 한마디는 여기에서만 보입니다. 공유를 지우려면 내 기록 넣기 화면의 4. 밖으로 나간 글에서 지웁니다.</p>
+      </div>
+      <section className="insight-card wide" data-testid="shares">
+        <MyShares shares={shares} base={base} />
+      </section>
       {core.map && core.map.points.length > 0 && (
         <section className="insight-card wide">
           <h2>의미 지도</h2>

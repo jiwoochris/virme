@@ -25,5 +25,6 @@ def svc(tmp_path, monkeypatch):
     s.music_root = tmp_path / "music"
     s.upload_root = tmp_path / "uploads"
     s.outbound.root = tmp_path / "outbound"
+    s.shares.root = tmp_path / "shares"
     build(s.store, s.text, s.vision, emotion_backend="truth", log=lambda *_: None, cluster=False, extract_entities=False, pii=False)
     return s

@@ -46,6 +46,10 @@ class Service:
         # 밖으로 나가는 글은 모두 여기서 마지막 검사를 거치고 로그에 남는다 (core 직접 호출과 브라우저에 넘기는 프롬프트)
         self.outbound = Outbound(DATA_DIR / "outbound" / profile, self.store)
         llm.set_outbound(self.outbound)
+        # 공유 카드·페이지 (share.py). 사용자가 고른 것만, 다듬은 글로
+        from .share import Shares
+
+        self.shares = Shares(profile, self.store, self.outbound)
 
     @property
     def engine(self) -> QueryEngine:
@@ -328,7 +332,8 @@ class Service:
             raise ValueError("기록을 처리하는 중에는 지울 수 없습니다. 끝난 뒤에 다시 눌러 주세요.")
         counts = self.store.wipe()
         folders = []
-        for label, d in (("올린 파일", self.upload_root), ("음악·영상", self.music_root), ("전송 로그", self.outbound.root)):
+        for label, d in (("올린 파일", self.upload_root), ("음악·영상", self.music_root), ("전송 로그", self.outbound.root),
+                         ("공유 카드", self.shares.root)):
             if d.exists():
                 shutil.rmtree(d, ignore_errors=True)
                 folders.append(label)
@@ -468,6 +473,26 @@ class Service:
             }
             out["files"] = {n: f"/book/{bid}/{n}" for n in self.BOOK_FILES if (d / n).exists()}
         return out
+
+    # ---------- 공유 카드 (share.py) ----------
+    def share_create(self, kind: str, summary_id: str | None = None, book_id: str | None = None,
+                     lines: list[str] | None = None, title: str | None = None,
+                     style_book_id: str | None = None) -> dict[str, Any]:
+        """발견 문장·책 표지·이야기 한 대목으로 피드·스토리 카드와 공유 페이지를 만든다. 사용자가 누를 때만 부른다."""
+        from .share import ShareError
+
+        def book_dir(bid: str | None) -> Path | None:
+            if not bid:
+                return None
+            d = self._book_dir(bid)
+            if not (d / "brief.json").exists():
+                raise ShareError("그런 책이 없습니다")
+            return d
+
+        s = self.store.summary()
+        return self.shares.create(kind, columns=self.columns() if kind == "discovery" else None, summary_id=summary_id,
+                                  book_dir=book_dir(book_id) if kind == "book" else None, lines=lines, title=title,
+                                  style_book_dir=book_dir(style_book_id), date_range=(s["first"], s["last"]))
 
     def book_file(self, book_id: str, name: str) -> Path | None:
         if name not in self.BOOK_FILES:

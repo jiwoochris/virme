@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { coreFetch } from './coreApi'
 import { koDate, relabel } from './narrative'
+import { ShareDialog } from './SharePanel'
 
 /* 소설 재료 컬럼(GET /columns, virtueme.columns/1) 화면: 발견 문장, 인물, 장소, 생활 리듬, 장르 추천, 채워진 컬럼.
    값은 모두 core/columns.py 가 센 통계다. 색은 인사이트 화면과 같은 역할 색만 쓴다. */
@@ -8,7 +9,7 @@ import { koDate, relabel } from './narrative'
 const C = { line: '#3987e5', evidence: '#d95926', aqua: '#199e70', gray: '#6f6e69' }
 
 type People = Record<string, string | null>
-export type Discovery = { column: string; text: string; evidence: string[] }
+export type Discovery = { id?: string; column: string; text: string; evidence: string[] }
 export type CatalogItem = { key: string; element: string; name: string; sources: string[]; available: boolean; how_to_get: string }
 export type CastRow = {
   alias: string; relation: string | null; family?: boolean; turns: number; active_days: number; first: string; last: string
@@ -78,12 +79,14 @@ function EvidenceList({ ids, people }: { ids: string[]; people: People }) {
   )
 }
 
-function Discoveries({ cols, people }: { cols: Columns; people: People }) {
+function Discoveries({ cols, people, onShared }: { cols: Columns; people: People; onShared?: () => void }) {
   const [open, setOpen] = useState<number | null>(null)
+  const [sharing, setSharing] = useState<Discovery | null>(null)
   const list = cols.discoveries ?? []
   const turns = strongTurns(cols)
   if (!list.length) return <p className="insight-sub">아직 발견 문장이 없습니다. 기록을 더 넣으면 생깁니다.</p>
   return (
+    <>
     <ol className="discoveries">
       {list.map((d, i) => {
         const turnNo = d.column === 'turn.points' ? turns.findIndex((t) => d.text.startsWith(koDate(t.date))) : -1
@@ -91,16 +94,24 @@ function Discoveries({ cols, people }: { cols: Columns; people: People }) {
           <li key={i} className={open === i ? 'open' : ''}>
             <span className="disc-tag">{elementOf(d.column)}{turnNo >= 0 ? ` ${turnNo + 1}` : ''}</span>
             <p>{relabel(d.text, people)}</p>
-            {d.evidence.length > 0 ? (
-              <button type="button" className="disc-count" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
-                근거 {d.evidence.length}건
-              </button>
-            ) : <span className="disc-count static">변화점</span>}
+            <span className="disc-actions">
+              {d.evidence.length > 0 ? (
+                <button type="button" className="disc-count" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
+                  근거 {d.evidence.length}건
+                </button>
+              ) : <span className="disc-count static">변화점</span>}
+              {d.id && <button type="button" className="disc-share" onClick={() => setSharing(d)}>카드 만들기</button>}
+            </span>
             {open === i && <div className="disc-detail"><EvidenceList ids={d.evidence} people={people} /></div>}
           </li>
         )
       })}
     </ol>
+    {sharing?.id && (
+      <ShareDialog request={{ kind: 'discovery', summary_id: sharing.id }} label={`발견 · ${elementOf(sharing.column)}`}
+        onClose={() => setSharing(null)} onShared={onShared} />
+    )}
+    </>
   )
 }
 
@@ -249,7 +260,7 @@ function Catalog({ items, sources }: { items: CatalogItem[]; sources: Record<str
 }
 
 /** 인사이트 화면의 "발견" 묶음. 카드 여러 장을 돌려주므로 .insight 그리드 안에 그대로 넣는다 */
-export function ColumnsSections({ cols, people, importUrl }: { cols: Columns | null; people: People; importUrl: string | null }) {
+export function ColumnsSections({ cols, people, importUrl, onShared }: { cols: Columns | null; people: People; importUrl: string | null; onShared?: () => void }) {
   if (!cols || !cols.schema) return null
   return (
     <>
@@ -259,8 +270,8 @@ export function ColumnsSections({ cols, people, importUrl }: { cols: Columns | n
       </div>
       <section className="insight-card wide" data-testid="discoveries">
         <h2>기억은 흐리지만 기록에는 남은 것</h2>
-        <p className="insight-sub">문장마다 숫자와 근거 기록이 붙어 있습니다. 근거 수를 누르면 그 기록을 보여 드립니다. 이 문장들은 노벨 모드가 이야기를 쓸 때 배경으로 들어갑니다.</p>
-        <Discoveries cols={cols} people={people} />
+        <p className="insight-sub">문장마다 숫자와 근거 기록이 붙어 있습니다. 근거 수를 누르면 그 기록을 보여 드립니다. 이 문장들은 노벨 모드가 이야기를 쓸 때 배경으로 들어갑니다. <b>카드 만들기</b>를 누르면 SNS 에 올릴 이미지 카드와 공유 링크를 만듭니다.</p>
+        <Discoveries cols={cols} people={people} onShared={onShared} />
       </section>
       <section className="insight-card">
         <h2>등장인물</h2>

@@ -38,6 +38,7 @@ $P places --name "id:ChIJf9ce69a326fQx=망원한강공원"   # 타임라인에 �
 $P query 러닝                                # 근거 등급과 근거 기록 출력
 $P columns                                  # 소설 재료 컬럼: 인물·장소·리듬·취향·전환점·발견·장르 추천 (COLUMNS.md)
 $P book 러닝 --author 윤서연                  # 이야기를 쓰고 표지·장 첫 쪽·본문 펼침면 렌더 (virtueme_core/book/README.md)
+$P share list                               # 화면에서 만든 공유 카드 목록, share export <번호> <폴더> 로 정적 사본 (COLUMNS.md 「공유 카드」)
 $P serve                                    # 로컬 API http://127.0.0.1:8767
 ```
 
@@ -211,6 +212,9 @@ bun run dev      # 또는 npm run dev. Vite 가 /api/core 를 8767 로 넘긴다
 | `POST /places/name` `{"key", "name"}` | 장소에 이름 붙이기 (휴대폰 타임라인에는 이름이 없음). 이름을 비우면 지움. 기록 넣기 화면의 "장소 이름 붙이기"가 이 요청을 씀 |
 | `POST /book` `{"keyword", "story", "genre"?, "title"?, "author"?}` | 노벨 화면의 이야기로 책 만들기 시작(백그라운드, 25~55초). 같은 입력이면 같은 작업 번호. 장르를 비우면 장르 추천 1위, 키가 없으면 절차적 그림 |
 | `GET /book/{id}` · `/book/{책 번호}/cover.png` · `opener.png` · `spread.png` · `book.pdf` | 진행 상태(작업 번호 12자리 또는 책 번호 10자리)와 결과 파일. 응답에는 파일 경로 대신 내려받을 주소만 실음 |
+| `POST /share` `{"kind": "discovery", "summary_id"}` · `{"kind": "book", "book_id"}` · `{"kind": "passage", "lines", "title"?, "style_book_id"?}` | 공유 카드 만들기: 피드(1080×1350)·스토리(1080×1920) PNG 와 공유 페이지. 글은 실명·가명·좌표·주소·연락처 검사를 거친 뒤에만 그림 (COLUMNS.md 「공유 카드」) |
+| `GET /share` · `GET /share/{id}` · `POST /share/{id}/delete` | 내 공유 목록(반응 수·한마디 포함), 한 건, 지우기 |
+| `GET /s/{id}` · `/s/{id}/feed.png` · `story.png` · `cover.png` · `POST /s/{id}/react` · `GET /s/{id}/counts` | 링크를 받은 사람이 보는 읽기 전용 공유 페이지(링크 미리보기 OpenGraph 포함)와 반응. 이 경로만 토큰 없이 열림 |
 | `GET /map?keyword=` | 의미 지도: 본인 기록의 2차원 좌표, 주제, 키워드 근거 표시 |
 | `GET /import` | 기록 넣기 화면 (`POST /import/{kakao,sms,instagram,photos,google,maps,card,health,spotify,netflix}`, 흔적 기록은 `since`·`until` 폼 값으로 기간 지정, `POST /build`, `GET /build/status`, `GET /people/local`, `POST /people/relation`) |
 | `GET /label` | 정답 라벨 붙이는 화면 (`/label/candidates`, `POST /label`, `/label/export`) |
@@ -347,7 +351,7 @@ VIRTUEME_PROFILE=seoyeon ./scripts/start-demo-mac.sh --music    # 새 키워드 
 ## 테스트
 
 ```bash
-uv run pytest -q     # 134개 (책 만들기 API 2개, 흔적 기록 30개, 소설 재료 컬럼 12개, 근거 검사 17개, 북디자인 포함). 모델을 내려받지 않는 해시 임베더와 가짜 음악 서버로 돈다
+uv run pytest -q     # 143개 (공유 카드 9개, 책 만들기 API 2개, 흔적 기록 30개, 소설 재료 컬럼 12개, 근거 검사 17개, 북디자인 포함). 모델을 내려받지 않는 해시 임베더와 가짜 음악 서버로 돈다
 ```
 
 ## 알려진 한계

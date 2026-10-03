@@ -240,6 +240,7 @@ button:focus-visible{outline:2px solid rgba(255,61,154,.5);outline-offset:2px}
   </div>
 </div>
 <div class="bookbox" id="bookBox" hidden></div>
+<div class="bookbox" id="shareBox" hidden></div>
 
 </div>
 
@@ -1034,9 +1035,9 @@ function renderInsufficient(kw,g){
    책에 넣는 글은 화면에 보이는 그대로(가명은 관계로 바꾸고, 기록과 맞지 않은 값은 흐린 글자 그대로)다. */
 const BOOK_GENRES=['미스터리','로맨스','SF','판타지','스릴러','코미디','문학·에세이'];
 const LS_BOOK='vx_book_cache',LS_AUTHOR='vx_book_author';
-let BOOKSEQ=0,BOOKKW='';
+let BOOKSEQ=0,BOOKKW='',CURBOOK=null;
 function bookCache(){try{return JSON.parse(localStorage.getItem(LS_BOOK)||'{}')}catch(e){return {}}}
-function bookHide(){BOOKSEQ++;$('bookBox').hidden=true;$('bookBox').innerHTML=''}
+function bookHide(){BOOKSEQ++;CURBOOK=null;$('bookBox').hidden=true;$('bookBox').innerHTML='';$('shareBox').hidden=true;$('shareBox').innerHTML='';selShareHide()}
 function storyOnPaper(){
   const t=$('paper').querySelector('.stitle');
   const paras=[...$('paper').querySelectorAll('.body > p')].map(p=>p.textContent.replace(/\s+/g,' ').trim()).filter(Boolean);
@@ -1055,6 +1056,7 @@ function bookOffer(kw,gi){
       <button id="bookGo">책으로 만들기</button>
     </div>
     <p class="booknote">이 이야기로 신국판 표지, 장 첫 쪽, 삽화가 든 본문 펼침면과 PDF 를 만듭니다. 장르는 이야기의 장르가 기본값입니다. 그림을 그려서 30초~1분 걸리고, 그림 모델에는 이야기에서 뽑은 장면 설명만 갑니다.</p>
+    <p class="booknote">이야기에서 세 문장까지 끌어서 고르면 그 대목으로 SNS 카드를 만들 수 있습니다.</p>
     <div id="bookOut"></div>`;
   $('bookGo').onclick=()=>bookMake(kw);
   // 같은 키워드·같은 제목으로 만든 책이 있으면 바로 보여 준다 (발표 대비)
@@ -1094,14 +1096,54 @@ function bookFail(my,msg){
 function bookShow(st,my){
   if(my!==BOOKSEQ)return;
   $('bookGo').disabled=false;$('bookGo').textContent='다시 만들기';
+  CURBOOK=st.book_id||null;
   const base=VX.base(),f=st.files||{},b=st.book||{};
   const img=(n,cap,cls)=>f[n]?`<figure class="${cls||''}"><a href="${base+f[n]}" target="_blank" rel="noopener"><img src="${base+f[n]}?t=${Date.now()}" alt="${cap}"></a><figcaption>${cap}</figcaption></figure>`:'';
   const art=b.art||{};
   const how=art.cover==='ai'?'AI 그림':art.cover==='procedural'?'절차적 그림(키 없음)':'';
   $('bookOut').innerHTML=`<div class="bookshots">${img('cover.png','앞표지')}${img('opener.png','장 첫 쪽')}${img('spread.png','본문 펼침면','wide')}</div>
     <div class="bookmeta">${f['book.pdf']?`<a href="${base+f['book.pdf']}" download="${esc((b.title||'책').replace(/[\\/:*?"<>|]/g,''))}.pdf">PDF 내려받기</a>`:''}
+      ${st.book_id?'<a href="#" id="bookShare">표지 카드 만들기</a>':''}
       <span>${esc(b.genre||'')}${b.pages?` · ${b.pages}쪽`:''}${how?` · ${how}`:''}${art.cost_usd?` · $${art.cost_usd.toFixed(3)}`:''}${b.seconds?` · ${Math.round(b.seconds)}초`:''}</span></div>`;
+  const sh=$('bookShare');
+  if(sh)sh.onclick=e=>{e.preventDefault();VX.shareInto($('shareBox'),{kind:'book',book_id:st.book_id},'책 표지')};
 }
+
+/* ============ 공유 카드: 이야기 속 문장을 끌어 고르면 그 대목으로 카드를 만든다 (core: POST /share) ============
+   카드에 들어가는 글은 core 가 실명·가명·좌표·주소·연락처를 한 번 더 검사하고 바꾼 뒤에 그린다. */
+let SELBTN=null;
+function selShareHide(){if(SELBTN){SELBTN.remove();SELBTN=null}}
+function selectedStoryText(){
+  const sel=window.getSelection(),body=$('paper').querySelector('.body');
+  if(!sel||sel.isCollapsed||!body||!sel.rangeCount)return null;
+  const r=sel.getRangeAt(0);
+  if(!body.contains(r.commonAncestorContainer))return null;
+  // 단락 사이를 줄바꿈으로 남겨 문장 나누기가 단락 경계를 알게 한다
+  const div=document.createElement('div');div.appendChild(r.cloneContents());
+  div.querySelectorAll('p').forEach(p=>p.insertAdjacentText('afterend','\n'));
+  return {text:div.textContent,rect:r.getBoundingClientRect()};
+}
+document.addEventListener('mouseup',e=>{
+  if(SELBTN&&SELBTN.contains(e.target))return;
+  setTimeout(()=>{
+    selShareHide();
+    if(SOURCE!=='core'||!CORE||BUSY)return;
+    const got=selectedStoryText();if(!got||!got.text.trim())return;
+    const pick=VX.pickLines(got.text);
+    SELBTN=document.createElement('button');SELBTN.className='vx-selshare';SELBTN.type='button';
+    SELBTN.innerHTML=pick.error?`카드 만들기<small>${esc(pick.error)}</small>`:`이 대목으로 카드 만들기<small>${pick.lines.length}문장</small>`;
+    SELBTN.style.left=Math.max(8,got.rect.left+window.scrollX)+'px';
+    SELBTN.style.top=(got.rect.bottom+window.scrollY+8)+'px';
+    SELBTN.disabled=!!pick.error;
+    SELBTN.onclick=()=>{
+      selShareHide();
+      const st=storyOnPaper();
+      VX.shareInto($('shareBox'),{kind:'passage',lines:pick.lines,title:st.title||null,style_book_id:CURBOOK||null},'이야기 한 대목')
+        .then(()=>$('shareBox').scrollIntoView({behavior:'smooth',block:'nearest'}));
+    };
+    document.body.appendChild(SELBTN);
+  },0);
+});
 
 /* ============ 바인딩 ============ */
 $('grow').onclick=()=>{const v=$('seed').value.trim();if(v){interrupt();VAR=0;FORCE_KW=null;render(v)}};

@@ -7,7 +7,9 @@
 from __future__ import annotations
 
 import hmac
+import json
 import os
+import re
 import shutil
 import threading
 from pathlib import Path
@@ -83,6 +85,15 @@ class DeleteBody(BaseModel):
     confirm: str = Field(min_length=1, max_length=60)
 
 
+class ShareBody(BaseModel):
+    kind: str = Field(pattern="^(discovery|book|passage)$")
+    summary_id: str | None = Field(default=None, pattern=r"^s[0-9a-f]{11}$")
+    book_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{10}$")
+    lines: list[str] | None = Field(default=None, max_length=3)
+    title: str | None = Field(default=None, max_length=80)
+    style_book_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{10}$")
+
+
 class TalkBody(BaseModel):
     message: str = Field(min_length=1, max_length=500)
     history: list[str] | None = None
@@ -91,6 +102,15 @@ class TalkBody(BaseModel):
 
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+# 공유 페이지(/s/<번호>)는 링크를 받은 사람이 여는 곳이라 토큰 없이 열리고, 다른 주소에 올린 사본도 반응을 보낼 수 있다
+PUBLIC_SHARE = re.compile(r"^/s/[0-9a-f]{12}(/(feed|story|cover)\.png|/react|/counts)?$")
+
+
+def _client(request: Request) -> str:
+    """반응 횟수 제한에 쓰는 보낸 곳. 이 컴퓨터의 터널(cloudflared 등)을 거쳐 오면 X-Forwarded-For 첫 값을 쓴다."""
+    host = request.client.host if request.client else ""
+    fwd = request.headers.get("x-forwarded-for", "")
+    return fwd.split(",")[0].strip() if host in LOOPBACK and fwd else host
 
 
 def create_app(service: Service, warm: bool = False, token: str | None = None) -> FastAPI:
@@ -100,7 +120,7 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
         @app.middleware("http")
         async def remote_guard(request: Request, call_next):
             client = request.client.host if request.client else ""
-            if client not in LOOPBACK:
+            if client not in LOOPBACK and not PUBLIC_SHARE.match(request.url.path):
                 given = request.headers.get("x-virtueme-token") or request.query_params.get("token") or ""
                 if not hmac.compare_digest(given, token):
                     return JSONResponse({"detail": "다른 컴퓨터에서 접속할 때는 토큰이 필요합니다 (서버를 켤 때 화면에 나온 값)"},
@@ -112,6 +132,18 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
         allow_methods=["GET", "POST"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def share_cors(request: Request, call_next):
+        # 공유 페이지의 반응·반응 수는 어느 주소에 올린 사본에서도 부를 수 있다 (쿠키·토큰 없이, 공개된 카드 내용만)
+        if PUBLIC_SHARE.match(request.url.path) and request.url.path.endswith(("/react", "/counts")):
+            if request.method == "OPTIONS":
+                return JSONResponse({}, headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST",
+                                                 "Access-Control-Allow-Headers": "Content-Type"})
+            resp = await call_next(request)
+            resp.headers["Access-Control-Allow-Origin"] = "*"
+            return resp
+        return await call_next(request)
 
     if warm:
         def _warm() -> None:
@@ -285,6 +317,87 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
         if not got:
             raise HTTPException(404, "아직 만들지 않았습니다")
         return FileResponse(got)
+
+    # ---------- 공유 카드·페이지 (share.py): 만들기·목록·지우기는 주인, /s/ 아래는 링크를 받은 사람 ----------
+    from .share import REACTIONS, ShareError
+
+    @app.post("/share")
+    def share_create(body: ShareBody) -> dict[str, Any]:
+        if body.kind == "discovery" and not body.summary_id:
+            raise HTTPException(422, "발견 문장 번호(summary_id)가 필요합니다")
+        if body.kind == "book" and not body.book_id:
+            raise HTTPException(422, "책 번호(book_id)가 필요합니다")
+        if body.kind == "passage" and not body.lines:
+            raise HTTPException(422, "고른 글(lines)이 필요합니다")
+        if body.lines and any(len(x) > 160 for x in body.lines):
+            raise HTTPException(422, "한 줄은 160자까지입니다")
+        try:
+            return service.share_create(body.kind, body.summary_id, body.book_id, body.lines, body.title,
+                                        body.style_book_id)
+        except ShareError as err:
+            raise HTTPException(400, str(err)) from err
+        except RuntimeError as err:
+            raise HTTPException(500, str(err)) from err
+
+    @app.get("/share")
+    def share_list() -> dict[str, Any]:
+        return {"shares": service.shares.list(), "reactions": REACTIONS}
+
+    @app.get("/share/{share_id}")
+    def share_get(share_id: str = PathParam(pattern=r"^[0-9a-f]{12}$")) -> dict[str, Any]:
+        got = service.shares.view(share_id, recent=100)
+        if not got:
+            raise HTTPException(404, "그런 공유가 없습니다")
+        return got
+
+    @app.post("/share/{share_id}/delete")
+    def share_delete(share_id: str = PathParam(pattern=r"^[0-9a-f]{12}$")) -> dict[str, Any]:
+        if not service.shares.delete(share_id):
+            raise HTTPException(404, "그런 공유가 없습니다")
+        return {"ok": True, "shares": service.shares.list()}
+
+    @app.get("/s/{share_id}", response_class=HTMLResponse)
+    def share_page(request: Request, share_id: str = PathParam(pattern=r"^[0-9a-f]{12}$")) -> HTMLResponse:
+        page = service.shares.page(share_id, str(request.base_url))
+        if page is None:
+            raise HTTPException(404, "지워졌거나 없는 공유입니다")
+        return HTMLResponse(page, headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+                                           "Referrer-Policy": "no-referrer",
+                                           "Content-Security-Policy": "default-src 'none'; img-src 'self'; "
+                                           "style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'"})
+
+    @app.get("/s/{share_id}/counts")
+    def share_counts(share_id: str = PathParam(pattern=r"^[0-9a-f]{12}$")) -> dict[str, Any]:
+        if not service.shares.get(share_id):
+            raise HTTPException(404, "지워졌거나 없는 공유입니다")
+        return {"counts": service.shares.counts(share_id)}
+
+    @app.get("/s/{share_id}/{name}")
+    def share_file(share_id: str = PathParam(pattern=r"^[0-9a-f]{12}$"),
+                   name: str = PathParam(pattern=r"^(feed|story|cover)\.png$")):
+        got = service.shares.file(share_id, name)
+        if not got:
+            raise HTTPException(404, "없는 그림입니다")
+        return FileResponse(got, media_type="image/png", headers={"Cache-Control": "no-cache"})
+
+    @app.post("/s/{share_id}/react")
+    async def share_react(request: Request, share_id: str = PathParam(pattern=r"^[0-9a-f]{12}$")) -> dict[str, Any]:
+        raw = await request.body()
+        if len(raw) > 2000:
+            raise HTTPException(413, "너무 깁니다")
+        try:
+            data = json.loads(raw.decode("utf-8") or "{}")
+            reaction, comment = str(data.get("reaction") or ""), str(data.get("comment") or "")
+        except (ValueError, UnicodeDecodeError, AttributeError) as err:
+            raise HTTPException(400, "보낸 값을 읽지 못했습니다") from err
+        try:
+            return {"ok": True, "counts": service.shares.react(share_id, reaction, comment, _client(request))}
+        except LookupError as err:
+            raise HTTPException(404, str(err)) from err
+        except PermissionError as err:
+            raise HTTPException(429, str(err)) from err
+        except ShareError as err:
+            raise HTTPException(400, str(err)) from err
 
     # ---------- 웹 화면에서 기록 넣기 (이 컴퓨터에서만: 서버는 127.0.0.1 에만 뜬다) ----------
     @app.get("/import", response_class=HTMLResponse)

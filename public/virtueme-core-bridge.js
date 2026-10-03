@@ -29,6 +29,19 @@
 .vx-pop button{margin-top:8px;font-size:11px;padding:4px 10px}
 .vx-pop ul{list-style:none;margin:8px 0 0;padding:0;max-height:220px;overflow-y:auto}
 .vx-pop li{padding:5px 0;border-top:1px solid rgba(255,255,255,.07)}
+.vx-share-busy{margin-top:8px;font-size:13px;color:var(--sub)}
+.vx-share-busy i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--pink2);margin-right:9px;animation:pu 1.1s ease-in-out infinite}
+.vx-share-shots{display:grid;grid-template-columns:1fr .79fr;gap:14px;align-items:end;margin-top:6px}
+.vx-share-shots figure{margin:0}
+.vx-share-shots img{display:block;width:100%;height:auto;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.vx-share-shots figcaption{margin-top:6px;font-size:11.5px;color:var(--mut)}
+.vx-share-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.vx-share-actions button,.vx-share-actions a{font-size:13px;padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:transparent;color:var(--ink);text-decoration:none;cursor:pointer;font-weight:600}
+.vx-share-actions button:hover,.vx-share-actions a:hover{border-color:#fff}
+.vx-share-note{min-height:1.4em;margin:8px 0 0;font-size:12.5px;color:var(--sub);word-break:break-all}
+.vx-share-fine{margin:2px 0 0;font-size:11.5px;color:var(--dim);line-height:1.65}
+.vx-selshare{position:absolute;z-index:950;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;border:none;background:var(--grad);color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.45);cursor:pointer}
+.vx-selshare small{font-weight:400;opacity:.85;margin-left:6px}
 .vx-mode{font-size:11.5px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--sub)}
 `
   function injectCss () {
@@ -229,6 +242,57 @@
     })
   }
 
-  window.VX = { detect, call, base: () => base, looseNumbers, fmtPending, unalias, relabel, mode, modeSelect, legend, badCount, bindRecordClicks, esc, JO, saveStory, loadStory,
+  /* ---------- 공유 카드 (core: POST /share). 이야기 속 문장·책 표지로 카드와 공유 페이지를 만든다 ---------- */
+  /* 고른 글을 카드에 실을 줄(문장)로 나눈다. 세 문장·300자·한 문장 160자까지 */
+  function pickLines (text, maxLines, maxChars) {
+    maxLines = maxLines || 3; maxChars = maxChars || 300
+    const clean = String(text || '').replace(/\u00a0/g, ' ').trim()
+    if (!clean) return { lines: [], error: '카드에 넣을 문장을 먼저 골라 주세요.' }
+    const lines = clean.split(/\n+/)
+      .flatMap((p) => p.replace(/\s+/g, ' ').trim().split(/(?<=[.!?。…])\s+(?=\S)/))
+      .map((x) => x.trim()).filter(Boolean)
+    if (lines.length > maxLines) return { lines: lines.slice(0, maxLines), error: `${maxLines}문장까지 고를 수 있습니다. 지금 ${lines.length}문장을 골랐습니다.` }
+    if (lines.join(' ').length > maxChars) return { lines, error: `${maxChars}자까지 고를 수 있습니다.` }
+    if (lines.some((x) => x.length > 160)) return { lines, error: '한 문장이 너무 깁니다. 160자 안으로 골라 주세요.' }
+    return { lines, error: null }
+  }
+  function shareLink (path) { return new URL(String(base || '').replace(/\/$/, '') + path, location.href).href }
+  async function savePng (url, name) {
+    const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status)
+    const href = URL.createObjectURL(await r.blob())
+    const a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove()
+    setTimeout(() => URL.revokeObjectURL(href), 4000)
+  }
+  /* el 안에 만들기 진행·결과(미리보기, 내려받기, 링크 복사)를 그린다 */
+  async function shareInto (el, body, label) {
+    el.hidden = false
+    el.innerHTML = `<h3>공유 카드 · ${esc(label)}</h3><div class="vx-share-busy"><i></i>카드 생성 중</div>`
+    let s
+    try { s = await call('/share', body, 120000) } catch (e) {
+      el.innerHTML = `<h3>공유 카드 · ${esc(label)}</h3><div class="err">카드를 만들지 못했습니다. ${esc(String(e.message || e).replace(/^로컬 기록 서버 오류 \(HTTP \d+\) — /, ''))}</div>`
+      return null
+    }
+    const link = shareLink(s.url), day = String(s.created || '').slice(0, 10).replace(/-/g, '')
+    const name = (w) => `버추얼미-${String(s.kind_ko).replace(/\s+/g, '')}-${day}-${w}-${s.id.slice(0, 6)}.png`
+    const replaced = (s.privacy && s.privacy.replaced) || []
+    el.innerHTML = `<h3>공유 카드 · ${esc(label)}</h3>
+      <div class="vx-share-shots"><figure><img src="${base + s.files['feed.png']}" alt="피드 카드"><figcaption>피드 1080×1350</figcaption></figure>
+        <figure><img src="${base + s.files['story.png']}" alt="스토리 카드"><figcaption>스토리 1080×1920</figcaption></figure></div>
+      <div class="vx-share-actions"><button data-a="feed">피드 카드 내려받기</button><button data-a="story">스토리 카드 내려받기</button>
+        <button data-a="copy">링크 복사</button><a href="${esc(link)}" target="_blank" rel="noopener">공유 페이지 열기</a></div>
+      <p class="vx-share-note" aria-live="polite"></p>
+      <p class="vx-share-fine">${replaced.length ? `카드에 넣기 전에 바꾼 것: ${esc(replaced.join(', '))}. ` : '실명·가명·좌표·주소·연락처가 없는지 확인했습니다. '}공유한 카드와 받은 반응은 INSIGHT 의 내 공유에서 봅니다. 링크는 이 컴퓨터의 기록 서버가 켜져 있을 때 열립니다.</p>`
+    const note = el.querySelector('.vx-share-note')
+    el.querySelectorAll('button[data-a]').forEach((b) => b.onclick = async () => {
+      const a = b.dataset.a
+      try {
+        if (a === 'copy') { await navigator.clipboard.writeText(link); note.textContent = '링크를 복사했습니다.' }
+        else { await savePng(base + s.files[a + '.png'], name(a === 'feed' ? '피드' : '스토리')); note.textContent = a === 'feed' ? '피드 카드를 내려받았습니다.' : '스토리 카드를 내려받았습니다.' }
+      } catch (e) { note.textContent = a === 'copy' ? link : '내려받지 못했습니다.' }
+    })
+    return s
+  }
+
+  window.VX = { detect, call, base: () => base, pickLines, shareInto, looseNumbers, fmtPending, unalias, relabel, mode, modeSelect, legend, badCount, bindRecordClicks, esc, JO, saveStory, loadStory,
     saveTalk, loadTalk }
 })()
