@@ -1,0 +1,52 @@
+{
+ "semanticSegments": [
+  {
+   "startTime": "2026-07-13T19:50:00.000+09:00",
+   "endTime": "2026-07-13T20:53:00.000+09:00",
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.9,
+    "topCandidate": {
+     "placeId": "ChIJhangang",
+     "semanticType": "UNKNOWN",
+     "probability": 0.8,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-13T20:53:00.000+09:00",
+   "endTime": "2026-07-13T21:10:00.000+09:00",
+   "activity": {
+    "topCandidate": {
+     "type": "WALKING"
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-13T21:10:00.000+09:00",
+   "endTime": "2026-07-14T08:10:00.000+09:00",
+   "visit": {
+    "topCandidate": {
+     "placeId": "ChIJhome",
+     "semanticType": "HOME",
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-14T08:00:00.000+09:00",
+   "endTime": "2026-07-14T09:00:00.000+09:00",
+   "timelinePath": [
+    {
+     "point": "37.55°, 126.90°",
+     "time": "2026-07-14T08:10:00.000+09:00"
+    }
+   ]
+  }
+ ]
+}

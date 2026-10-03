@@ -63,6 +63,14 @@ JUDGE_VERSION = "v4"  # 판정 기준 문구를 바꾸면 올려서 예전 캐�
 JUDGE_RELATION_NOTE = ("대화 상대 옆 ( ) 는 기록 주인과의 관계다 (예: 지인A(대학 친구)). 이 키워드는 관계를 가리키므로, "
                        "그 관계인 사람을 키워드의 사람으로 본다.")
 JUDGE_VERSION_RELATION = "v5r"
+# 흔적 기록(유튜브 시청·검색·결제·방문·건강·음악)은 따로 묶어 이 문장을 더해 판정한다. 글로 쓴 기록의 판정 캐시는 그대로 둔다.
+# 이 문장 없이 판정하면 "콩이"(강아지 이름)에 "고양이 웃긴 영상 모음" 시청이 2 로 잡혔다 (2026-10-03 윤서연 샘플)
+JUDGE_TRACE_NOTE = ("이번 기록은 기록 주인이 글로 쓴 것이 아니라 기기·서비스에 남은 흔적이다 (본 영상 제목, 검색어, 결제한 가맹점, "
+                    "방문한 장소, 하루 걸음·잠·운동, 들은 곡). 흔적이 키워드의 활동·대상을 직접 가리키면 2 다 (러닝 ← 러닝화 결제, "
+                    "러닝 자세 영상, 달리기 운동 기록). 키워드가 사람·반려동물의 이름이면 그 이름이 흔적에 나올 때만 2 이고, "
+                    "같은 종류의 다른 대상(다른 강아지·고양이 영상)은 그 이름과 함께한 생활과 이어질 때만 1, 아니면 0 이다. "
+                    "감정·상태 키워드는 흔적 제목이 그 상태를 직접 말할 때만 2, 짐작할 수 있을 뿐이면 1 이다.")
+JUDGE_VERSION_TRACE = "t1"
 JUDGE_BATCH = 40
 
 BACKGROUND = [
@@ -123,7 +131,9 @@ def expand_keyword(store: Store, keyword: str, model: str = LLM_MODEL) -> dict[s
 def judge_line(r: Record, chars: int = 160, people: dict[str, str | None] | None = None) -> str:
     """LLM 판정·집필에 넘기는 한 줄. 텍스트는 가져올 때 이미 가려져 있다. people(가명 → 관계)을 주면
     "지인A(대학 친구)"처럼 적는다: 관계를 모르면 "친구" 키워드에서 친구와 나눈 대화를 가려낼 수 없다."""
-    src = {"kakao": "카카오톡", "sms": "문자", "instagram": "인스타그램", "photo": "사진", "synthetic": "활동"}.get(r.source, r.source)
+    src = {"kakao": "카카오톡", "sms": "문자", "instagram": "인스타그램", "photo": "사진", "synthetic": "활동",
+           "youtube": "유튜브 시청 기록", "search": "검색 기록", "maps": "지도 방문 기록", "card": "카드 결제 내역",
+           "health": "건강 앱", "spotify": "음악 재생 기록", "netflix": "넷플릭스 시청 기록"}.get(r.source, r.source)
     people = people or {}
     who = [f"{p}({people[p]})" if people.get(p) else p for p in r.participants if p != "나"]
     ctx = f"{src} · {', '.join(who)}와의 대화" if r.thread and who else src
@@ -148,13 +158,15 @@ def judge(store: Store, keyword: str, records: list[Record], model: str = JUDGE_
     people = store.relations() if people is None else people
     relational = bool(relation_aliases(people, keyword))
     system = JUDGE_SYSTEM.replace("\nJSON", f"\n{JUDGE_RELATION_NOTE}\nJSON") if relational else JUDGE_SYSTEM
+    base_system, trace_system = system, system.replace("\nJSON", f"\n{JUDGE_TRACE_NOTE}\nJSON")
     version = JUDGE_VERSION_RELATION if relational else JUDGE_VERSION
     shown = people if relational else {}
     out: dict[str, int] = {}
     todo: list[tuple[Record, str, str]] = []
     for r in records:
         line = judge_line(r, people=shown)
-        key = f"judge:{version}:{model}:{keyword}:{r.id}:{hashlib.sha1(line.encode()).hexdigest()[:8]}"
+        ver = f"{version}{JUDGE_VERSION_TRACE}" if r.is_trace else version
+        key = f"judge:{ver}:{model}:{keyword}:{r.id}:{hashlib.sha1(line.encode()).hexdigest()[:8]}"
         hit = store.cache_get(key)
         if hit is not None:
             out[r.id] = int(hit)
@@ -163,7 +175,7 @@ def judge(store: Store, keyword: str, records: list[Record], model: str = JUDGE_
 
     def run(batch: list[tuple[Record, str, str]]) -> list[tuple[str, str, int]]:
         body = "\n".join(f"{i}. {line}" for i, (_, line, _) in enumerate(batch))
-        data = chat_json(system, f"키워드: {keyword}\n기록 {len(batch)}건:\n{body}", model=model,
+        data = chat_json(trace_system if batch[0][0].is_trace else base_system, f"키워드: {keyword}\n기록 {len(batch)}건:\n{body}", model=model,
                          max_tokens=20 * len(batch) + 200)
         got = []
         for item in data.get("labels", []) if isinstance(data, dict) else data:
@@ -172,7 +184,9 @@ def judge(store: Store, keyword: str, records: list[Record], model: str = JUDGE_
                 got.append((batch[i][0].id, batch[i][2], max(0, min(2, int(item.get("r", 0))))))
         return got
 
-    batches = [todo[k : k + JUDGE_BATCH] for k in range(0, len(todo), JUDGE_BATCH)]
+    # 글로 쓴 기록과 흔적 기록은 판정 기준 문장이 달라 따로 묶는다
+    batches = [grp[k : k + JUDGE_BATCH] for grp in ([t for t in todo if not t[0].is_trace], [t for t in todo if t[0].is_trace])
+               for k in range(0, len(grp), JUDGE_BATCH)]
     with ThreadPoolExecutor(max_workers=4) as pool:
         for got in pool.map(run, batches):
             for rid, key, label in got:
@@ -353,7 +367,9 @@ class QueryEngine:
         weak = sorted((s for s in scope if cfg.weak <= s.rel < cfg.strong), key=lambda s: -s.rel)
         adjacent = self._adjacent(strong, {s.record.id for s in strong + weak})
 
-        active_days = len({s.record.day for s in scope})
+        # 기록이 있는 날은 글로 쓴 기록으로 센다. 건강 하루 요약처럼 매일 생기는 흔적 기록까지 세면 비율 기준이 흔들린다
+        written = {s.record.day for s in scope if not s.record.is_trace}
+        active_days = len(written or {s.record.day for s in scope})
         strong_days = len({s.record.day for s in strong})
         any_days = len({s.record.day for s in strong + weak})
         share = strong_days / active_days if active_days else 0.0
@@ -422,7 +438,7 @@ class QueryEngine:
         if not self.records or self.daily is None:
             return {"records": 0}
         d = self.daily
-        own = [r for r in self.records if r.is_self]
+        own = [r for r in self.records if r.is_self and not r.is_trace]
         vals = [self.emotions[r.id][0] for r in own if r.id in self.emotions]
         return {
             "summary": self.store.summary(),

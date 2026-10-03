@@ -2,6 +2,10 @@
 
 카카오톡 메시지, 인스타그램 게시물, 사진, 합성 활동 로그가 모두 같은 모양으로
 저장된다. 이후 단계(임베딩·정서·검색·서사 오브젝트)는 출처를 몰라도 된다.
+
+흔적 기록(TRACE_KINDS): 유튜브 시청·구글 검색·지도 방문·카드 결제·건강 하루 요약·음악 재생처럼 사람이 글로 쓰지 않고
+기기와 서비스에 남은 것. 모두 본인 기록(is_self, author "나")이고 text 는 검색·임베딩용 한국어 설명문이다
+("유튜브 시청: 제목 (채널)"). 정서 채점·개체 추출·주제 묶기에서는 빼고, 키워드 검색의 근거로만 쓴다.
 """
 from __future__ import annotations
 
@@ -15,8 +19,11 @@ from .config import DEFAULT_TZ
 
 RECORD_SCHEMA = "virtueme.record/1"
 
-SOURCES = ("kakao", "sms", "instagram", "photo", "synthetic")
-KINDS = ("message", "post", "story", "reel", "comment", "photo", "activity")
+SOURCES = ("kakao", "sms", "instagram", "photo", "synthetic",
+           "youtube", "search", "maps", "card", "health", "spotify", "netflix")
+KINDS = ("message", "post", "story", "reel", "comment", "photo", "activity",
+         "watch", "listen", "search", "visit", "payment", "health")
+TRACE_KINDS = ("watch", "listen", "search", "visit", "payment", "health")
 MODALITIES = ("text", "image", "text+image")
 
 
@@ -45,8 +52,8 @@ def iso(dt: datetime) -> str:
 class Record:
     id: str
     ts: str                       # ISO 8601, 시간대 포함
-    source: str                   # kakao | instagram | photo | synthetic
-    kind: str                     # message | post | story | reel | comment | photo | activity
+    source: str                   # SOURCES 가운데 하나
+    kind: str                     # KINDS 가운데 하나 (흔적 기록은 TRACE_KINDS)
     modality: str                 # text | image | text+image
     text: str | None = None       # 본문. 가져올 때 이미 참여자 이름·연락처를 가린 상태로 저장한다
     media: list[str] = field(default_factory=list)   # 로컬 파일 경로
@@ -76,6 +83,11 @@ class Record:
     @property
     def day(self) -> str:
         return self.dt.date().isoformat()
+
+    @property
+    def is_trace(self) -> bool:
+        """글로 쓴 기록이 아니라 기기·서비스에 남은 흔적인가."""
+        return self.kind in TRACE_KINDS
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

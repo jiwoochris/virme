@@ -17,6 +17,7 @@ from .records import Record
 
 WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"]
 OTHERS_WEIGHT = 0.3  # 다른 사람이 보낸 메시지가 하루 정서에 기여하는 비율
+# 흔적 기록(유튜브·결제·건강 …)은 정서가 없고 하루에 수십 건씩 쌓이므로 날짜 범위에만 넣고, 기록 수·정서에는 넣지 않는다
 
 
 @dataclass
@@ -78,6 +79,8 @@ def daily(records: list[Record], emotions: dict[str, tuple[float, float, str]]) 
     as_ = np.zeros(n)
     ws = np.zeros(n)
     for r, d in zip(records, days):
+        if r.is_trace:
+            continue
         i = (d - start).days
         w = 1.0 if r.is_self else OTHERS_WEIGHT
         cnt[i] += w
@@ -177,7 +180,8 @@ def periodicity(counts: np.ndarray, dates: list[date]) -> dict[str, Any]:
 
 
 def hour_profile(records: list[Record]) -> dict[str, Any]:
-    hours = [r.dt.hour + r.dt.minute / 60 for r in records]
+    """시간대 분포. 건강 하루 요약은 시각이 23:59 로 정해져 있어 뺀다."""
+    hours = [r.dt.hour + r.dt.minute / 60 for r in records if getattr(r, "kind", None) != "health"]
     if not hours:
         return {"center": None, "histogram": [0] * 24}
     ang = np.array(hours) / 24 * 2 * math.pi

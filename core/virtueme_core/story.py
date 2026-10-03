@@ -26,6 +26,11 @@ RULE_PEOPLE = (
     "\"(나)\"는 기록 주인의 이름을 가린 표기이고 \"(누군가)\"는 다른 사람의 이름을 가린 표기다. 둘 다 그대로 쓰지 말고 "
     "문맥에 맞게 나·너·그 사람으로 바꿔라."
 )
+BACKGROUND_RULE = (
+    "\n\n취재 노트의 background 는 키워드와 상관없이 기록 전체에서 계산한 인물·장소·생활 리듬·발견이다. 등장인물과 무대는 "
+    "여기서 골라라. discoveries 가운데 하나를 주인공이 뒤늦게 알아차리는 장면으로 써라. 주인공이 처음부터 알고 있던 것처럼 "
+    "쓰지 말고, 어렴풋이 기억하던 것이 분명해지는 순간으로 써라. background 의 값은 번호가 없으므로 <em> 으로 감싸지 마라."
+)
 INSUFFICIENT = "\n\n근거가 부족하다. 기록의 흔적을 사실처럼 단정하지 말고 <em>은 한 번 이하로만 써라."
 AVATAR_RULE2_V2 = (
     "2. 밋밋한 요약 금지. 기록을 말할 땐 장면으로 말해라. 장면의 세부는 지어내도 되지만 기록과 모순되면 안 된다. "
@@ -59,13 +64,22 @@ def _record_line(n: int | None, v: dict[str, Any], synthetic: bool) -> dict[str,
     out["author"] = v.get("author") or "나"
     if v.get("text"):
         out["text"] = v["text"]
+    if v.get("place"):
+        out["place"] = v["place"]
+    if v.get("amount") is not None:
+        out["amount"] = f"{v['amount']:,}원"
     if v.get("photo_tags"):
         out["photo"] = ", ".join(v["photo_tags"])
     return out
 
 
-def story_context(result: dict[str, Any], version: str = "v2") -> tuple[dict[str, Any], list[str]]:
-    """서사 오브젝트와 근거 기록으로 취재 노트를 만든다. 반환: (노트, 번호 순 기록 ID)."""
+def story_context(result: dict[str, Any], version: str = "v2",
+                  columns: dict[str, Any] | None = None) -> tuple[dict[str, Any], list[str]]:
+    """서사 오브젝트와 근거 기록으로 취재 노트를 만든다. 반환: (노트, 번호 순 기록 ID).
+
+    columns 는 `columns.note_for_story` 결과다. 키워드와 무관한 인물·장소·리듬·발견을 `background` 로 붙인다.
+    background 에는 번호가 없으므로 집필 규칙 7번에 따라 <em> 으로 감쌀 수 없고, 인물과 무대를 정하는 데만 쓴다.
+    """
     no = result["narrative_object"]
     st = no.get("stats") or {}
     em = no.get("emotion") or {}
@@ -89,19 +103,26 @@ def story_context(result: dict[str, Any], version: str = "v2") -> tuple[dict[str
         "records": [_record_line(i + 1 if numbered else None, v, synthetic) for i, v in enumerate(recs)],
         "people": {a: (r or "관계 모름: 친구나 그 사람으로 부를 것") for a, r in (result.get("people") or {}).items()},
     }
+    if columns:
+        note["background"] = columns
+        for c in columns.get("cast", []):
+            if c["who"].startswith("지인"):
+                note["people"].setdefault(c["who"], "관계 모름: 친구나 그 사람으로 부를 것")
     return note, [v["id"] for v in recs]
 
 
 def story_prompt(result: dict[str, Any], genre: int | None = None, version: str = "v2", variation: int = 0,
-                 seed: int | None = None) -> dict[str, Any]:
+                 seed: int | None = None, columns: dict[str, Any] | None = None) -> dict[str, Any]:
     rng = random.Random(seed)
     g = pick_genre(genre, rng)
     spark = rng.choice(SPARKS)
-    note, ids = story_context(result, version)
+    note, ids = story_context(result, version, columns)
     grade = result["narrative_object"]["evidence_grade"]
     user = (f"씨앗 단어: {note['keyword']}\n장르: {GENRES[g][0]} — 장르적 재미가 최우선이다. 사건과 긴장을 만들고, 끝은 반드시 갚아라."
             + (f"\n오늘의 비틀기(반드시 반영): {spark}" if spark else "")
             + f"\n근거 등급: {grade}\n\n취재 노트(JSON):\n{json.dumps(note, ensure_ascii=False)}")
+    if columns:
+        user += BACKGROUND_RULE
     if grade == "근거 부족":
         user += INSUFFICIENT
     if variation > 0:

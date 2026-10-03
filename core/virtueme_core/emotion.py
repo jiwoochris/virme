@@ -5,6 +5,8 @@
 - 텍스트, `anchor` (키가 없을 때): bge-m3 공간에서 긍정·부정, 들뜸·차분 기준 문장과의 거리 차이로 계산한다.
 - 사진, `siglip`: SigLIP 2 로 "밝고 즐거운 장면" 과 "어둡고 쓸쓸한 장면" 설명문과 비교한다. 사진은 밖으로 나가지 않는다.
 - `truth`: 합성 데이터의 정답 값(Storyseed 그룹 정서)을 그대로 쓴다. 평가 비교용.
+- 흔적 기록(유튜브 시청·검색·결제·방문·건강·음악, records.TRACE_KINDS)은 채점하지 않는다. "결제: 편의점 4,800원" 같은
+  설명문에는 감정이 없어서, 채점하면 0 근처 값이 쌓여 하루 정서 곡선이 평평해진다.
 
 인공지능이 추정한 값이므로 기록 한 건의 점수보다 여러 날에 걸친 흐름으로 읽어야 한다.
 """
@@ -139,6 +141,8 @@ def image_scores(vision, img_vecs: np.ndarray) -> list[tuple[float, float]]:
 
 
 def text_for_emotion(r: Record) -> str | None:
+    if r.is_trace:
+        return None
     return r.text.strip() if r.text and r.text.strip() else None
 
 
@@ -157,13 +161,17 @@ def score_all(
     if backend in ("auto", "llm") and openrouter_key():
         # 예전 채점 문구로만 채점된 기록(함께 여부 없음)은 새 문구로 다시 채점한다
         for r in store.records():
+            if r.is_trace:
+                continue
             t = text_for_emotion(r)
             if r.id in done and done[r.id][2].startswith("llm") and t and \
                     store.cache_get(_key(model, masker.mask(t) or "")) is None:
                 stale.add(r.id)
-    records = [r for r in store.records() if force or r.id not in done or r.id in stale]
+    all_records = store.records()
+    traces = sum(1 for r in all_records if r.is_trace)
+    records = [r for r in all_records if not r.is_trace and (force or r.id not in done or r.id in stale)]
     rows: list[tuple[str, float, float, str, str | None]] = []
-    stats = {"llm": 0, "anchor": 0, "siglip": 0, "truth": 0, "skipped": 0}
+    stats = {"llm": 0, "anchor": 0, "siglip": 0, "truth": 0, "skipped": 0, "trace_skipped": traces}
 
     if backend == "truth":
         for r in records:

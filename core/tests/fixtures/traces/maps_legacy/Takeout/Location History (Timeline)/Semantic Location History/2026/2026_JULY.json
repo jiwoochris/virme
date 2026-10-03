@@ -1,0 +1,42 @@
+{
+ "timelineObjects": [
+  {
+   "placeVisit": {
+    "location": {
+     "latitudeE7": 375568400,
+     "longitudeE7": 1269070200,
+     "placeId": "ChIJvet",
+     "address": "서울 마포구 망원동",
+     "name": "망원동물병원",
+     "semanticType": "TYPE_SEARCHED_ADDRESS"
+    },
+    "duration": {
+     "startTimestamp": "2026-07-21T01:10:00Z",
+     "endTimestamp": "2026-07-21T02:05:00Z"
+    }
+   }
+  },
+  {
+   "activitySegment": {
+    "duration": {
+     "startTimestamp": "2026-07-21T02:05:00Z",
+     "endTimestamp": "2026-07-21T02:20:00Z"
+    }
+   }
+  },
+  {
+   "placeVisit": {
+    "location": {
+     "latitudeE7": 375560200,
+     "longitudeE7": 1269050300,
+     "placeId": "ChIJhome",
+     "semanticType": "TYPE_HOME"
+    },
+    "duration": {
+     "startTimestampMs": "1784600400000",
+     "endTimestampMs": "1784632800000"
+    }
+   }
+  }
+ ]
+}

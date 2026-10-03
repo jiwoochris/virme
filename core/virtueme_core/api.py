@@ -54,6 +54,11 @@ class MusicBody(QueryBody):
     total_sec: int = Field(default=60, ge=20, le=180)
 
 
+class PlaceNameBody(BaseModel):
+    key: str = Field(min_length=3, max_length=80, pattern=r"^(id|ll):")
+    name: str | None = Field(default=None, max_length=40)
+
+
 class RelationBody(BaseModel):
     alias: str = Field(min_length=1, max_length=20)
     relation: str | None = Field(default=None, max_length=30)
@@ -179,6 +184,18 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
         _ready()
         return service.graph(keyword, max(5, min(limit, 120)))
 
+    @app.get("/columns")
+    def columns_() -> dict[str, Any]:
+        return service.columns()
+
+    @app.post("/places/name")
+    def name_place(body: PlaceNameBody) -> dict[str, Any]:
+        from . import columns as columns_mod
+
+        columns_mod.set_place_name(service.store, body.key, body.name)
+        service.invalidate()
+        return {"ok": True, "places": service.columns()["places"]}
+
     @app.get("/gaps")
     def gaps() -> dict[str, Any]:
         _ready()
@@ -241,8 +258,10 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
         return (Path(__file__).parent / "static" / "import.html").read_text(encoding="utf-8")
 
     @app.post("/import/{source}")
-    def import_files(source: str = PathParam(pattern="^(kakao|sms|instagram|photos)$"),
-                     files: list[UploadFile] = File(...), me: str = Form(default="")) -> dict[str, Any]:
+    def import_files(source: str = PathParam(pattern="^(kakao|sms|instagram|photos|google|maps|card|health|spotify|netflix)$"),
+                     files: list[UploadFile] = File(...), me: str = Form(default=""),
+                     since: str = Form(default="", pattern=r"^(\d{4}-\d{2}-\d{2})?$"),
+                     until: str = Form(default="", pattern=r"^(\d{4}-\d{2}-\d{2})?$")) -> dict[str, Any]:
         d = service.new_upload_dir(source)
         saved = []
         for f in files:
@@ -253,7 +272,7 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
             saved.append(target)
         try:
             names = [n.strip() for n in me.split(",") if n.strip()] or None
-            return service.import_paths(source, saved, names)
+            return service.import_paths(source, saved, names, since=since or None, until=until or None)
         except ValueError as err:
             raise HTTPException(400, str(err)) from err
 

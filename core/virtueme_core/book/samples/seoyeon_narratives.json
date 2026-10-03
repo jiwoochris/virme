@@ -1,0 +1,1296 @@
+{
+ "note": "core/examples/seoyeon/README.md 의 2026-09-11 실행 결과(등급·기간·변화점·정서 평균)를 옮겨 손으로 만든 예시 서사 오브젝트. 정서 곡선 모양은 줄거리에 맞춘 근사값이다.",
+ "items": {
+  "콩이": {
+   "schema": "virtueme.narrative/1",
+   "narrative_id": "db526075",
+   "keyword": "콩이",
+   "evidence_grade": "강한 근거",
+   "grade_basis": {
+    "strong_records": 24,
+    "strong_days": 14,
+    "active_days": 88,
+    "strong_day_share": 0.16,
+    "thresholds": {}
+   },
+   "data_scope": {
+    "records": 695,
+    "self_records": 345,
+    "date_range": [
+     "2026-06-01",
+     "2026-08-29"
+    ],
+    "sources": {
+     "카카오톡": 560,
+     "인스타그램": 91,
+     "사진": 44
+    }
+   },
+   "evidence": {
+    "strong": [],
+    "weak": [],
+    "adjacent": []
+   },
+   "stats": {
+    "distinct_days": 14,
+    "span_days": 40,
+    "first_date": "2026-07-20",
+    "last_date": "2026-08-29",
+    "coverage_pct": 7.0,
+    "time_center": 20.5,
+    "time_band": "저녁"
+   },
+   "top_terms": [
+    {
+     "term": "콩이",
+     "count": 9
+    },
+    {
+     "term": "산책",
+     "count": 8
+    },
+    {
+     "term": "강아지",
+     "count": 7
+    },
+    {
+     "term": "엄마",
+     "count": 6
+    }
+   ],
+   "top_tags": [
+    {
+     "tag": "강아지",
+     "count": 5
+    },
+    {
+     "tag": "공원",
+     "count": 4
+    }
+   ],
+   "emotion": {
+    "series": [
+     {
+      "date": "2026-07-20",
+      "valence": 0.15,
+      "arousal": 0.45,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-21",
+      "valence": 0.178,
+      "arousal": 0.462,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-22",
+      "valence": 0.205,
+      "arousal": 0.475,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-23",
+      "valence": 0.23,
+      "arousal": 0.487,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-24",
+      "valence": 0.253,
+      "arousal": 0.498,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-25",
+      "valence": 0.272,
+      "arousal": 0.509,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-26",
+      "valence": 0.288,
+      "arousal": 0.518,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-27",
+      "valence": 0.3,
+      "arousal": 0.527,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-28",
+      "valence": 0.308,
+      "arousal": 0.534,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-29",
+      "valence": 0.312,
+      "arousal": 0.54,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-30",
+      "valence": 0.312,
+      "arousal": 0.545,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-31",
+      "valence": 0.309,
+      "arousal": 0.548,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-01",
+      "valence": 0.304,
+      "arousal": 0.55,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-02",
+      "valence": 0.297,
+      "arousal": 0.55,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-03",
+      "valence": 0.289,
+      "arousal": 0.548,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-04",
+      "valence": 0.281,
+      "arousal": 0.545,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-05",
+      "valence": 0.275,
+      "arousal": 0.541,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-06",
+      "valence": 0.269,
+      "arousal": 0.535,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-07",
+      "valence": 0.267,
+      "arousal": 0.528,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-08",
+      "valence": 0.268,
+      "arousal": 0.519,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-09",
+      "valence": 0.272,
+      "arousal": 0.51,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-10",
+      "valence": 0.28,
+      "arousal": 0.499,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-11",
+      "valence": 0.292,
+      "arousal": 0.488,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-12",
+      "valence": 0.308,
+      "arousal": 0.476,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-13",
+      "valence": 0.328,
+      "arousal": 0.464,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-14",
+      "valence": 0.351,
+      "arousal": 0.452,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-15",
+      "valence": 0.376,
+      "arousal": 0.439,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-16",
+      "valence": 0.403,
+      "arousal": 0.427,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-17",
+      "valence": 0.431,
+      "arousal": 0.415,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-18",
+      "valence": 0.459,
+      "arousal": 0.404,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-19",
+      "valence": 0.486,
+      "arousal": 0.393,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-20",
+      "valence": 0.511,
+      "arousal": 0.383,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-21",
+      "valence": 0.533,
+      "arousal": 0.374,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-22",
+      "valence": 0.553,
+      "arousal": 0.367,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-23",
+      "valence": 0.568,
+      "arousal": 0.361,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-24",
+      "valence": 0.58,
+      "arousal": 0.356,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-25",
+      "valence": 0.588,
+      "arousal": 0.352,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-26",
+      "valence": 0.591,
+      "arousal": 0.35,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-27",
+      "valence": 0.591,
+      "arousal": 0.35,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-28",
+      "valence": 0.588,
+      "arousal": 0.351,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-29",
+      "valence": 0.583,
+      "arousal": 0.354,
+      "evidence": 0,
+      "sparse": false
+     }
+    ],
+    "mean": 0.367,
+    "min": 0.15,
+    "max": 0.591,
+    "baseline": 0.05
+   },
+   "change_points": [],
+   "periodicity": {
+    "lag_days": 7,
+    "strength": 0.4,
+    "weekday_peak": "화",
+    "weekly_strength": 0.3
+   },
+   "clusters": [],
+   "signals": {
+    "stability": 0.62,
+    "novelty": 0.7,
+    "conflict": 0.3,
+    "uncertainty": 0.2,
+    "possibility": 0.7,
+    "activity": 0.62,
+    "confidence": 0.82
+   }
+  },
+  "러닝": {
+   "schema": "virtueme.narrative/1",
+   "narrative_id": "6d2f04a5",
+   "keyword": "러닝",
+   "evidence_grade": "강한 근거",
+   "grade_basis": {
+    "strong_records": 24,
+    "strong_days": 14,
+    "active_days": 88,
+    "strong_day_share": 0.16,
+    "thresholds": {}
+   },
+   "data_scope": {
+    "records": 695,
+    "self_records": 345,
+    "date_range": [
+     "2026-06-01",
+     "2026-08-29"
+    ],
+    "sources": {
+     "카카오톡": 560,
+     "인스타그램": 91,
+     "사진": 44
+    }
+   },
+   "evidence": {
+    "strong": [],
+    "weak": [],
+    "adjacent": []
+   },
+   "stats": {
+    "distinct_days": 14,
+    "span_days": 66,
+    "first_date": "2026-06-24",
+    "last_date": "2026-08-29",
+    "coverage_pct": 7.0,
+    "time_center": 20.5,
+    "time_band": "저녁"
+   },
+   "top_terms": [
+    {
+     "term": "러닝",
+     "count": 9
+    },
+    {
+     "term": "크루",
+     "count": 8
+    },
+    {
+     "term": "한강",
+     "count": 7
+    },
+    {
+     "term": "완주",
+     "count": 6
+    }
+   ],
+   "top_tags": [
+    {
+     "tag": "강",
+     "count": 5
+    },
+    {
+     "tag": "운동화",
+     "count": 4
+    }
+   ],
+   "emotion": {
+    "series": [
+     {
+      "date": "2026-06-24",
+      "valence": -0.05,
+      "arousal": 0.5,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-25",
+      "valence": -0.052,
+      "arousal": 0.504,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-26",
+      "valence": -0.054,
+      "arousal": 0.508,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-27",
+      "valence": -0.056,
+      "arousal": 0.511,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-28",
+      "valence": -0.058,
+      "arousal": 0.515,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-29",
+      "valence": -0.059,
+      "arousal": 0.519,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-30",
+      "valence": -0.059,
+      "arousal": 0.523,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-01",
+      "valence": -0.059,
+      "arousal": 0.527,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-02",
+      "valence": -0.058,
+      "arousal": 0.53,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-03",
+      "valence": -0.057,
+      "arousal": 0.534,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-04",
+      "valence": -0.054,
+      "arousal": 0.538,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-05",
+      "valence": -0.05,
+      "arousal": 0.542,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-06",
+      "valence": -0.046,
+      "arousal": 0.545,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-07",
+      "valence": -0.04,
+      "arousal": 0.549,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-08",
+      "valence": -0.033,
+      "arousal": 0.553,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-09",
+      "valence": -0.025,
+      "arousal": 0.557,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-10",
+      "valence": -0.016,
+      "arousal": 0.561,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-11",
+      "valence": -0.006,
+      "arousal": 0.564,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-12",
+      "valence": 0.006,
+      "arousal": 0.568,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-13",
+      "valence": 0.018,
+      "arousal": 0.572,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-14",
+      "valence": 0.031,
+      "arousal": 0.576,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-15",
+      "valence": 0.046,
+      "arousal": 0.58,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-16",
+      "valence": 0.061,
+      "arousal": 0.583,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-17",
+      "valence": 0.077,
+      "arousal": 0.587,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-18",
+      "valence": 0.094,
+      "arousal": 0.591,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-19",
+      "valence": 0.111,
+      "arousal": 0.595,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-20",
+      "valence": 0.129,
+      "arousal": 0.598,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-21",
+      "valence": 0.148,
+      "arousal": 0.602,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-22",
+      "valence": 0.166,
+      "arousal": 0.606,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-23",
+      "valence": 0.185,
+      "arousal": 0.61,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-24",
+      "valence": 0.204,
+      "arousal": 0.614,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-25",
+      "valence": 0.223,
+      "arousal": 0.617,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-26",
+      "valence": 0.242,
+      "arousal": 0.621,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-27",
+      "valence": 0.26,
+      "arousal": 0.625,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-28",
+      "valence": 0.278,
+      "arousal": 0.629,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-29",
+      "valence": 0.296,
+      "arousal": 0.633,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-30",
+      "valence": 0.313,
+      "arousal": 0.636,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-07-31",
+      "valence": 0.329,
+      "arousal": 0.64,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-01",
+      "valence": 0.344,
+      "arousal": 0.644,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-02",
+      "valence": 0.359,
+      "arousal": 0.648,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-03",
+      "valence": 0.372,
+      "arousal": 0.652,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-04",
+      "valence": 0.385,
+      "arousal": 0.655,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-05",
+      "valence": 0.397,
+      "arousal": 0.659,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-06",
+      "valence": 0.407,
+      "arousal": 0.663,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-07",
+      "valence": 0.417,
+      "arousal": 0.667,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-08",
+      "valence": 0.425,
+      "arousal": 0.67,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-09",
+      "valence": 0.432,
+      "arousal": 0.674,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-10",
+      "valence": 0.438,
+      "arousal": 0.678,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-11",
+      "valence": 0.443,
+      "arousal": 0.682,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-12",
+      "valence": 0.447,
+      "arousal": 0.686,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-13",
+      "valence": 0.45,
+      "arousal": 0.689,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-14",
+      "valence": 0.452,
+      "arousal": 0.693,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-15",
+      "valence": 0.453,
+      "arousal": 0.697,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-16",
+      "valence": 0.453,
+      "arousal": 0.701,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-17",
+      "valence": 0.453,
+      "arousal": 0.705,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-18",
+      "valence": 0.452,
+      "arousal": 0.708,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-19",
+      "valence": 0.45,
+      "arousal": 0.712,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-20",
+      "valence": 0.449,
+      "arousal": 0.716,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-21",
+      "valence": 0.446,
+      "arousal": 0.72,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-22",
+      "valence": 0.444,
+      "arousal": 0.723,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-23",
+      "valence": 0.442,
+      "arousal": 0.727,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-24",
+      "valence": 0.44,
+      "arousal": 0.731,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-25",
+      "valence": 0.438,
+      "arousal": 0.735,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-26",
+      "valence": 0.436,
+      "arousal": 0.739,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-27",
+      "valence": 0.435,
+      "arousal": 0.742,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-28",
+      "valence": 0.434,
+      "arousal": 0.746,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-29",
+      "valence": 0.434,
+      "arousal": 0.75,
+      "evidence": 1,
+      "sparse": false
+     }
+    ],
+    "mean": 0.221,
+    "min": -0.059,
+    "max": 0.453,
+    "baseline": 0.05
+   },
+   "change_points": [
+    {
+     "date": "2026-06-23",
+     "direction": "상승",
+     "delta": 0.33,
+     "before": -0.07,
+     "after": 0.26,
+     "near_evidence": true
+    }
+   ],
+   "periodicity": {
+    "lag_days": 7,
+    "strength": 0.4,
+    "weekday_peak": "화",
+    "weekly_strength": 0.3
+   },
+   "clusters": [],
+   "signals": {
+    "stability": 0.55,
+    "novelty": 0.55,
+    "conflict": 0.35,
+    "uncertainty": 0.15,
+    "possibility": 0.78,
+    "activity": 0.66,
+    "confidence": 0.85
+   }
+  },
+  "제주": {
+   "schema": "virtueme.narrative/1",
+   "narrative_id": "9c596cb4",
+   "keyword": "제주",
+   "evidence_grade": "강한 근거",
+   "grade_basis": {
+    "strong_records": 24,
+    "strong_days": 14,
+    "active_days": 88,
+    "strong_day_share": 0.16,
+    "thresholds": {}
+   },
+   "data_scope": {
+    "records": 695,
+    "self_records": 345,
+    "date_range": [
+     "2026-06-01",
+     "2026-08-29"
+    ],
+    "sources": {
+     "카카오톡": 560,
+     "인스타그램": 91,
+     "사진": 44
+    }
+   },
+   "evidence": {
+    "strong": [],
+    "weak": [],
+    "adjacent": []
+   },
+   "stats": {
+    "distinct_days": 14,
+    "span_days": 3,
+    "first_date": "2026-08-11",
+    "last_date": "2026-08-14",
+    "coverage_pct": 7.0,
+    "time_center": 20.5,
+    "time_band": "저녁"
+   },
+   "top_terms": [
+    {
+     "term": "제주",
+     "count": 9
+    },
+    {
+     "term": "바다",
+     "count": 8
+    },
+    {
+     "term": "친구",
+     "count": 7
+    },
+    {
+     "term": "여행",
+     "count": 6
+    }
+   ],
+   "top_tags": [
+    {
+     "tag": "바다",
+     "count": 5
+    },
+    {
+     "tag": "해변",
+     "count": 4
+    }
+   ],
+   "emotion": {
+    "series": [
+     {
+      "date": "2026-08-11",
+      "valence": 0.45,
+      "arousal": 0.62,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-12",
+      "valence": 0.534,
+      "arousal": 0.62,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-13",
+      "valence": 0.541,
+      "arousal": 0.62,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-08-14",
+      "valence": 0.464,
+      "arousal": 0.62,
+      "evidence": 1,
+      "sparse": false
+     }
+    ],
+    "mean": 0.497,
+    "min": 0.45,
+    "max": 0.541,
+    "baseline": 0.05
+   },
+   "change_points": [],
+   "periodicity": {
+    "lag_days": 7,
+    "strength": 0.4,
+    "weekday_peak": "화",
+    "weekly_strength": 0.3
+   },
+   "clusters": [],
+   "signals": {
+    "stability": 0.8,
+    "novelty": 0.9,
+    "conflict": 0.15,
+    "uncertainty": 0.25,
+    "possibility": 0.5,
+    "activity": 0.4,
+    "confidence": 0.8
+   }
+  },
+  "외로움": {
+   "schema": "virtueme.narrative/1",
+   "narrative_id": "978de05f",
+   "keyword": "외로움",
+   "evidence_grade": "약한 근거",
+   "grade_basis": {
+    "strong_records": 24,
+    "strong_days": 14,
+    "active_days": 88,
+    "strong_day_share": 0.16,
+    "thresholds": {}
+   },
+   "data_scope": {
+    "records": 695,
+    "self_records": 345,
+    "date_range": [
+     "2026-06-01",
+     "2026-08-29"
+    ],
+    "sources": {
+     "카카오톡": 560,
+     "인스타그램": 91,
+     "사진": 44
+    }
+   },
+   "evidence": {
+    "strong": [],
+    "weak": [],
+    "adjacent": []
+   },
+   "stats": {
+    "distinct_days": 14,
+    "span_days": 17,
+    "first_date": "2026-06-07",
+    "last_date": "2026-06-24",
+    "coverage_pct": 7.0,
+    "time_center": 20.5,
+    "time_band": "저녁"
+   },
+   "top_terms": [
+    {
+     "term": "혼자",
+     "count": 9
+    },
+    {
+     "term": "야근",
+     "count": 8
+    },
+    {
+     "term": "주말",
+     "count": 7
+    },
+    {
+     "term": "집",
+     "count": 6
+    }
+   ],
+   "top_tags": [
+    {
+     "tag": "방",
+     "count": 5
+    },
+    {
+     "tag": "밤",
+     "count": 4
+    }
+   ],
+   "emotion": {
+    "series": [
+     {
+      "date": "2026-06-07",
+      "valence": -0.7,
+      "arousal": 0.28,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-08",
+      "valence": -0.664,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-09",
+      "valence": -0.634,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-10",
+      "valence": -0.614,
+      "arousal": 0.28,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-11",
+      "valence": -0.608,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-12",
+      "valence": -0.613,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-13",
+      "valence": -0.628,
+      "arousal": 0.28,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-14",
+      "valence": -0.647,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-15",
+      "valence": -0.664,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-16",
+      "valence": -0.674,
+      "arousal": 0.28,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-17",
+      "valence": -0.672,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-18",
+      "valence": -0.657,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-19",
+      "valence": -0.63,
+      "arousal": 0.28,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-20",
+      "valence": -0.595,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-21",
+      "valence": -0.558,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-22",
+      "valence": -0.526,
+      "arousal": 0.28,
+      "evidence": 1,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-23",
+      "valence": -0.502,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     },
+     {
+      "date": "2026-06-24",
+      "valence": -0.491,
+      "arousal": 0.28,
+      "evidence": 0,
+      "sparse": false
+     }
+    ],
+    "mean": -0.615,
+    "min": -0.7,
+    "max": -0.491,
+    "baseline": 0.05
+   },
+   "change_points": [],
+   "periodicity": {
+    "lag_days": 7,
+    "strength": 0.4,
+    "weekday_peak": "화",
+    "weekly_strength": 0.3
+   },
+   "clusters": [],
+   "signals": {
+    "stability": 0.7,
+    "novelty": 0.1,
+    "conflict": 0.25,
+    "uncertainty": 0.6,
+    "possibility": 0.58,
+    "activity": 0.3,
+    "confidence": 0.55
+   }
+  }
+ }
+}

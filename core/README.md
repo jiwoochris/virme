@@ -1,17 +1,18 @@
 # virtueme-core: 기록 처리와 키워드 검색
 
-카카오톡·인스타그램·사진 기록을 한 형식으로 모으고, 키워드를 넣으면 관련 기록을 찾아 근거 등급을 매긴 뒤
+카카오톡·인스타그램·사진 기록과 유튜브·카드·지도·건강 같은 흔적 기록을 한 형식으로 모으고, 키워드를 넣으면 관련 기록을 찾아 근거 등급을 매긴 뒤
 서사 오브젝트(JSON)로 돌려주는 로컬 파이썬 패키지입니다. Storyseed 노벨·대화 화면은 이 패키지의 로컬 API 에
 연결되면 합성 페르소나 대신 **내 기록**으로 이야기를 쓰고, 이야기 속 사실 주장을 기록과 대조합니다(근거 계약 v2).
 같은 서사 오브젝트를 비주얼 모드와 인사이트(시각화) 화면이 함께 읽고, 정서 곡선으로 음악(ACE-Step 1.5)과
 그 음악에 맞춰 움직이는 잠재공간 영상을 만듭니다.
 
 모든 계산은 이 컴퓨터에서 합니다. 밖으로 나가는 것은 가명·개인정보 가리기를 거친 텍스트 일부뿐이며,
-사진 파일과 GPS 좌표는 나가지 않습니다.
+사진 파일과 GPS·지도 좌표는 나가지 않습니다.
 
 ## 5분 안에 샘플로 돌려 보기
 
-가상 인물 윤서연의 90일 기록(카카오톡 방 3개, 인스타그램, 휴대폰 사진)이 `examples/seoyeon/` 에 들어 있습니다.
+가상 인물 윤서연의 90일 기록(카카오톡 방 3개, 인스타그램, 휴대폰 사진, 유튜브·검색·지도·카드·삼성 헬스·스포티파이 흔적)이
+`examples/seoyeon/` 에 들어 있습니다.
 실존 인물이 아닙니다.
 
 ```bash
@@ -25,10 +26,18 @@ P="uv run virtueme -p seoyeon"
 $P ingest kakao examples/seoyeon/kakao/대학친구들.txt examples/seoyeon/kakao/엄마.txt examples/seoyeon/kakao/정우진.csv --me 윤서연
 $P ingest instagram examples/seoyeon/instagram
 $P ingest photos examples/seoyeon/photos
+$P ingest google examples/seoyeon/google              # 흔적 기록 (examples/seoyeon/README.md 의 "흔적 기록")
+$P ingest maps examples/seoyeon/maps/Timeline.json
+$P ingest card examples/seoyeon/card/신한카드_이용내역.xlsx
+$P ingest health examples/seoyeon/health
+$P ingest spotify examples/seoyeon/spotify
 $P people --relation "지인A=대학 친구" --relation "지인B=대학 친구" --relation "지인C=대학 친구" \
           --relation "지인D=회사 동기" --relation "지인E=러닝 크루 친구"
 $P build                                    # 이름 가리기·임베딩·정서·묶기·관계 추출 (모델 첫 다운로드 제외)
+$P places --name "id:ChIJf9ce69a326fQx=망원한강공원"   # 타임라인에 없는 장소 이름 붙이기 (examples/seoyeon/README.md)
 $P query 러닝                                # 근거 등급과 근거 기록 출력
+$P columns                                  # 소설 재료 컬럼: 인물·장소·리듬·취향·전환점·발견·장르 추천 (COLUMNS.md)
+$P book 러닝 --author 윤서연                  # 이야기를 쓰고 표지·장 첫 쪽·본문 펼침면 렌더 (virtueme_core/book/README.md)
 $P serve                                    # 로컬 API http://127.0.0.1:8767
 ```
 
@@ -67,6 +76,32 @@ bun run dev      # 또는 npm run dev. Vite 가 /api/core 를 8767 로 넘긴다
 | 인스타그램 | 설정 → 계정 센터 → 내 정보 다운로드 → **JSON** 형식 | `ingest instagram 압축푼폴더` |
 | 휴대폰 사진 | 사진 폴더 그대로 (jpg·png·heic) | `ingest photos 폴더` |
 
+### 흔적 기록
+
+글로 쓰지 않았지만 기기와 서비스에 남은 기록입니다. 앱을 따로 깔지 않고 각 서비스의 공식 "내 데이터 다운로드" 파일을
+씁니다. 폴더나 받은 zip 을 그대로 넘기면 안에서 파일을 찾고(영어·한국어 파일 이름 모두), `--since 2026-06-01 --until
+2026-08-31` 로 기간을 정할 수 있습니다. 유튜브·스포티파이처럼 몇 년 치가 수만 줄인 곳은 기간을 정하는 편이 빠릅니다.
+
+| 출처 | 내보내는 방법 | 명령 | 레코드 |
+|---|---|---|---|
+| 유튜브·구글 검색·예전 위치 기록 | takeout.google.com → "YouTube 및 YouTube Music"(기록)과 "내 활동"을 **JSON** 형식으로 | `ingest google takeout.zip` | 유튜브 `watch` "유튜브 시청: 제목 (채널)", 검색 `search` "검색: 검색어" |
+| 구글 지도 타임라인 | 휴대폰 설정 → 위치 → 위치 서비스 → 타임라인 → 타임라인 데이터 내보내기 (`Timeline.json`). 아이폰은 구글 지도 앱 → 설정 → 타임라인 내보내기 (`location-history.json`) | `ingest maps Timeline.json` | `visit` "방문: 장소 (1시간 3분 머무름)" |
+| 카드 | 카드사 홈페이지·앱 → 이용내역 조회 → 엑셀(xlsx·xls)이나 CSV 저장 | `ingest card 이용내역.xlsx` | `payment` "결제: 가맹점 12,000원" |
+| 카드 승인 문자 | 문자 백업에 함께 들어 있음 | `ingest sms 백업.xml` | 같은 `payment` (취소 문자는 음수) |
+| 삼성 헬스 | 삼성 헬스 → 설정 → 개인 데이터 다운로드 (CSV 폴더) | `ingest health 폴더` | 하루 한 건 `health` "건강: 걸음 8,214 · 수면 6시간 10분 (01:40~07:50) · 달리기 32분 5.1km" |
+| 애플 건강 | 건강 앱 → 프로필 → 모든 건강 데이터 내보내기 (`export.xml`, 한국어 아이폰은 `내보내기.xml`) | `ingest health 내보내기.zip` | 같은 `health` |
+| 스포티파이 | 계정 → 개인정보 보호 설정 → 데이터 다운로드 (계정 데이터, 또는 전체 재생 기록) | `ingest spotify my_spotify_data.zip` | `listen` "음악: 가수 - 곡" |
+| 넷플릭스 | 계정 → 개인 정보 다운로드 (`ViewingActivity.csv`) | `ingest netflix 폴더 --netflix-profile 서연` | `watch` "넷플릭스 시청: 제목" |
+
+- 흔적 기록은 모두 본인 기록(author "나")입니다. 정서 채점·개체 추출·주제 묶기에서는 빼고(건수가 많고 감정이 없는 설명문이라
+  정서 곡선을 평평하게 만들고 주제를 덮어 버립니다), 키워드 검색의 근거로만 씁니다. "러닝"을 찾으면 러닝화 결제나
+  러닝 영상이 근거로 함께 잡힙니다. 제3자 이름 가리기는 검색어에만 합니다.
+- 카드 번호와 문자에 찍힌 이름은 저장하지 않습니다. 삼성페이·애플페이 같은 간편결제는 따로 내보내기가 없고, 연결한 카드의
+  이용내역과 승인 문자에 그대로 나옵니다.
+- 휴대폰 타임라인 내보내기에는 장소 이름이 없어서 집·직장 말고는 "장소"로 들어갑니다. 예전 테이크아웃의 Semantic Location
+  History 를 함께 넣으면 같은 장소(placeId)에 이름을 붙입니다. 좌표는 로컬 DB 에만 두고 밖으로 내보내지 않습니다.
+- 유튜브는 광고와 지워진 영상, 스포티파이는 30초보다 짧게 들은 곡, 넷플릭스는 예고편과 1분 미만 재생을 뺍니다.
+
 - `--me` 는 카카오톡에 표시되는 본인 이름입니다. 틀리면 보낸 사람 목록을 보여 주고 멈춥니다.
 - 대화 상대 실명은 가져올 때 `지인A`, `지인B` … 로 바뀝니다. `엄마`·`팀장님`처럼 관계로 저장된 연락처는 그대로 둡니다.
 - 문자는 인증번호·광고처럼 자동 발송된 것(발신 전용 번호, [Web발신]·(광고) 표시)은 빼고, 이름 없이 번호로만 온 상대는
@@ -80,6 +115,7 @@ bun run dev      # 또는 npm run dev. Vite 가 /api/core 를 8767 로 넘긴다
 | 단계 | 모듈 | 하는 일 | 쓰는 것 |
 |---|---|---|---|
 | 가져오기 | `ingest/` | 카카오톡·문자·인스타그램·사진을 공통 레코드 `virtueme.record/1` 로 변환. 같은 사람이 3분 안에 연달아 보낸 메시지는 한 발화로 합침 | 직접 구현 |
+| 흔적 기록 | `ingest/google.py`, `card.py`, `health.py`, `streaming.py` | 유튜브 시청·검색·지도 방문·카드 결제·건강 하루 요약·음악·넷플릭스를 흔적 기록(`records.TRACE_KINDS`)으로 변환. 카드 이용내역은 머리글 줄을 찾아 읽고, 애플 건강 XML 은 한 줄씩 읽음 | 직접 구현, openpyxl |
 | 개인정보 | `privacy.py` | 참여자 가명화, 본문 속 이름·전화·이메일·계좌·카드·주민번호·URL·계정 가리기 | 직접 구현 |
 | 제3자 이름 | `pii.py` | 참여자 목록에 없고 본문에만 나오는 사람 이름을 "(누군가)"로 가림. 관계어("엄마")와 반려동물 이름은 둠 | GLiNER `gliner_multi_pii-v1` (Apache-2.0) |
 | 형태소 | `textproc.py` | 명사·용언 원형 추출 ("외로웠다" → "외롭다") | Kiwi |
@@ -89,6 +125,8 @@ bun run dev      # 또는 npm run dev. Vite 가 /api/core 를 8767 로 넘긴다
 | 묶기 | `clusters.py` | 주제 묶음(형태소 명사로 BERTopic, LLM 이름 붙이기), 기분 묶음, 혼자/함께 묶음, 의미 지도(2차원 좌표) | BERTopic, UMAP, HDBSCAN |
 | 개체·관계 | `entities.py` | 기록마다 사람·장소·활동·물건과 관계를 뽑아 그래프로. 습관을 단정한 자기 서술("요즘 운동할 시간도 없어")과 그 뒤 기록 수의 간극 찾기 | OpenRouter (추출 gemini-2.5-flash, 자기 서술 claude-haiku-4.5), networkx |
 | 검색 | `query.py` | 키워드 확장 → 직접 일치 + 의미 유사도 → LLM 판정 → 근거 3등급 | OpenRouter (확장 gemini-2.5-flash, 판정 claude-haiku-4.5) |
+| 소설 재료 컬럼 | `columns.py` | 키워드 없이 기록 전체에서 인물(대화량·답장 간격·밤 비율·새로 등장/끊김)·장소·생활 리듬·취향·여러 컬럼이 함께 꺾인 날을 계산하고, 숫자와 근거 기록을 붙인 발견 문장과 장르 추천을 만듦. 노벨 취재 노트의 `background` 로 들어감 (`COLUMNS.md`) | 통계만, ruptures (PELT) |
+| 북디자인 | `book/` | 실제 북커버 206장을 재고(팔레트·여백 등)·라벨을 붙여 장르별 디자인 문법을 세고, 장르·정서가 가까운 사례 6장으로 브리프를 만든 뒤 그림 모델로 표지·삽화를 그리고 HTML 판형으로 렌더 (`book/README.md`) | Open Library, OpenRouter (라벨 gemini-2.5-flash, 그림 gemini-3.1-flash-image-preview), Playwright |
 | 서사 오브젝트 | `narrative.py` | `virtueme.narrative/1` JSON, 근거 기록 목록, 주제·기분·혼자/함께 비율, 비주얼 신호 7개 | `schema/narrative.v1.schema.json` |
 | 이야기 프롬프트 | `story.py` | 번호 붙인 취재 노트와 근거 계약 v2 집필 규칙. 노벨과 대화가 같은 함수를 씀 | Storyseed 원문 프롬프트 (`prompts_storyseed.py`) |
 | 근거 검사 | `verify.py` | `<em ref>` 앵커의 날짜·요일·시각·횟수·낱말을 기록과 대조, 문맥 검사, 강등 | OpenRouter (문맥 검사 claude-haiku-4.5) |
@@ -107,6 +145,11 @@ bun run dev      # 또는 npm run dev. Vite 가 /api/core 를 8767 로 넘긴다
 - 키가 있으면 관련도 0.2 이상 후보(최대 240건)를 판정 모델이 2(직접)·1(간접)·0(무관)으로 다시 봅니다.
   2 는 강한 근거, 1 은 약한 근거가 됩니다.
 - 기본값은 **본인이 쓴 기록만** 근거로 셉니다. 상대가 보낸 메시지는 앞뒤 20분 안의 인접 근거로만 씁니다.
+- 흔적 기록도 본인 기록이라 근거로 셉니다. 판정 모델에는 흔적 기록을 따로 묶어 "흔적이 키워드의 활동·대상을 직접 가리킬 때만
+  2, 이름 키워드(콩이)는 그 이름이 나올 때만 2" 라는 기준을 더해 보냅니다(`query.JUDGE_TRACE_NOTE`). 비율 기준의 분모인
+  "기록이 있는 날"은 글로 쓴 기록이 있는 날로 셉니다. 건강 하루 요약처럼 매일 생기는 흔적까지 세면 비율이 흔들리기 때문입니다.
+- 이야기에 넘기는 근거 기록(최대 48건)에서 흔적 기록은 같은 글을 한 번만 두고 1/3 자리까지만 씁니다. 같은 영상을 여러 번
+  본 기록이 취재 노트를 덮지 않게 하기 위해서입니다. 글로 쓴 근거가 모자라면 흔적으로 채웁니다.
 - 강한 근거: 강한 기록 8건·5일 이상, 기록이 있는 날의 5% 이상
 - 약한 근거: 강한 기록 3건·2일 이상, 또는 강한·약한을 합쳐 8건·4일 이상
 - 근거 부족: 그 밖. 서사 오브젝트에 `message: "기록이 충분하지 않습니다"` 만 담고, 노벨 화면은 이야기를 짓지 않습니다.
@@ -147,8 +190,10 @@ bun run dev      # 또는 npm run dev. Vite 가 /api/core 를 8767 로 넘긴다
 | `GET /clusters` | 주제·기분·혼자/함께 묶음과 비율 |
 | `GET /graph?keyword=` | 개체·관계 그래프 (노드·엣지, 근거 기록 수) |
 | `GET /gaps` | 자기 서술과 기록 비율이 어긋나는 곳 |
+| `GET /columns` | 소설 재료 컬럼 `virtueme.columns/1`: 컬럼 목록과 출처 유무, 인물, 장소, 리듬, 취향, 전환점, 발견 문장, 장르 추천 |
+| `POST /places/name` `{"key", "name"}` | 장소에 이름 붙이기 (휴대폰 타임라인에는 이름이 없음). 이름을 비우면 지움 |
 | `GET /map?keyword=` | 의미 지도: 본인 기록의 2차원 좌표, 주제, 키워드 근거 표시 |
-| `GET /import` | 기록 넣기 화면 (`POST /import/{kakao,sms,instagram,photos}`, `POST /build`, `GET /build/status`, `GET /people/local`, `POST /people/relation`) |
+| `GET /import` | 기록 넣기 화면 (`POST /import/{kakao,sms,instagram,photos,google,maps,card,health,spotify,netflix}`, 흔적 기록은 `since`·`until` 폼 값으로 기간 지정, `POST /build`, `GET /build/status`, `GET /people/local`, `POST /people/relation`) |
 | `GET /label` | 정답 라벨 붙이는 화면 (`/label/candidates`, `POST /label`, `/label/export`) |
 | `GET /outbound?days=7` · `/outbound/item?id=` | 밖으로 나간 글: 용도별 요청 수·글자 수, 마지막 검사에서 바꾼 요청, 최근 요청과 전체 글 |
 | `POST /profile/delete` `{"confirm": "<프로필 이름>"}` | 이 프로필의 기록과 파생 파일 전부 지우기 |
@@ -283,7 +328,7 @@ VIRTUEME_PROFILE=seoyeon ./scripts/start-demo-mac.sh --music    # 새 키워드 
 ## 테스트
 
 ```bash
-uv run pytest -q     # 68개. 모델을 내려받지 않는 해시 임베더와 가짜 음악 서버로 돈다
+uv run pytest -q     # 119개 (흔적 기록 30개, 소설 재료 컬럼 9개, 북디자인 12개 포함). 모델을 내려받지 않는 해시 임베더와 가짜 음악 서버로 돈다
 ```
 
 ## 알려진 한계

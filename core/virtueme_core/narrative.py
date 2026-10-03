@@ -34,9 +34,56 @@ from .records import Record
 from .textproc import top_nouns
 
 SCHEMA_ID = "virtueme.narrative/1"
-SOURCE_LABEL = {"kakao": "카카오톡", "sms": "문자", "instagram": "인스타그램", "photo": "사진", "synthetic": "활동 기록"}
+SOURCE_LABEL = {"kakao": "카카오톡", "sms": "문자", "instagram": "인스타그램", "photo": "사진", "synthetic": "활동 기록",
+                "youtube": "유튜브", "search": "구글 검색", "maps": "구글 지도", "card": "카드", "health": "건강",
+                "spotify": "스포티파이", "netflix": "넷플릭스"}
 KIND_LABEL = {"message": "메시지", "post": "게시물", "story": "스토리", "reel": "릴스", "comment": "댓글",
-              "photo": "사진", "activity": "활동"}
+              "photo": "사진", "activity": "활동",
+              "watch": "시청", "listen": "음악", "search": "검색", "visit": "방문", "payment": "결제", "health": "건강"}
+
+
+def term_text(r: Record) -> str | None:
+    """주요 낱말을 셀 때 쓰는 본문. 흔적 기록은 "유튜브 시청:" 같은 틀과 채널·금액을 빼고 제목·검색어·가맹점만 쓴다."""
+    if not r.is_trace:
+        return r.text
+    m = r.meta
+    got = m.get("title") or m.get("query") or m.get("merchant") or m.get("track")
+    if got:
+        return str(got)
+    if r.kind == "visit":
+        return r.place if r.place not in (None, "장소") else None
+    return None
+
+
+def _pick_evidence(ev: list[Scored], limit: int) -> list[Scored]:
+    """LLM 에 넘길 근거: 관련도 상위 2/3 + 나머지에서 시간 순으로 고르게 1/3.
+
+    흔적 기록은 같은 영상을 여러 번 본 것처럼 같은 글이 많고 건수도 커서, 같은 글은 한 번만 두고 자리의 1/3 까지만 쓴다
+    (글로 쓴 근거가 모자라면 그만큼 더 쓴다). 흔적 자리도 기간에 고르게 나눈다.
+    """
+    def spread(items: list[Scored], n: int) -> list[Scored]:
+        if n <= 0 or not items:
+            return []
+        top_n = (n * 2) // 3
+        picked = items[:top_n]
+        rest = sorted(items[top_n:], key=lambda s: s.record.ts)
+        if rest:
+            step = max(1, len(rest) // max(1, n - top_n))
+            picked += rest[::step][: n - top_n]
+        return picked
+
+    written = [s for s in ev if not s.record.is_trace]
+    seen: set[str] = set()
+    traces = []
+    for s in ev:
+        if s.record.is_trace and (s.record.text or "") not in seen:
+            seen.add(s.record.text or "")
+            traces.append(s)
+    n_trace = min(len(traces), max(limit // 3, limit - len(written)))
+    by_time = sorted(traces, key=lambda s: s.record.ts)
+    step = len(by_time) / n_trace if n_trace else 1
+    picked = spread(written, limit - n_trace) + [by_time[int(i * step)] for i in range(n_trace)]
+    return sorted(picked, key=lambda s: s.record.ts)
 
 
 def _clip01(x: float) -> float:
@@ -76,6 +123,14 @@ def record_view(r: Record, masker: Masker, rel: float | None = None, chars: int 
         out["channel"] = r.meta.get("channel")
     if r.meta.get("room"):
         out["room"] = r.meta["room"]
+    if r.is_trace:
+        # 결제한 곳·방문한 곳 이름과 금액. 좌표(lat·lon)는 내보내지 않는다
+        if r.place:
+            out["place"] = masker.mask(r.place)
+        if r.kind == "payment" and r.meta.get("amount") is not None:
+            out["amount"] = r.meta["amount"]
+        if r.kind == "visit" and r.meta.get("duration_min") is not None:
+            out["duration_min"] = r.meta["duration_min"]
     if rel is not None:
         out["relevance"] = round(rel, 3)
     return out
@@ -193,7 +248,7 @@ def build(engine: QueryEngine, res: QueryResult, masker: Masker | None = None,
             "sources": dict(Counter(SOURCE_LABEL.get(s.record.source, s.record.source) for s in ev)),
         },
         "top_terms": [{"term": t, "count": c} for t, c in top_nouns(
-            (masker.mask(s.record.text) or "" for s in ev if s.record.text), k=8)],
+            (masker.mask(term_text(s.record)) or "" for s in ev if s.record.text), k=8)],
         "top_tags": [{"tag": t, "count": c} for t, c in tags.most_common(6)],
         "emotion": {
             "series": series,
@@ -210,14 +265,7 @@ def build(engine: QueryEngine, res: QueryResult, masker: Masker | None = None,
         **clustering.summarize(engine.store, [s.record.id for s in ev]),
         "signals": _signals(engine, res, ev, vals),
     })
-    # LLM 에 넘길 근거: 관련도 상위 2/3 + 나머지에서 시간 순으로 고르게 1/3
-    top_n = (limit * 2) // 3
-    picked = ev[:top_n]
-    rest = sorted(ev[top_n:], key=lambda s: s.record.ts)
-    if rest:
-        step = max(1, len(rest) // max(1, limit - top_n))
-        picked += rest[::step][: limit - top_n]
-    picked.sort(key=lambda s: s.record.ts)
+    picked = _pick_evidence(ev, limit)
     evidence = [record_view(s.record, masker, s.rel) for s in picked]
     adjacent = [record_view(r, masker) for r in res.adjacent[:12]]
     return {

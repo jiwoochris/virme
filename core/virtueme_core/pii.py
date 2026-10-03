@@ -10,6 +10,7 @@
 - 관계어("엄마", "옆집 할머니"), 가명("지인A"), 본인 표기("나")는 건너뛰고, 본인 이름("서연씨")은 "(나)" 로 바꾼다.
 - 잘못 잡히는 이름은 `virtueme people --keep 이름` 으로 예외에 넣는다.
 - 모델은 처음 쓸 때 내려받는다 (약 1.1GB). `virtueme build --no-pii` 로 끌 수 있다.
+- 흔적 기록은 검색어만 검사한다. 영상 제목·가맹점·곡 이름에 나오는 이름은 연예인·상호라 가리면 검색만 나빠진다.
 """
 from __future__ import annotations
 
@@ -136,7 +137,8 @@ def mask_texts(texts: list[str], keep: set[str] | None = None, self_names: set[s
 
 def run(store: Store, log=print) -> dict[str, Any]:
     """아직 검사하지 않은 기록의 본문에서 제3자 이름을 가린다."""
-    todo = [r for r in store.records() if r.text and r.meta.get("pii") != PII_VERSION]
+    todo = [r for r in store.records() if r.text and r.meta.get("pii") != PII_VERSION
+            and (not r.is_trace or r.kind == "search")]
     if not todo:
         return {"scanned": 0}
     log(f"제3자 이름 검사 {len(todo)}건 (GLiNER)")

@@ -1,0 +1,18 @@
+[
+ {
+  "ts": "2026-07-14T13:00:00Z",
+  "platform": "ios",
+  "ms_played": 200000,
+  "master_metadata_track_name": "밤편지",
+  "master_metadata_album_artist_name": "아이유",
+  "master_metadata_album_album_name": "Palette",
+  "spotify_track_uri": "spotify:track:x"
+ },
+ {
+  "ts": "2026-07-14T14:00:00Z",
+  "ms_played": 900000,
+  "master_metadata_track_name": null,
+  "master_metadata_album_artist_name": null,
+  "episode_name": "어떤 팟캐스트"
+ }
+]

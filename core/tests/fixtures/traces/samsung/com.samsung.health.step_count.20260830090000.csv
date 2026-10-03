@@ -1,0 +1,6 @@
+com.samsung.health.step_count,6315006,4
+com.samsung.health.step_count.start_time,com.samsung.health.step_count.count,com.samsung.health.step_count.time_offset,com.samsung.health.step_count.deviceuuid
+2026-07-12 23:00:00.000,3000,UTC+0900,phone
+2026-07-13 10:00:00.000,4000,UTC+0900,phone
+2026-07-13 10:00:00.000,5000,UTC+0900,watch
+2026-07-13 11:00:00.000,2500,UTC+0900,watch

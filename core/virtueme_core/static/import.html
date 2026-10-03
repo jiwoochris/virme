@@ -17,6 +17,7 @@
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
   .card h3 { margin: 0; font-size: 14px; }
   .how { margin: 0; color: var(--mut); font-size: 12px; line-height: 1.6; }
+  input[type=date] { padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: #0f1016; color: var(--ink); font: inherit; font-size: 13px; }
   input[type=text] { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: #0f1016; color: var(--ink); font: inherit; font-size: 13px; }
   input[type=file] { font-size: 12px; color: var(--sub); }
   button { padding: 9px 12px; border-radius: 9px; border: 1px solid var(--line); background: #1c1e28; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
@@ -74,6 +75,51 @@
       <h3>사진</h3>
       <p class="how">jpg·png·heic 여러 장이나 zip. 촬영 시각과 위치(EXIF)를 읽고, 위치는 밖으로 보내지 않습니다.</p>
       <input type="file" multiple accept="image/*,.heic,.zip">
+      <button>가져오기</button><p class="out"></p>
+    </div>
+  </div>
+
+  <h2>1-2. 흔적 기록 올리기 (선택)</h2>
+  <p class="sub">글로 쓰지 않았지만 기기와 서비스에 남은 기록입니다. 각 서비스의 "내 데이터 다운로드" 파일을 그대로 올리고, 받은 zip 을 풀 필요는 없습니다. 기록 처리 때 정서 채점과 주제 묶기에서는 빠지고, 키워드 검색의 근거로 쓰입니다.</p>
+  <div class="opts">
+    <label>가져올 기간 <input type="date" id="traceSince"> ~ <input type="date" id="traceUntil"></label>
+    <span>유튜브·스포티파이처럼 몇 년 치가 쌓인 곳은 기간을 정하면 빨라집니다.</span>
+  </div>
+  <div class="grid">
+    <div class="card" data-source="google" data-trace>
+      <h3>구글 (유튜브·검색·지도)</h3>
+      <p class="how">takeout.google.com 에서 YouTube 기록과 내 활동(검색)을 JSON 형식으로 내보내기. 받은 zip 을 올리면 유튜브 시청·검색·예전 위치 기록을 한 번에 읽습니다.</p>
+      <input type="file" multiple accept=".zip,.json,.html">
+      <button>가져오기</button><p class="out"></p>
+    </div>
+    <div class="card" data-source="maps" data-trace>
+      <h3>구글 지도 타임라인</h3>
+      <p class="how">휴대폰 설정 → 위치 → 위치 서비스 → 타임라인 → 타임라인 데이터 내보내기로 만든 Timeline.json. 좌표는 밖으로 보내지 않습니다.</p>
+      <input type="file" multiple accept=".json,.zip">
+      <button>가져오기</button><p class="out"></p>
+    </div>
+    <div class="card" data-source="card" data-trace>
+      <h3>카드 이용내역</h3>
+      <p class="how">카드사 홈페이지·앱 → 이용내역 조회 → 엑셀(xlsx·xls)이나 CSV 저장. 삼성페이 결제도 연결한 카드의 내역에 나옵니다. 카드 번호는 저장하지 않습니다.</p>
+      <input type="file" multiple accept=".xlsx,.xls,.csv,.zip">
+      <button>가져오기</button><p class="out"></p>
+    </div>
+    <div class="card" data-source="health" data-trace>
+      <h3>건강 (삼성 헬스·애플 건강)</h3>
+      <p class="how">삼성 헬스 → 설정 → 개인 데이터 다운로드 폴더를 zip 으로, 또는 아이폰 건강 앱 → 프로필 → 모든 건강 데이터 내보내기 zip. 하루 한 건(걸음·잠·운동)으로 모읍니다.</p>
+      <input type="file" multiple accept=".zip,.csv,.xml">
+      <button>가져오기</button><p class="out"></p>
+    </div>
+    <div class="card" data-source="spotify" data-trace>
+      <h3>스포티파이</h3>
+      <p class="how">계정 → 개인정보 보호 설정 → 데이터 다운로드로 받은 zip (StreamingHistory JSON). 30초 넘게 들은 곡만 씁니다.</p>
+      <input type="file" multiple accept=".zip,.json">
+      <button>가져오기</button><p class="out"></p>
+    </div>
+    <div class="card" data-source="netflix" data-trace>
+      <h3>넷플릭스</h3>
+      <p class="how">계정 → 개인 정보 다운로드로 받은 zip 이나 그 안의 ViewingActivity.csv. 예고편과 1분 미만 재생은 뺍니다.</p>
+      <input type="file" multiple accept=".zip,.csv">
       <button>가져오기</button><p class="out"></p>
     </div>
   </div>
@@ -144,6 +190,10 @@ document.querySelectorAll('.card').forEach((card) => {
     [...input.files].forEach((f) => fd.append('files', f, f.name));
     const me = $('input[name=me]', card);
     if (me) fd.append('me', me.value.trim());
+    if (card.hasAttribute('data-trace')) {
+      if ($('#traceSince').value) fd.append('since', $('#traceSince').value);
+      if ($('#traceUntil').value) fd.append('until', $('#traceUntil').value);
+    }
     btn.disabled = true; out.className = 'out'; out.textContent = '파일 전송 중';
     try {
       const r = await fetch('import/' + card.dataset.source, { method: 'POST', body: fd });

@@ -1,6 +1,7 @@
 """개체·관계 추출과 지식그래프, 그리고 "스스로 말한 나"와 기록 사이의 간극.
 
 개체·관계
+- 흔적 기록(records.TRACE_KINDS)은 보내지 않는다. 건수가 많아 비용이 크고, 가맹점·영상 제목은 이미 meta 에 있다.
 - 가려진 기록 텍스트를 30건씩 LLM 에 보내 사람·장소·활동·음식·물건·동물·일·단체와 "나 —함께함→ 지인D" 같은 관계를 받는다.
 - 그래프는 networkx 로 만든다. 노드 = (종류, 이름), 간선 = 같은 기록에 함께 나온 횟수 + 관계 동사.
 - 그래프를 만들기 전에 이름을 합친다: 제주도→제주, 우리집→집, 우리 크루·크루→러닝 크루, 지인D씨→지인D.
@@ -69,7 +70,7 @@ def extract(store: Store, model: str = LLM_MODEL, batch: int = 30) -> dict[str, 
         return {"skipped": "OPENROUTER_API_KEY 없음"}
     masker = Masker.from_store(store)
     done = store.entity_done()
-    todo = [(r, masker.mask(r.text) or "") for r in store.records() if r.text and r.id not in done]
+    todo = [(r, masker.mask(r.text) or "") for r in store.records() if r.text and not r.is_trace and r.id not in done]
     hits = 0
     pending = []
     for r, t in todo:
@@ -292,7 +293,7 @@ def graph(store: Store, emotions: dict[str, tuple[float, float, str]], record_id
 
 def find_gaps(store: Store, engine: QueryEngine, model: str = LLM_MODEL, max_topics: int = 8) -> list[dict[str, Any]]:
     """자기 서술과 기록 사이의 간극. 결과는 캐시에 남긴다 (기록이 바뀌면 다시 계산)."""
-    own = [r for r in engine.records if r.is_self and r.text and len(r.text) >= 6]
+    own = [r for r in engine.records if r.is_self and not r.is_trace and r.text and len(r.text) >= 6]
     from .query import JUDGE_VERSION  # 판정 기준이 바뀌면 간극의 기록 수도 달라진다
 
     key = f"{CLAIM_VERSION}:{JUDGE_VERSION}:{model}:{_hash(''.join(r.id + (r.text or '') for r in engine.records))}"

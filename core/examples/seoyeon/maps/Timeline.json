@@ -1,0 +1,5431 @@
+{
+ "semanticSegments": [
+  {
+   "startTime": "2026-06-01T00:00:00.000+09:00",
+   "endTime": "2026-06-01T08:10:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.76,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.82,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-01T08:10:00.000+09:00",
+   "endTime": "2026-06-01T09:01:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-01T09:01:00.000+09:00",
+   "endTime": "2026-06-01T22:42:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.77,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.7,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-01T22:42:00.000+09:00",
+   "endTime": "2026-06-01T23:12:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-01T23:12:00.000+09:00",
+   "endTime": "2026-06-02T08:35:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.85,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.51,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-02T08:35:00.000+09:00",
+   "endTime": "2026-06-02T09:05:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-02T09:05:00.000+09:00",
+   "endTime": "2026-06-02T20:48:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.8,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.84,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-02T20:48:00.000+09:00",
+   "endTime": "2026-06-02T21:18:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-02T21:18:00.000+09:00",
+   "endTime": "2026-06-03T08:34:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.74,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.81,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-03T08:34:00.000+09:00",
+   "endTime": "2026-06-03T09:04:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-03T09:04:00.000+09:00",
+   "endTime": "2026-06-03T20:43:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.7,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.5,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-03T20:43:00.000+09:00",
+   "endTime": "2026-06-03T21:13:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-03T21:13:00.000+09:00",
+   "endTime": "2026-06-04T08:35:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.66,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.58,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-04T08:35:00.000+09:00",
+   "endTime": "2026-06-04T09:05:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-04T09:05:00.000+09:00",
+   "endTime": "2026-06-04T22:47:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.84,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-04T22:47:00.000+09:00",
+   "endTime": "2026-06-04T23:17:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-04T23:17:00.000+09:00",
+   "endTime": "2026-06-05T08:29:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.74,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.89,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-05T08:29:00.000+09:00",
+   "endTime": "2026-06-05T08:59:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-05T08:59:00.000+09:00",
+   "endTime": "2026-06-05T21:32:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.86,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.83,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-05T21:32:00.000+09:00",
+   "endTime": "2026-06-05T22:02:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-05T22:02:00.000+09:00",
+   "endTime": "2026-06-08T08:37:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.83,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.65,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-08T08:37:00.000+09:00",
+   "endTime": "2026-06-08T09:07:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-08T09:07:00.000+09:00",
+   "endTime": "2026-06-08T21:04:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.76,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.6,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-08T21:04:00.000+09:00",
+   "endTime": "2026-06-08T21:34:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-08T21:34:00.000+09:00",
+   "endTime": "2026-06-09T08:26:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.71,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.63,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-09T08:26:00.000+09:00",
+   "endTime": "2026-06-09T08:56:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-09T08:56:00.000+09:00",
+   "endTime": "2026-06-09T22:11:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.78,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.6,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-09T22:11:00.000+09:00",
+   "endTime": "2026-06-09T22:41:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-09T22:41:00.000+09:00",
+   "endTime": "2026-06-10T08:31:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.66,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-10T08:31:00.000+09:00",
+   "endTime": "2026-06-10T09:01:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-10T09:01:00.000+09:00",
+   "endTime": "2026-06-10T22:37:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.69,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.61,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-10T22:37:00.000+09:00",
+   "endTime": "2026-06-10T23:07:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-10T23:07:00.000+09:00",
+   "endTime": "2026-06-11T08:32:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.65,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.81,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-11T08:32:00.000+09:00",
+   "endTime": "2026-06-11T09:02:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-11T09:02:00.000+09:00",
+   "endTime": "2026-06-11T22:11:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.75,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.5,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-11T22:11:00.000+09:00",
+   "endTime": "2026-06-11T22:41:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-11T22:41:00.000+09:00",
+   "endTime": "2026-06-12T08:32:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.67,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.64,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-12T08:32:00.000+09:00",
+   "endTime": "2026-06-12T09:02:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-12T09:02:00.000+09:00",
+   "endTime": "2026-06-12T22:03:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.66,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.77,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-12T22:03:00.000+09:00",
+   "endTime": "2026-06-12T22:33:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-12T22:33:00.000+09:00",
+   "endTime": "2026-06-15T08:37:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.91,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.71,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-15T08:37:00.000+09:00",
+   "endTime": "2026-06-15T09:07:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-15T09:07:00.000+09:00",
+   "endTime": "2026-06-15T21:28:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.69,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.54,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-15T21:28:00.000+09:00",
+   "endTime": "2026-06-15T21:58:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-15T21:58:00.000+09:00",
+   "endTime": "2026-06-16T08:40:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.78,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.79,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-16T08:40:00.000+09:00",
+   "endTime": "2026-06-16T09:10:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-16T09:10:00.000+09:00",
+   "endTime": "2026-06-16T21:39:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.55,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-16T21:39:00.000+09:00",
+   "endTime": "2026-06-16T22:09:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-16T22:09:00.000+09:00",
+   "endTime": "2026-06-17T08:34:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.81,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.52,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-17T08:34:00.000+09:00",
+   "endTime": "2026-06-17T09:04:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-17T09:04:00.000+09:00",
+   "endTime": "2026-06-17T20:57:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.8,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.66,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-17T20:57:00.000+09:00",
+   "endTime": "2026-06-17T21:27:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-17T21:27:00.000+09:00",
+   "endTime": "2026-06-18T08:36:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.76,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.82,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-18T08:36:00.000+09:00",
+   "endTime": "2026-06-18T09:06:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-18T09:06:00.000+09:00",
+   "endTime": "2026-06-18T21:07:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.76,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.6,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-18T21:07:00.000+09:00",
+   "endTime": "2026-06-18T21:37:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-18T21:37:00.000+09:00",
+   "endTime": "2026-06-19T08:28:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.86,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.51,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-19T08:28:00.000+09:00",
+   "endTime": "2026-06-19T08:58:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-19T08:58:00.000+09:00",
+   "endTime": "2026-06-19T21:22:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.92,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.9,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-19T21:22:00.000+09:00",
+   "endTime": "2026-06-19T21:52:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-19T21:52:00.000+09:00",
+   "endTime": "2026-06-22T08:25:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.84,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.6,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-22T08:25:00.000+09:00",
+   "endTime": "2026-06-22T08:55:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-22T08:55:00.000+09:00",
+   "endTime": "2026-06-22T22:05:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.91,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.53,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-22T22:05:00.000+09:00",
+   "endTime": "2026-06-22T22:35:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-22T22:35:00.000+09:00",
+   "endTime": "2026-06-23T08:31:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.69,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-23T08:31:00.000+09:00",
+   "endTime": "2026-06-23T09:01:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-23T09:01:00.000+09:00",
+   "endTime": "2026-06-23T22:27:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.64,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.73,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-23T22:27:00.000+09:00",
+   "endTime": "2026-06-23T22:57:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-23T22:57:00.000+09:00",
+   "endTime": "2026-06-24T08:32:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.75,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.72,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-24T08:32:00.000+09:00",
+   "endTime": "2026-06-24T09:02:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-24T09:02:00.000+09:00",
+   "endTime": "2026-06-24T18:44:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.77,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.64,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-24T18:44:00.000+09:00",
+   "endTime": "2026-06-24T19:14:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-24T19:14:00.000+09:00",
+   "endTime": "2026-06-25T08:40:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.65,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.84,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-25T08:40:00.000+09:00",
+   "endTime": "2026-06-25T09:10:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-25T09:10:00.000+09:00",
+   "endTime": "2026-06-25T18:42:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.56,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-25T18:42:00.000+09:00",
+   "endTime": "2026-06-25T19:12:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-25T19:12:00.000+09:00",
+   "endTime": "2026-06-26T08:40:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.6,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.84,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-26T08:40:00.000+09:00",
+   "endTime": "2026-06-26T09:10:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-26T09:10:00.000+09:00",
+   "endTime": "2026-06-26T18:58:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.7,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.75,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-26T18:58:00.000+09:00",
+   "endTime": "2026-06-26T19:28:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-26T19:28:00.000+09:00",
+   "endTime": "2026-06-28T14:10:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.65,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.87,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-28T14:10:00.000+09:00",
+   "endTime": "2026-06-28T14:40:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-28T14:40:00.000+09:00",
+   "endTime": "2026-06-28T15:35:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.9,
+    "topCandidate": {
+     "placeId": "ChIJc843e8366c7Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.63,
+     "placeLocation": {
+      "latLng": "37.5496000°, 126.9138000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-28T15:35:00.000+09:00",
+   "endTime": "2026-06-28T16:05:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5496000°, 126.9138000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-28T16:05:00.000+09:00",
+   "endTime": "2026-06-29T08:32:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.91,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.88,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-29T08:32:00.000+09:00",
+   "endTime": "2026-06-29T09:02:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-29T09:02:00.000+09:00",
+   "endTime": "2026-06-29T18:56:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.78,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.72,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-29T18:56:00.000+09:00",
+   "endTime": "2026-06-29T19:26:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-29T19:26:00.000+09:00",
+   "endTime": "2026-06-30T08:35:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.87,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.85,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-30T08:35:00.000+09:00",
+   "endTime": "2026-06-30T09:05:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-30T09:05:00.000+09:00",
+   "endTime": "2026-06-30T18:34:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.74,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.78,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-06-30T18:34:00.000+09:00",
+   "endTime": "2026-06-30T19:04:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-06-30T19:04:00.000+09:00",
+   "endTime": "2026-07-01T06:25:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.66,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.6,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-01T06:25:00.000+09:00",
+   "endTime": "2026-07-01T06:55:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-01T06:55:00.000+09:00",
+   "endTime": "2026-07-01T07:46:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.85,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.56,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-01T07:46:00.000+09:00",
+   "endTime": "2026-07-01T08:58:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-01T08:58:00.000+09:00",
+   "endTime": "2026-07-01T19:10:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.86,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-01T19:10:00.000+09:00",
+   "endTime": "2026-07-01T19:40:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-01T19:40:00.000+09:00",
+   "endTime": "2026-07-02T08:39:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.84,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.6,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-02T08:39:00.000+09:00",
+   "endTime": "2026-07-02T09:09:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-02T09:09:00.000+09:00",
+   "endTime": "2026-07-02T19:05:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.81,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.88,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-02T19:05:00.000+09:00",
+   "endTime": "2026-07-02T19:35:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-02T19:35:00.000+09:00",
+   "endTime": "2026-07-03T08:32:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.91,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.58,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-03T08:32:00.000+09:00",
+   "endTime": "2026-07-03T09:02:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-03T09:02:00.000+09:00",
+   "endTime": "2026-07-03T18:59:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.67,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.65,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-03T18:59:00.000+09:00",
+   "endTime": "2026-07-03T19:29:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-03T19:29:00.000+09:00",
+   "endTime": "2026-07-04T19:00:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.69,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.64,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-04T19:00:00.000+09:00",
+   "endTime": "2026-07-04T19:30:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-04T19:30:00.000+09:00",
+   "endTime": "2026-07-04T20:22:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.68,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.58,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-04T20:22:00.000+09:00",
+   "endTime": "2026-07-04T20:52:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-04T20:52:00.000+09:00",
+   "endTime": "2026-07-06T08:30:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.76,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.6,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-06T08:30:00.000+09:00",
+   "endTime": "2026-07-06T09:00:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-06T09:00:00.000+09:00",
+   "endTime": "2026-07-06T18:41:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.87,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.66,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-06T18:41:00.000+09:00",
+   "endTime": "2026-07-06T19:50:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-06T19:50:00.000+09:00",
+   "endTime": "2026-07-06T20:44:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.91,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.77,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-06T20:44:00.000+09:00",
+   "endTime": "2026-07-06T21:14:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-06T21:14:00.000+09:00",
+   "endTime": "2026-07-07T08:34:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.68,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.58,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-07T08:34:00.000+09:00",
+   "endTime": "2026-07-07T09:04:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-07T09:04:00.000+09:00",
+   "endTime": "2026-07-07T18:59:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.86,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.54,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-07T18:59:00.000+09:00",
+   "endTime": "2026-07-07T19:55:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-07T19:55:00.000+09:00",
+   "endTime": "2026-07-07T20:52:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.73,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.63,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-07T20:52:00.000+09:00",
+   "endTime": "2026-07-07T21:22:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-07T21:22:00.000+09:00",
+   "endTime": "2026-07-08T08:26:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.88,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.89,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-08T08:26:00.000+09:00",
+   "endTime": "2026-07-08T08:56:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-08T08:56:00.000+09:00",
+   "endTime": "2026-07-08T19:04:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.95,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.78,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-08T19:04:00.000+09:00",
+   "endTime": "2026-07-08T19:34:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-08T19:34:00.000+09:00",
+   "endTime": "2026-07-09T08:39:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.79,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.63,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-09T08:39:00.000+09:00",
+   "endTime": "2026-07-09T09:09:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-09T09:09:00.000+09:00",
+   "endTime": "2026-07-09T18:41:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.81,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.56,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-09T18:41:00.000+09:00",
+   "endTime": "2026-07-09T19:50:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-09T19:50:00.000+09:00",
+   "endTime": "2026-07-09T20:46:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.87,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.9,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-09T20:46:00.000+09:00",
+   "endTime": "2026-07-09T21:16:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-09T21:16:00.000+09:00",
+   "endTime": "2026-07-10T08:35:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.64,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.83,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-10T08:35:00.000+09:00",
+   "endTime": "2026-07-10T09:05:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-10T09:05:00.000+09:00",
+   "endTime": "2026-07-10T18:56:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.71,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.6,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-10T18:56:00.000+09:00",
+   "endTime": "2026-07-10T19:26:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-10T19:26:00.000+09:00",
+   "endTime": "2026-07-11T07:30:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.65,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.76,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-11T07:30:00.000+09:00",
+   "endTime": "2026-07-11T08:00:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-11T08:00:00.000+09:00",
+   "endTime": "2026-07-11T08:57:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.77,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.89,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-11T08:57:00.000+09:00",
+   "endTime": "2026-07-11T09:27:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-11T09:27:00.000+09:00",
+   "endTime": "2026-07-13T08:27:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.77,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.63,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-13T08:27:00.000+09:00",
+   "endTime": "2026-07-13T08:57:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-13T08:57:00.000+09:00",
+   "endTime": "2026-07-13T18:28:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.74,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.7,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-13T18:28:00.000+09:00",
+   "endTime": "2026-07-13T19:50:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-13T19:50:00.000+09:00",
+   "endTime": "2026-07-13T20:53:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.92,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.73,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-13T20:53:00.000+09:00",
+   "endTime": "2026-07-13T21:23:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-13T21:23:00.000+09:00",
+   "endTime": "2026-07-14T08:32:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.89,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.63,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-14T08:32:00.000+09:00",
+   "endTime": "2026-07-14T09:02:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-14T09:02:00.000+09:00",
+   "endTime": "2026-07-14T18:44:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.85,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.7,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-14T18:44:00.000+09:00",
+   "endTime": "2026-07-14T19:14:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-14T19:14:00.000+09:00",
+   "endTime": "2026-07-15T08:33:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.79,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.77,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-15T08:33:00.000+09:00",
+   "endTime": "2026-07-15T09:03:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-15T09:03:00.000+09:00",
+   "endTime": "2026-07-15T18:36:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.84,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.76,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-15T18:36:00.000+09:00",
+   "endTime": "2026-07-15T19:55:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-15T19:55:00.000+09:00",
+   "endTime": "2026-07-15T20:54:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.72,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.89,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-15T20:54:00.000+09:00",
+   "endTime": "2026-07-15T21:24:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-15T21:24:00.000+09:00",
+   "endTime": "2026-07-16T08:36:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.79,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.68,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-16T08:36:00.000+09:00",
+   "endTime": "2026-07-16T09:06:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-16T09:06:00.000+09:00",
+   "endTime": "2026-07-16T18:21:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.84,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.83,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-16T18:21:00.000+09:00",
+   "endTime": "2026-07-16T18:51:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-16T18:51:00.000+09:00",
+   "endTime": "2026-07-17T08:40:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.61,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.64,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-17T08:40:00.000+09:00",
+   "endTime": "2026-07-17T09:10:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-17T09:10:00.000+09:00",
+   "endTime": "2026-07-17T18:23:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.75,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-17T18:23:00.000+09:00",
+   "endTime": "2026-07-17T20:00:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-17T20:00:00.000+09:00",
+   "endTime": "2026-07-17T21:02:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.63,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.9,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-17T21:02:00.000+09:00",
+   "endTime": "2026-07-17T21:32:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-17T21:32:00.000+09:00",
+   "endTime": "2026-07-18T18:50:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.67,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.62,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-18T18:50:00.000+09:00",
+   "endTime": "2026-07-18T19:20:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-18T19:20:00.000+09:00",
+   "endTime": "2026-07-18T20:21:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.84,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.65,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-18T20:21:00.000+09:00",
+   "endTime": "2026-07-18T20:51:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-18T20:51:00.000+09:00",
+   "endTime": "2026-07-20T08:37:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.82,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.62,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-20T08:37:00.000+09:00",
+   "endTime": "2026-07-20T09:07:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-20T09:07:00.000+09:00",
+   "endTime": "2026-07-20T18:42:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.76,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.69,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-20T18:42:00.000+09:00",
+   "endTime": "2026-07-20T19:12:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-20T19:12:00.000+09:00",
+   "endTime": "2026-07-21T08:33:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.95,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.59,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-21T08:33:00.000+09:00",
+   "endTime": "2026-07-21T09:03:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-21T09:03:00.000+09:00",
+   "endTime": "2026-07-21T18:37:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.65,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.65,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-21T10:10:00.000+09:00",
+   "endTime": "2026-07-21T11:05:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ9476be00916Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.84,
+     "placeLocation": {
+      "latLng": "37.5568400°, 126.9070200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-21T11:05:00.000+09:00",
+   "endTime": "2026-07-21T11:35:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5568400°, 126.9070200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-21T11:35:00.000+09:00",
+   "endTime": "2026-07-22T08:29:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.79,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.77,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-22T08:29:00.000+09:00",
+   "endTime": "2026-07-22T08:59:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-22T08:59:00.000+09:00",
+   "endTime": "2026-07-22T19:01:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.9,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.68,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-22T19:01:00.000+09:00",
+   "endTime": "2026-07-22T19:31:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-22T19:31:00.000+09:00",
+   "endTime": "2026-07-23T08:27:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.89,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.62,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-23T08:27:00.000+09:00",
+   "endTime": "2026-07-23T08:57:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-23T08:57:00.000+09:00",
+   "endTime": "2026-07-23T19:02:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.66,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.71,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-23T19:02:00.000+09:00",
+   "endTime": "2026-07-23T19:32:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-23T19:32:00.000+09:00",
+   "endTime": "2026-07-24T08:28:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.89,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.68,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-24T08:28:00.000+09:00",
+   "endTime": "2026-07-24T08:58:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-24T08:58:00.000+09:00",
+   "endTime": "2026-07-24T18:53:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.67,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.53,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-24T18:53:00.000+09:00",
+   "endTime": "2026-07-24T19:23:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-24T19:23:00.000+09:00",
+   "endTime": "2026-07-25T07:50:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.9,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.83,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-25T07:50:00.000+09:00",
+   "endTime": "2026-07-25T08:20:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-25T08:20:00.000+09:00",
+   "endTime": "2026-07-25T09:16:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.91,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.59,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-25T09:16:00.000+09:00",
+   "endTime": "2026-07-25T09:46:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-25T09:46:00.000+09:00",
+   "endTime": "2026-07-27T08:27:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.92,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.53,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-27T08:27:00.000+09:00",
+   "endTime": "2026-07-27T08:57:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-27T08:57:00.000+09:00",
+   "endTime": "2026-07-27T18:50:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.86,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.87,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-27T18:50:00.000+09:00",
+   "endTime": "2026-07-27T19:00:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-27T19:00:00.000+09:00",
+   "endTime": "2026-07-27T19:40:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.89,
+    "topCandidate": {
+     "placeId": "ChIJ9476be00916Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.85,
+     "placeLocation": {
+      "latLng": "37.5568400°, 126.9070200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-27T19:40:00.000+09:00",
+   "endTime": "2026-07-27T20:10:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5568400°, 126.9070200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-27T20:10:00.000+09:00",
+   "endTime": "2026-07-28T08:31:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.9,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.58,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-28T08:31:00.000+09:00",
+   "endTime": "2026-07-28T09:01:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-28T09:01:00.000+09:00",
+   "endTime": "2026-07-28T18:29:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.88,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-28T18:29:00.000+09:00",
+   "endTime": "2026-07-28T18:59:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-28T18:59:00.000+09:00",
+   "endTime": "2026-07-29T08:38:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.69,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.72,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-29T08:38:00.000+09:00",
+   "endTime": "2026-07-29T09:08:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-29T09:08:00.000+09:00",
+   "endTime": "2026-07-29T18:38:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.72,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.79,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-29T18:38:00.000+09:00",
+   "endTime": "2026-07-29T19:08:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-29T19:08:00.000+09:00",
+   "endTime": "2026-07-30T08:31:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.6,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.68,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-30T08:31:00.000+09:00",
+   "endTime": "2026-07-30T09:01:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-30T09:01:00.000+09:00",
+   "endTime": "2026-07-30T18:34:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.89,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.82,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-30T18:34:00.000+09:00",
+   "endTime": "2026-07-30T19:04:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-30T19:04:00.000+09:00",
+   "endTime": "2026-07-31T08:30:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.64,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.8,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-31T08:30:00.000+09:00",
+   "endTime": "2026-07-31T09:00:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-31T09:00:00.000+09:00",
+   "endTime": "2026-07-31T18:36:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.65,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.51,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-31T18:36:00.000+09:00",
+   "endTime": "2026-07-31T19:05:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-31T19:05:00.000+09:00",
+   "endTime": "2026-07-31T20:55:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.75,
+    "topCandidate": {
+     "placeId": "ChIJb58c852013eQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.52,
+     "placeLocation": {
+      "latLng": "37.5552200°, 126.9031100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-07-31T20:55:00.000+09:00",
+   "endTime": "2026-07-31T21:25:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5552200°, 126.9031100°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-07-31T21:25:00.000+09:00",
+   "endTime": "2026-08-01T07:40:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.88,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.53,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-01T07:40:00.000+09:00",
+   "endTime": "2026-08-01T08:10:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-01T08:10:00.000+09:00",
+   "endTime": "2026-08-01T09:11:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.88,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.7,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-01T09:11:00.000+09:00",
+   "endTime": "2026-08-01T09:41:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-01T09:41:00.000+09:00",
+   "endTime": "2026-08-03T08:26:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.87,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.56,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-03T08:26:00.000+09:00",
+   "endTime": "2026-08-03T08:56:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-03T08:56:00.000+09:00",
+   "endTime": "2026-08-03T18:20:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.71,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.88,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-03T18:20:00.000+09:00",
+   "endTime": "2026-08-03T18:50:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-03T18:50:00.000+09:00",
+   "endTime": "2026-08-04T08:37:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.69,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.56,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-04T08:37:00.000+09:00",
+   "endTime": "2026-08-04T09:07:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-04T09:07:00.000+09:00",
+   "endTime": "2026-08-04T18:38:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.88,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.83,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-04T18:38:00.000+09:00",
+   "endTime": "2026-08-04T19:50:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-04T19:50:00.000+09:00",
+   "endTime": "2026-08-04T20:54:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.75,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-04T20:54:00.000+09:00",
+   "endTime": "2026-08-04T21:24:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-04T21:24:00.000+09:00",
+   "endTime": "2026-08-05T08:32:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.87,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.62,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-05T08:32:00.000+09:00",
+   "endTime": "2026-08-05T09:02:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-05T09:02:00.000+09:00",
+   "endTime": "2026-08-05T18:26:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.93,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.84,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-05T18:26:00.000+09:00",
+   "endTime": "2026-08-05T18:56:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-05T18:56:00.000+09:00",
+   "endTime": "2026-08-06T08:34:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.85,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.86,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-06T08:34:00.000+09:00",
+   "endTime": "2026-08-06T09:04:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-06T09:04:00.000+09:00",
+   "endTime": "2026-08-06T19:06:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.69,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.57,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-06T19:06:00.000+09:00",
+   "endTime": "2026-08-06T19:55:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-06T19:55:00.000+09:00",
+   "endTime": "2026-08-06T21:02:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.69,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.83,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-06T21:02:00.000+09:00",
+   "endTime": "2026-08-06T21:32:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-06T21:32:00.000+09:00",
+   "endTime": "2026-08-07T08:26:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.91,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.54,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-07T08:26:00.000+09:00",
+   "endTime": "2026-08-07T08:56:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-07T08:56:00.000+09:00",
+   "endTime": "2026-08-07T19:06:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.6,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.54,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-07T19:06:00.000+09:00",
+   "endTime": "2026-08-07T19:36:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-07T19:36:00.000+09:00",
+   "endTime": "2026-08-08T07:20:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.75,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.82,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-08T07:20:00.000+09:00",
+   "endTime": "2026-08-08T07:50:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-08T07:50:00.000+09:00",
+   "endTime": "2026-08-08T08:56:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.7,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.86,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-08T08:56:00.000+09:00",
+   "endTime": "2026-08-08T09:26:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-08T09:26:00.000+09:00",
+   "endTime": "2026-08-10T08:39:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.92,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.58,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-10T08:39:00.000+09:00",
+   "endTime": "2026-08-10T09:09:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-10T09:09:00.000+09:00",
+   "endTime": "2026-08-10T18:49:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.69,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.89,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-10T18:49:00.000+09:00",
+   "endTime": "2026-08-10T19:19:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-10T19:19:00.000+09:00",
+   "endTime": "2026-08-11T06:50:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.8,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.66,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-11T06:50:00.000+09:00",
+   "endTime": "2026-08-11T07:20:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-11T07:20:00.000+09:00",
+   "endTime": "2026-08-11T08:30:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.7,
+    "topCandidate": {
+     "placeId": "ChIJ1c20b997b2dQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.66,
+     "placeLocation": {
+      "latLng": "37.5586000°, 126.7944000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-11T08:30:00.000+09:00",
+   "endTime": "2026-08-11T09:40:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5586000°, 126.7944000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-11T09:40:00.000+09:00",
+   "endTime": "2026-08-11T10:30:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.67,
+    "topCandidate": {
+     "placeId": "ChIJed74a8dfc36Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.55,
+     "placeLocation": {
+      "latLng": "33.5104000°, 126.4914000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-11T10:30:00.000+09:00",
+   "endTime": "2026-08-11T11:30:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "33.5104000°, 126.4914000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-11T11:30:00.000+09:00",
+   "endTime": "2026-08-11T15:40:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.65,
+    "topCandidate": {
+     "placeId": "ChIJ8f6a522cbb4Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.81,
+     "placeLocation": {
+      "latLng": "33.3940000°, 126.2396000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-11T15:40:00.000+09:00",
+   "endTime": "2026-08-11T17:00:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "33.3940000°, 126.2396000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-11T17:00:00.000+09:00",
+   "endTime": "2026-08-12T10:20:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.8,
+    "topCandidate": {
+     "placeId": "ChIJ62852cb96e5Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.55,
+     "placeLocation": {
+      "latLng": "33.4630000°, 126.3100000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-12T10:20:00.000+09:00",
+   "endTime": "2026-08-12T10:40:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "33.4630000°, 126.3100000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-12T10:40:00.000+09:00",
+   "endTime": "2026-08-12T12:30:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.75,
+    "topCandidate": {
+     "placeId": "ChIJ3ce29206cbeQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.9,
+     "placeLocation": {
+      "latLng": "33.4650000°, 126.3150000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-12T12:30:00.000+09:00",
+   "endTime": "2026-08-12T15:00:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "33.4650000°, 126.3150000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-12T15:00:00.000+09:00",
+   "endTime": "2026-08-12T16:30:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.76,
+    "topCandidate": {
+     "placeId": "ChIJ850e4495742Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.52,
+     "placeLocation": {
+      "latLng": "33.4590000°, 126.8320000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-12T16:30:00.000+09:00",
+   "endTime": "2026-08-12T19:30:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "33.4590000°, 126.8320000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-12T19:30:00.000+09:00",
+   "endTime": "2026-08-13T04:50:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ62852cb96e5Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.85,
+     "placeLocation": {
+      "latLng": "33.4630000°, 126.3100000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-13T04:50:00.000+09:00",
+   "endTime": "2026-08-13T05:40:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "33.4630000°, 126.3100000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-13T05:40:00.000+09:00",
+   "endTime": "2026-08-13T07:30:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.72,
+    "topCandidate": {
+     "placeId": "ChIJ02d813fa0f8Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.7,
+     "placeLocation": {
+      "latLng": "33.4580000°, 126.9425000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-13T07:30:00.000+09:00",
+   "endTime": "2026-08-13T18:00:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "33.4580000°, 126.9425000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-13T18:00:00.000+09:00",
+   "endTime": "2026-08-14T11:00:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.69,
+    "topCandidate": {
+     "placeId": "ChIJ62852cb96e5Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.5,
+     "placeLocation": {
+      "latLng": "33.4630000°, 126.3100000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-14T11:00:00.000+09:00",
+   "endTime": "2026-08-14T15:10:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "33.4630000°, 126.3100000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-14T15:10:00.000+09:00",
+   "endTime": "2026-08-14T16:20:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.79,
+    "topCandidate": {
+     "placeId": "ChIJed74a8dfc36Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.76,
+     "placeLocation": {
+      "latLng": "33.5104000°, 126.4914000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-14T16:20:00.000+09:00",
+   "endTime": "2026-08-14T17:30:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "33.5104000°, 126.4914000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-14T17:30:00.000+09:00",
+   "endTime": "2026-08-14T18:10:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.7,
+    "topCandidate": {
+     "placeId": "ChIJ1c20b997b2dQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.61,
+     "placeLocation": {
+      "latLng": "37.5586000°, 126.7944000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-14T18:10:00.000+09:00",
+   "endTime": "2026-08-14T18:40:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5586000°, 126.7944000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-14T18:40:00.000+09:00",
+   "endTime": "2026-08-17T08:27:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.89,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.77,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-17T08:27:00.000+09:00",
+   "endTime": "2026-08-17T08:57:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-17T08:57:00.000+09:00",
+   "endTime": "2026-08-17T19:09:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.63,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.56,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-17T19:09:00.000+09:00",
+   "endTime": "2026-08-17T19:50:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-17T19:50:00.000+09:00",
+   "endTime": "2026-08-17T20:56:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.66,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.5,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-17T20:56:00.000+09:00",
+   "endTime": "2026-08-17T21:26:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-17T21:26:00.000+09:00",
+   "endTime": "2026-08-18T08:32:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.89,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.7,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-18T08:32:00.000+09:00",
+   "endTime": "2026-08-18T09:02:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-18T09:02:00.000+09:00",
+   "endTime": "2026-08-18T19:04:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.88,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.8,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-18T19:04:00.000+09:00",
+   "endTime": "2026-08-18T19:34:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-18T19:34:00.000+09:00",
+   "endTime": "2026-08-19T08:33:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.77,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.61,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-19T08:33:00.000+09:00",
+   "endTime": "2026-08-19T09:03:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-19T09:03:00.000+09:00",
+   "endTime": "2026-08-19T19:00:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.88,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.64,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-19T19:00:00.000+09:00",
+   "endTime": "2026-08-19T19:50:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-19T19:50:00.000+09:00",
+   "endTime": "2026-08-19T21:02:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.91,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.82,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-19T21:02:00.000+09:00",
+   "endTime": "2026-08-19T21:32:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-19T21:32:00.000+09:00",
+   "endTime": "2026-08-20T08:33:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.67,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.64,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-20T08:33:00.000+09:00",
+   "endTime": "2026-08-20T09:03:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-20T09:03:00.000+09:00",
+   "endTime": "2026-08-20T18:54:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.84,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.77,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-20T18:54:00.000+09:00",
+   "endTime": "2026-08-20T19:10:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-20T19:10:00.000+09:00",
+   "endTime": "2026-08-20T19:50:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.81,
+    "topCandidate": {
+     "placeId": "ChIJ9476be00916Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.82,
+     "placeLocation": {
+      "latLng": "37.5568400°, 126.9070200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-20T19:50:00.000+09:00",
+   "endTime": "2026-08-20T20:20:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5568400°, 126.9070200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-20T20:20:00.000+09:00",
+   "endTime": "2026-08-21T08:39:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.87,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.57,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-21T08:39:00.000+09:00",
+   "endTime": "2026-08-21T09:09:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-21T09:09:00.000+09:00",
+   "endTime": "2026-08-21T18:38:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.78,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-21T18:38:00.000+09:00",
+   "endTime": "2026-08-21T19:40:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-21T19:40:00.000+09:00",
+   "endTime": "2026-08-21T20:51:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.72,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.56,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-21T20:51:00.000+09:00",
+   "endTime": "2026-08-21T21:21:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-21T21:21:00.000+09:00",
+   "endTime": "2026-08-23T17:50:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.69,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.65,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-23T17:50:00.000+09:00",
+   "endTime": "2026-08-23T18:20:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-23T18:20:00.000+09:00",
+   "endTime": "2026-08-23T19:38:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.72,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.7,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-23T19:38:00.000+09:00",
+   "endTime": "2026-08-23T20:08:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-23T20:08:00.000+09:00",
+   "endTime": "2026-08-24T08:39:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.61,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.53,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-24T08:39:00.000+09:00",
+   "endTime": "2026-08-24T09:09:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-24T09:09:00.000+09:00",
+   "endTime": "2026-08-24T18:27:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.95,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.57,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-24T18:27:00.000+09:00",
+   "endTime": "2026-08-24T18:57:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-24T18:57:00.000+09:00",
+   "endTime": "2026-08-25T08:34:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.92,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.55,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-25T08:34:00.000+09:00",
+   "endTime": "2026-08-25T09:04:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-25T09:04:00.000+09:00",
+   "endTime": "2026-08-25T18:46:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.77,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.7,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-25T18:46:00.000+09:00",
+   "endTime": "2026-08-25T19:16:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-25T19:16:00.000+09:00",
+   "endTime": "2026-08-26T08:32:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.81,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.76,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-26T08:32:00.000+09:00",
+   "endTime": "2026-08-26T09:02:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-26T09:02:00.000+09:00",
+   "endTime": "2026-08-26T18:48:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.91,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.67,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-26T18:48:00.000+09:00",
+   "endTime": "2026-08-26T19:50:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-26T19:50:00.000+09:00",
+   "endTime": "2026-08-26T20:50:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.8,
+    "topCandidate": {
+     "placeId": "ChIJf9ce69a326fQx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.8,
+     "placeLocation": {
+      "latLng": "37.5545100°, 126.8945200°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-26T20:50:00.000+09:00",
+   "endTime": "2026-08-26T21:20:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5545100°, 126.8945200°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-26T21:20:00.000+09:00",
+   "endTime": "2026-08-27T08:37:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.62,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.54,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-27T08:37:00.000+09:00",
+   "endTime": "2026-08-27T09:07:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-27T09:07:00.000+09:00",
+   "endTime": "2026-08-27T18:21:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.94,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.81,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-27T18:21:00.000+09:00",
+   "endTime": "2026-08-27T18:51:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-27T18:51:00.000+09:00",
+   "endTime": "2026-08-28T08:39:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.87,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.67,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-28T08:39:00.000+09:00",
+   "endTime": "2026-08-28T09:09:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-28T09:09:00.000+09:00",
+   "endTime": "2026-08-28T18:29:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.88,
+    "topCandidate": {
+     "placeId": "ChIJ9cb92ce4921Qx",
+     "semanticType": "WORK",
+     "probability": 0.67,
+     "placeLocation": {
+      "latLng": "37.5006100°, 127.0364100°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-28T18:29:00.000+09:00",
+   "endTime": "2026-08-28T18:59:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5006100°, 127.0364100°"
+    },
+    "topCandidate": {
+     "type": "IN_SUBWAY",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-28T18:59:00.000+09:00",
+   "endTime": "2026-08-29T07:20:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.74,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.64,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-29T07:20:00.000+09:00",
+   "endTime": "2026-08-29T07:50:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5560200°, 126.9050300°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-29T07:50:00.000+09:00",
+   "endTime": "2026-08-29T09:21:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.93,
+    "topCandidate": {
+     "placeId": "ChIJ66dfa1620c1Qx",
+     "semanticType": "UNKNOWN",
+     "probability": 0.74,
+     "placeLocation": {
+      "latLng": "37.5259000°, 126.9227000°"
+     }
+    }
+   }
+  },
+  {
+   "startTime": "2026-08-29T09:21:00.000+09:00",
+   "endTime": "2026-08-29T09:51:00.000+09:00",
+   "activity": {
+    "start": {
+     "latLng": "37.5259000°, 126.9227000°"
+    },
+    "topCandidate": {
+     "type": "WALKING",
+     "probability": 0.7
+    },
+    "distanceMeters": 1200.0
+   }
+  },
+  {
+   "startTime": "2026-08-29T09:51:00.000+09:00",
+   "endTime": "2026-08-29T23:50:00.000+09:00",
+   "startTimeTimezoneUtcOffsetMinutes": 540,
+   "endTimeTimezoneUtcOffsetMinutes": 540,
+   "visit": {
+    "hierarchyLevel": 0,
+    "probability": 0.71,
+    "topCandidate": {
+     "placeId": "ChIJ37eba17de84Qx",
+     "semanticType": "HOME",
+     "probability": 0.69,
+     "placeLocation": {
+      "latLng": "37.5560200°, 126.9050300°"
+     }
+    }
+   }
+  }
+ ],
+ "rawSignals": [],
+ "userLocationProfile": {
+  "frequentPlaces": [
+   {
+    "placeId": "ChIJ37eba17de84Qx",
+    "placeLocation": "37.5560200°, 126.9050300°",
+    "label": "HOME"
+   },
+   {
+    "placeId": "ChIJ9cb92ce4921Qx",
+    "placeLocation": "37.5006100°, 127.0364100°",
+    "label": "WORK"
+   }
+  ]
+ }
+}

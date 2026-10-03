@@ -8,7 +8,8 @@
 - social: 정서 채점 때 받은 함께 여부 (혼자 / 함께 / 알 수 없음)
 - map   : 같은 bge-m3 벡터를 UMAP 으로 2차원에 펼친 좌표. 인사이트 화면의 "의미 지도"가 쓴다 (설계 문서의 "하나의 의미 공간")
 
-본인이 쓴 기록만 묶는다. 결과는 DB 의 clusters·cluster_info 표에 남는다.
+본인이 쓴 기록만 묶는다. 흔적 기록(유튜브 시청·결제·방문 등)은 건수가 많고 "유튜브 시청:" 같은 틀이 같아서
+주제를 덮어 버리므로 주제 묶음과 의미 지도에서 뺀다. 결과는 DB 의 clusters·cluster_info 표에 남는다.
 """
 from __future__ import annotations
 
@@ -55,7 +56,7 @@ def build_topics(store: Store, llm_model: str = LLM_MODEL, seed: int = 42) -> di
     masker = Masker.from_store(store)
     ids, mat = store.vectors("text")
     pos = {rid: i for i, rid in enumerate(ids)}
-    recs = [r for r in store.records() if r.is_self and r.id in pos and embed_text(r)]
+    recs = [r for r in store.records() if r.is_self and not r.is_trace and r.id in pos and embed_text(r)]
     if len(recs) < 30:
         return {"topics": 0, "note": "본인 기록이 30건보다 적어 묶지 않았습니다"}
     docs = [masker.mask(embed_text(r)) or "" for r in recs]
@@ -141,7 +142,7 @@ def semantic_map(store: Store, seed: int = 42) -> dict[str, Any]:
     """본인 기록의 텍스트 벡터를 UMAP 으로 2차원(0..1)에 펼친다. 기록이나 벡터가 바뀌면 다시 계산하고, 결과는 캐시에 둔다."""
     ids, mat = store.vectors("text")
     pos = {rid: i for i, rid in enumerate(ids)}
-    own = [r.id for r in store.records() if r.is_self and r.id in pos]
+    own = [r.id for r in store.records() if r.is_self and not r.is_trace and r.id in pos]
     if len(own) < 10:
         return {"ids": [], "xy": []}
     emb = mat[[pos[i] for i in own]]

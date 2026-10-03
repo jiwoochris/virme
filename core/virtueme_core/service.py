@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import threading
 import time
@@ -11,7 +12,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from . import clusters, entities, importer, llm, music, narrative, patterns, story
+from . import clusters, columns, entities, importer, llm, music, narrative, patterns, story
 from .config import DATA_DIR, JUDGE_MODEL, LLM_MODEL, SETTINGS, Settings, openrouter_key, profile_db_path
 from .embed import HashEmbedder, TextEmbedder, VisionEmbedder
 from .outbound import Outbound
@@ -35,6 +36,7 @@ class Service:
         self.llm_model = llm_model
         self.judge_model = judge_model
         self._engine: QueryEngine | None = None
+        self._columns: tuple[tuple[int, int], dict[str, Any]] | None = None
         self._lock = threading.Lock()
         # 음악은 로컬 ACE-Step 서버가 만든다. 결과는 프로필별 캐시 폴더에 남아 발표 때 다시 쓴다
         self.music_root = Path(os.environ.get("VIRTUEME_MUSIC_DIR", DATA_DIR / "music")) / profile
@@ -56,6 +58,14 @@ class Service:
     def invalidate(self) -> None:
         with self._lock:
             self._engine = None
+            self._columns = None
+
+    def columns(self) -> dict[str, Any]:
+        """소설 재료 컬럼. 기록 수와 정서 채점 수가 그대로면 다시 계산하지 않는다."""
+        key = (self.store.count(), len(self.store.emotions()))
+        if self._columns is None or self._columns[0] != key:
+            self._columns = (key, columns.compute(self.store))
+        return self._columns[1]
 
     def health(self) -> dict[str, Any]:
         s = self.store.summary()
@@ -92,10 +102,38 @@ class Service:
     def story_prompt(self, keyword: str, genre: int | None = None, version: str = "v2", variation: int = 0,
                      include_others: bool | None = None) -> dict[str, Any]:
         result = self.query(keyword, include_others=include_others)
-        prompt = story.story_prompt(result, genre, version, variation)
+        cols = self.columns()
+        prompt = story.story_prompt(result, genre, version, variation, columns=columns.note_for_story(cols))
         # 이 프롬프트는 브라우저가 OpenRouter 로 보낸다. 넘기기 전에 마지막 검사를 거치고 로그에 남긴다
         prompt["system"], prompt["user"] = self.outbound.send("browser", prompt["system"], prompt["user"], purpose="이야기 집필")
         return {"query": result, "prompt": prompt}
+
+    # ---------- 책: 이야기 → 표지·본문 ----------
+    def write_story(self, keyword: str, genre: int, model: str = "anthropic/claude-sonnet-4.5") -> str:
+        """노벨 화면과 같은 프롬프트로 core 가 직접 이야기를 쓴다 (명령줄에서 책을 만들 때). 첫 줄은 TITLE:."""
+        from .llm import chat_text
+
+        p = self.story_prompt(keyword, genre)["prompt"]
+        raw = chat_text(p["system"], p["user"], model=model, temperature=0.9, max_tokens=3000)
+        # 근거 표시는 책 본문에 남기지 않는다. 검사는 노벨 화면에서 한다
+        return re.sub(r"</?em[^>]*>", "", raw)
+
+    def make_book(self, keyword: str, story_text: str | None = None, genre: int | None = None, title: str | None = None,
+                  author: str = "나", offline: bool = False, log=print) -> dict[str, Any]:
+        """genre 가 없으면 소설 재료 컬럼의 장르 추천 1위를 쓴다."""
+        from . import book
+
+        if genre is None or genre < 0:
+            genre = self.columns()["genre_hint"][0]["index"]
+        if not story_text:
+            story_text = self.write_story(keyword, genre)
+        no = self.query(keyword)["narrative_object"]
+        res = book.make_book(genre, story_text, title=title, author=author, narrative_object=no,
+                             profile=self.profile, offline=offline, log=log)
+        story_file = Path(res["files"]["cover.png"]).with_name("story.txt")
+        story_file.write_text(story_text, "utf-8")
+        res["files"]["story.txt"] = str(story_file)
+        return res
 
     def _start(self) -> date | None:
         d = self.engine.daily
@@ -122,7 +160,7 @@ class Service:
         """대화 모드가 늘 알고 있을 요약."""
         eng = self.engine
         d = eng.daily
-        own = [r for r in eng.records if r.is_self]
+        own = [r for r in eng.records if r.is_self and not r.is_trace]  # 시간대·주요 낱말은 글로 쓴 기록으로
         hp = patterns.hour_profile(own)
         return {
             "date_range": [patterns.ko_date(d.dates[0]), patterns.ko_date(d.dates[-1])] if d else None,
@@ -139,7 +177,7 @@ class Service:
         masker = Masker.from_store(self.store)
         query_text = " ".join([*(history or [])[-2:], message])
         near = eng.retrieve(query_text, k=16)
-        recent = [r for r in reversed(eng.records) if r.is_self and r.text][:6]
+        recent = [r for r in reversed(eng.records) if r.is_self and r.text and not r.is_trace][:6]
         seen, recs = set(), []
         for r in near + recent:
             if r.id not in seen:
@@ -212,11 +250,21 @@ class Service:
         d.mkdir(parents=True, exist_ok=True)
         return d
 
-    def import_paths(self, source: str, saved: list[Path], me: list[str] | None = None) -> dict[str, Any]:
-        """올린 파일을 가져온다. 압축 파일은 풀어서, 인스타그램·사진은 폴더째, 카카오톡·문자는 파일마다."""
+    def import_paths(self, source: str, saved: list[Path], me: list[str] | None = None,
+                     since: str | None = None, until: str | None = None) -> dict[str, Any]:
+        """올린 파일을 가져온다. 압축 파일은 풀어서, 인스타그램·사진은 폴더째, 카카오톡·문자는 파일마다.
+        흔적 기록(구글·카드·건강 등)은 올린 폴더 하나를 통째로 넘기고 그 안에서 파일을 찾는다."""
         if source not in importer.SOURCES:
             raise ValueError(f"모르는 출처: {source}")
         d = saved[0].parent
+        if source in importer.TRACE_SOURCES:
+            for f in saved:
+                if f.suffix.lower() == ".zip":
+                    importer.safe_extract(f, d / f.stem)
+                    f.unlink()
+            out = importer.ingest(self.store, source, [d], me, since=since or None, until=until or None)
+            self.invalidate()
+            return out
         files: list[Path] = []
         for f in saved:
             if f.suffix.lower() == ".zip":

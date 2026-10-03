@@ -1,0 +1,28 @@
+[
+ {
+  "header": "Search",
+  "title": "Searched for running shoes for beginners",
+  "titleUrl": "https://www.google.com/search?q=running+shoes",
+  "time": "2026-06-25T14:00:00.000Z",
+  "products": [
+   "Search"
+  ]
+ },
+ {
+  "header": "Search",
+  "title": "Searched for call 010-1234-5678 about 윤서연",
+  "time": "2026-06-25T14:05:00Z",
+  "products": [
+   "Search"
+  ]
+ },
+ {
+  "header": "Search",
+  "title": "Visited Running - Wikipedia",
+  "titleUrl": "https://en.wikipedia.org/wiki/Running",
+  "time": "2026-06-25T14:01:00Z",
+  "products": [
+   "Search"
+  ]
+ }
+]

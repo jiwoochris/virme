@@ -1,0 +1,54 @@
+[
+ {
+  "header": "YouTube",
+  "title": "Watched How to start running: 5 tips",
+  "titleUrl": "https://www.youtube.com/watch?v=aaa111",
+  "subtitles": [
+   {
+    "name": "Run Coach",
+    "url": "https://www.youtube.com/channel/UC1"
+   }
+  ],
+  "time": "2026-06-24T13:05:10.123Z",
+  "products": [
+   "YouTube"
+  ]
+ },
+ {
+  "header": "YouTube",
+  "title": "Watched Premium running app",
+  "titleUrl": "https://www.youtube.com/watch?v=ad1",
+  "time": "2026-06-24T13:00:00Z",
+  "products": [
+   "YouTube"
+  ],
+  "details": [
+   {
+    "name": "From Google Ads"
+   }
+  ]
+ },
+ {
+  "header": "YouTube",
+  "title": "Watched https://www.youtube.com/watch?v=gone1",
+  "titleUrl": "https://www.youtube.com/watch?v=gone1",
+  "time": "2026-06-23T13:00:00Z",
+  "products": [
+   "YouTube"
+  ]
+ },
+ {
+  "header": "YouTube Music",
+  "title": "Watched Night piano",
+  "titleUrl": "https://music.youtube.com/watch?v=bbb222",
+  "subtitles": [
+   {
+    "name": "Piano Room - Topic"
+   }
+  ],
+  "time": "2026-05-30T16:00:00.5Z",
+  "products": [
+   "YouTube"
+  ]
+ }
+]

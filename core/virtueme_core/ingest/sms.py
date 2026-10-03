@@ -10,6 +10,8 @@
 카카오톡과 같은 규칙을 쓴다: 같은 사람이 3분 안에 연달아 보낸 문자는 한 발화로 합치고, 대화 상대 이름·번호는 가명(지인A …)으로,
 "엄마"처럼 관계로 저장된 연락처는 그대로 둔다. 본문 속 전화번호·계좌 등은 Masker 가 가린다. 인증번호·광고 같은
 자동 발송 문자는 기록으로 만들지 않는다 (번호가 짧은 발신 전용 번호이거나 [Web발신]·(광고) 표시가 있는 것).
+단 카드 승인·취소 문자는 버리기 전에 결제 기록(source "card", kind "payment")으로 바꾼다 (ingest/card.py). 카드 번호와
+이름은 남기지 않고 가맹점·금액만 쓴다.
 """
 from __future__ import annotations
 
@@ -25,6 +27,7 @@ from zoneinfo import ZoneInfo
 from ..config import DEFAULT_TZ
 from ..privacy import Masker, Pseudonymizer
 from ..records import Record, from_epoch, iso, record_id
+from .card import parse_card_sms
 
 TURN_GAP = timedelta(minutes=3)
 APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
@@ -170,11 +173,16 @@ def parse_file(path: Path) -> list[Sms]:
 
 
 def to_records(messages: list[Sms], pseudo: Pseudonymizer, tz: str = DEFAULT_TZ) -> tuple[list[Record], dict]:
-    """문자를 발화 단위 레코드로. 대화 상대는 가명으로, 자동 발송 문자는 뺀다."""
+    """문자를 발화 단위 레코드로. 대화 상대는 가명으로, 자동 발송 문자는 뺀다. 카드 승인 문자는 결제 기록으로."""
     skipped: Counter[str] = Counter()
     kept: list[Sms] = []
+    payments: dict[str, Record] = {}
+    card_masker = Masker(pseudo.table)
     for m in messages:
-        if m.sender != "나" and _is_service_number(m.sender):
+        pay = parse_card_sms(m.text, m.dt.astimezone(ZoneInfo(tz)), card_masker) if m.sender != "나" else None
+        if pay is not None:
+            payments[pay.id] = pay
+        elif m.sender != "나" and _is_service_number(m.sender):
             skipped["service_number"] += 1
         elif AUTOMATED.search(m.text):
             skipped["automated"] += 1
@@ -217,5 +225,6 @@ def to_records(messages: list[Sms], pseudo: Pseudonymizer, tz: str = DEFAULT_TZ)
                 flush()
             turn.append(m)
         flush()
-    info = {"messages": len(messages), "turns": len(records), "threads": len(by_thread), "skipped": dict(skipped)}
-    return records, info
+    info = {"messages": len(messages), "turns": len(records), "threads": len(by_thread), "skipped": dict(skipped),
+            "payments": len(payments)}
+    return records + sorted(payments.values(), key=lambda r: r.ts), info

@@ -116,9 +116,12 @@ def _numbers_in(text: str) -> set[tuple[float, str]]:
 
 
 SOURCE_WORDS = {"kakao": "카카오톡 카톡 메시지 대화 톡 채팅", "sms": "문자 문자메시지 메시지 대화", "instagram": "인스타그램 인스타 게시물 피드", "photo": "사진",
-                "synthetic": "활동"}
+                "synthetic": "활동", "youtube": "유튜브 영상 동영상", "search": "검색", "maps": "지도 위치",
+                "card": "카드 결제 계산", "health": "건강 걸음 수면", "spotify": "스포티파이 음악 노래", "netflix": "넷플릭스 드라마 영화"}
 GROUP_ROOM_WORDS = "단톡방 단톡 톡방 단체방"
-KIND_WORDS = {"post": "게시물", "story": "스토리", "reel": "릴스", "comment": "댓글", "photo": "사진", "message": "메시지"}
+KIND_WORDS = {"post": "게시물", "story": "스토리", "reel": "릴스", "comment": "댓글", "photo": "사진", "message": "메시지",
+              "watch": "시청 봤다", "listen": "들었다", "search": "검색", "visit": "방문 들렀다", "payment": "결제 샀다 구매",
+              "health": "건강"}
 
 
 def facts_of(r: Record, start: date | None = None, people: dict[str, str | None] | None = None) -> Facts:
