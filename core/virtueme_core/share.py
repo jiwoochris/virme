@@ -731,7 +731,8 @@ class Shares:
         if not s:
             return None
         base = base_url.rstrip("/") + f"/s/{share_id}"
-        return page_html(s, f"/s/{share_id}/", base, f"/s/{share_id}/react", self.counts(share_id))
+        # 페이지 주소는 /s/<id> 이고, 앱의 프록시(/api/core/s/<id>)로 열어도 맞도록 그림·반응 주소는 상대 경로로 둔다
+        return page_html(s, f"{share_id}/", base, f"{share_id}/react", self.counts(share_id))
 
     def export(self, share_id: str, out_dir: Path, base_url: str | None = None, react_url: str | None = None) -> list[Path]:
         """정적 사본: index.html + 이미지. 아무 정적 호스팅(깃허브 페이지 등)에 폴더째 올리면 열린다.

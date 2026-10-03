@@ -93,6 +93,9 @@ def test_share_roundtrip_page_reactions_delete(client, svc, tmp_path):
     assert len(sid) == 12 and s["url"] == f"/s/{sid}" and set(s["files"]) == {"feed.png", "story.png"}
     assert not any(f.startswith("/Users") or "/tmp" in f for f in s["files"].values())
     assert all(not f["overflow"] for f in s["render"]["fit"])
+    # 앱 프록시(/api/core/s/<id>)로 열어도 그림·반응 주소가 맞도록 페이지 안 주소는 상대 경로다
+    page = client.get(f"/s/{sid}").text
+    assert f"src='{sid}/feed.png'" in page and f"data-api='{sid}/react'" in page and '"/s/' not in page.split("og:")[0]
     png = client.get(s["files"]["feed.png"])
     assert png.status_code == 200 and png.content[:4] == b"\x89PNG"
     from PIL import Image

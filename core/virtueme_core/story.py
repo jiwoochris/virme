@@ -185,6 +185,7 @@ def avatar_prompt(profile: dict[str, Any], records: list[dict[str, Any]], people
 def greeting(profile: dict[str, Any]) -> str:
     c = profile.get("time_center")
     b = patterns.band(c)
-    hour = f"{round(c)}시" if c is not None else ""
+    # 띠 이름(늦은 오후·저녁)과 함께 쓰므로 12시간제로 부른다. 17.6시는 "늦은 오후 5시"이지 "18시"가 아니다
+    hour = f"{int(c) % 12 or 12}시" if c is not None else ""
     return (f"왔네. ...뭐, 기다린 건 아니고. 나야, 기록 속의 너. {b} {hour}쯤이면 휴대폰 붙들고 있던 그 사람. "
             "그래서, 오늘은 무슨 일 있었는데?")
