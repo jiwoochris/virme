@@ -2,13 +2,14 @@
 
 팀은 Runway 웹에서 Gen-4.5 클립 5개와 Seed Audio BGM 을 손으로 만들어 내려받았다. 같은 Gen-4.5 가 OpenRouter 의
 영상 API(`/api/v1/videos`, 제출 → 폴링 → 내려받기)에 있어서 그대로 자동화했다. BGM 은 OpenRouter 의 Lyria 3 클립
-(30초, chat completions 의 audio 출력)으로 만든다.
+(30초, chat completions 의 audio 출력, stream 필수)으로 만든다.
 
 보내는 글은 전부 `outbound.Outbound.send` 로 실명 검사를 받고 프로필의 전송 로그에 남는다.
 """
 from __future__ import annotations
 
 import base64
+import json
 import os
 import time
 from pathlib import Path
@@ -122,56 +123,54 @@ def generate_clip_any(prompt: str, out: Path, outbound: Outbound, purpose: str, 
     raise RuntimeError("클립을 만들지 못했습니다 — " + " / ".join(errors))
 
 
-def _audio_bytes(msg: dict[str, Any]) -> tuple[bytes, str] | None:
-    """chat completions 응답에서 오디오를 찾는다. 공급자마다 담는 자리가 달라 알려진 모양을 차례로 본다."""
-    cands: list[Any] = []
-    if isinstance(msg.get("audio"), dict):
-        cands.append(msg["audio"])
-    for key in ("audios", "images"):
-        if isinstance(msg.get(key), list):
-            cands.extend(msg[key])
-    if isinstance(msg.get("content"), list):
-        cands.extend(msg["content"])
-    for c in cands:
-        if not isinstance(c, dict):
-            continue
-        data = c.get("data") or (c.get("input_audio") or {}).get("data") or (c.get("audio") or {}).get("data")
-        url = (c.get("audio_url") or c.get("image_url") or {}).get("url") if isinstance(c.get("audio_url") or c.get("image_url"), dict) else None
-        fmt = str(c.get("format") or (c.get("input_audio") or {}).get("format") or "")
-        if url and url.startswith("data:"):
-            head, data = url.split(",", 1)
-            fmt = fmt or head.split("/")[-1].split(";")[0]
-        if data:
+def _stream_audio(body: dict[str, Any], key: str, timeout: float) -> tuple[bytes, str, dict[str, Any]]:
+    """오디오 출력은 stream: true 로만 받는다 (2026-10-24 실측: 아니면 HTTP 400 "Audio output requires stream: true").
+    SSE 조각의 delta.audio.data(base64)를 이어 붙이고, 마지막 조각의 usage 를 돌려준다."""
+    chunks: list[str] = []
+    fmt = str((body.get("audio") or {}).get("format") or "mp3")
+    usage: dict[str, Any] = {}
+    with httpx.stream("POST", OPENROUTER_URL, json=body, headers=_headers(key), timeout=timeout) as res:
+        if res.status_code >= 400:
+            raise RuntimeError(f"HTTP {res.status_code}: {res.read()[:300]!r}")
+        for line in res.iter_lines():
+            if not line.startswith("data:"):
+                continue  # ": OPENROUTER PROCESSING" 같은 유지 신호
+            payload = line[5:].strip()
+            if payload == "[DONE]":
+                break
             try:
-                return base64.b64decode(data), (fmt or "mp3").replace("mpeg", "mp3")
+                d = json.loads(payload)
             except ValueError:
                 continue
-    return None
+            if d.get("error"):
+                raise RuntimeError(str(d["error"])[:300])
+            usage = d.get("usage") or usage
+            for ch in d.get("choices") or []:
+                audio = (ch.get("delta") or {}).get("audio") or {}
+                if audio.get("data"):
+                    chunks.append(audio["data"])
+                if audio.get("format"):
+                    fmt = str(audio["format"])
+    if not chunks:
+        raise RuntimeError("응답에 오디오가 없습니다")
+    return base64.b64decode("".join(chunks)), fmt, usage
 
 
 def generate_music(prompt: str, out_stem: Path, outbound: Outbound, log: Log = lambda m: None) -> dict[str, Any]:
-    """분위기 문장 → 30초 BGM. 반환: {path, model, cost_usd}. 파일 확장자는 받은 형식을 따른다."""
+    """분위기 문장 → 30초 BGM(mp3). 반환: {path, model, cost_usd}."""
     key = _key()
     _, prompt = outbound.send("core", "", prompt, model=MUSIC_MODEL, purpose="막장극장 BGM 생성")
-    body = {"model": MUSIC_MODEL, "modalities": ["text", "audio"], "usage": {"include": True},
+    body = {"model": MUSIC_MODEL, "stream": True, "modalities": ["text", "audio"], "audio": {"format": "mp3"},
             "messages": [{"role": "user", "content": prompt}]}
     last: Exception | None = None
     for attempt in range(3):
         try:
-            res = httpx.post(OPENROUTER_URL, json=body, headers=_headers(key), timeout=240)
-            if res.status_code >= 400:
-                raise RuntimeError(f"HTTP {res.status_code}: {res.text[:300]}")
-            data = res.json()
-            got = _audio_bytes(data["choices"][0]["message"])
-            if not got:
-                raise RuntimeError(f"응답에 오디오가 없습니다: {str(data)[:300]}")
-            raw, fmt = got
-            path = out_stem.with_suffix("." + fmt)
+            raw, fmt, usage = _stream_audio(body, key, timeout=240)
+            path = out_stem.with_suffix("." + fmt.replace("mpeg", "mp3"))
             path.write_bytes(raw)
-            usage = data.get("usage") or {}
             log(f"BGM 완료 · {MUSIC_MODEL.split('/')[-1]}")
             return {"path": str(path), "model": MUSIC_MODEL, "cost_usd": float(usage.get("cost") or 0.04)}
-        except (httpx.HTTPError, RuntimeError, KeyError, IndexError, ValueError) as err:
+        except (httpx.HTTPError, RuntimeError, ValueError) as err:
             last = err
             time.sleep(3 * (attempt + 1))
     raise RuntimeError(f"BGM 을 만들지 못했습니다: {last}")

@@ -54,13 +54,29 @@ def test_clip_prompt_repeats_appearance_verbatim():
     assert all("Photorealistic live-action" in p for p in ps)
 
 
-def test_audio_bytes_reads_known_shapes():
-    raw = b"ID3fake"
+def test_stream_audio_joins_sse_chunks(monkeypatch):
+    raw = b"ID3" + bytes(range(200))
     b64 = base64.b64encode(raw).decode()
-    assert gen._audio_bytes({"audio": {"data": b64, "format": "mp3"}}) == (raw, "mp3")
-    assert gen._audio_bytes({"content": [{"type": "output_audio", "data": b64, "format": "wav"}]}) == (raw, "wav")
-    assert gen._audio_bytes({"audios": [{"audio_url": {"url": "data:audio/mpeg;base64," + b64}}]}) == (raw, "mp3")
-    assert gen._audio_bytes({"content": "글만 왔다"}) is None
+    lines = [": OPENROUTER PROCESSING", 'data: {"choices":[{"delta":{"content":"<instrumental>"}}]}',
+             'data: {"choices":[{"delta":{"audio":{"data":"%s"}}}]}' % b64[:100],
+             'data: {"choices":[{"delta":{"audio":{"data":"%s"}}}]}' % b64[100:],
+             'data: {"choices":[{"delta":{}}],"usage":{"cost":0.04}}', "data: [DONE]"]
+
+    class Res:
+        status_code = 200
+
+        def iter_lines(self):
+            return iter(lines)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(gen.httpx, "stream", lambda *a, **k: Res())
+    got, fmt, usage = gen._stream_audio({"audio": {"format": "mp3"}}, "k", 10)
+    assert got == raw and fmt == "mp3" and usage["cost"] == 0.04
 
 
 def test_assemble_matches_team_spec(tmp_path):
