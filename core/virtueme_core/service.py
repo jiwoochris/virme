@@ -516,6 +516,47 @@ class Service:
         return {"job": job_id, "state": st["state"], "log": st["lines"][-6:], "issue_id": st.get("issue_id"),
                 "error": st.get("error"), "elapsed": st.get("elapsed", round(time.time() - st["started"], 1))}
 
+    # 정기 발행: 정한 요일·시각이 지나면 그 주(또는 그날) 호를 저절로 만든다. core 서버가 켜져 있는 동안만 돈다
+    def webzine_schedule(self, update: dict[str, Any] | None = None) -> dict[str, Any]:
+        cur = self.store.cache_get("webzine_schedule") or {"enabled": False, "every": "week", "weekday": 0, "hour": 9}
+        if update:
+            cur.update({k: v for k, v in update.items() if k in ("enabled", "every", "weekday", "hour")})
+            self.store.cache_put("webzine_schedule", cur)
+        return {**cur, "last": self.store.cache_get("webzine_schedule_last"), "next": self._webzine_due(cur, peek=True)}
+
+    def _webzine_due(self, sch: dict[str, Any], peek: bool = False) -> str | None:
+        """다음 발행 시각(ISO). peek 가 아니면 지금 발행할 차례인지 보고, 차례면 마지막 발행 시각을 남긴다."""
+        from datetime import datetime, timedelta
+
+        if not sch.get("enabled"):
+            return None
+        now = datetime.now()
+        slot = now.replace(hour=int(sch.get("hour", 9)), minute=0, second=0, microsecond=0)
+        if sch.get("every") == "week":
+            slot -= timedelta(days=(now.weekday() - int(sch.get("weekday", 0))) % 7)
+        elif slot > now:
+            slot -= timedelta(days=1)
+        if slot > now:
+            slot -= timedelta(days=7 if sch.get("every") == "week" else 1)
+        last = self.store.cache_get("webzine_schedule_last")
+        due = not last or last < slot.isoformat(timespec="minutes")
+        nxt = slot + timedelta(days=7 if sch.get("every") == "week" else 1)
+        if peek:
+            return (slot if due else nxt).isoformat(timespec="minutes")
+        if due:
+            self.store.cache_put("webzine_schedule_last", slot.isoformat(timespec="minutes"))
+            return slot.isoformat(timespec="minutes")
+        return None
+
+    def webzine_tick(self) -> dict[str, Any] | None:
+        """서버가 몇 분마다 부른다. 발행할 차례이고 기록이 있으면 새 호를 만든다."""
+        sch = self.store.cache_get("webzine_schedule") or {}
+        if not sch.get("enabled") or not self.store.count():
+            return None
+        if self._webzine_due(sch):
+            return self.webzine_start(days=7 if sch.get("every") == "week" else 1)
+        return None
+
     def webzine_list(self) -> list[dict[str, Any]]:
         from .webzine import list_issues
 
@@ -531,8 +572,8 @@ class Service:
     # ---------- 공유 카드 (share.py) ----------
     def share_create(self, kind: str, summary_id: str | None = None, book_id: str | None = None,
                      lines: list[str] | None = None, title: str | None = None,
-                     style_book_id: str | None = None) -> dict[str, Any]:
-        """발견 문장·책 표지·이야기 한 대목으로 피드·스토리 카드와 공유 페이지를 만든다. 사용자가 누를 때만 부른다."""
+                     style_book_id: str | None = None, webzine_id: str | None = None) -> dict[str, Any]:
+        """발견 문장·책 표지·이야기 한 대목·웹진 한 호로 피드·스토리 카드와 공유 페이지를 만든다. 사용자가 누를 때만 부른다."""
         from .share import ShareError
 
         def book_dir(bid: str | None) -> Path | None:
@@ -546,7 +587,15 @@ class Service:
         s = self.store.summary()
         return self.shares.create(kind, columns=self.columns() if kind == "discovery" else None, summary_id=summary_id,
                                   book_dir=book_dir(book_id) if kind == "book" else None, lines=lines, title=title,
-                                  style_book_dir=book_dir(style_book_id), date_range=(s["first"], s["last"]))
+                                  style_book_dir=book_dir(style_book_id), date_range=(s["first"], s["last"]),
+                                  webzine_dir=self._webzine_dir(webzine_id) if kind == "webzine" else None)
+
+    def _webzine_dir(self, issue_id: str | None) -> Path | None:
+        from .webzine.issue import issues_dir
+
+        if not issue_id or not re.fullmatch(r"\d{8}-\d{5}", issue_id):
+            return None
+        return issues_dir(self.profile) / issue_id
 
     def book_file(self, book_id: str, name: str) -> Path | None:
         if name not in self.BOOK_FILES:

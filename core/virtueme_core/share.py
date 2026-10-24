@@ -37,7 +37,7 @@ from .privacy import _PII_PATTERNS, SELF_ALIAS, Masker
 
 HERE = Path(__file__).resolve().parent
 SHARE_ID = re.compile(r"^[0-9a-f]{12}$")
-KINDS = {"discovery": "발견", "book": "책 표지", "passage": "이야기 한 대목"}
+KINDS = {"discovery": "발견", "book": "책 표지", "passage": "이야기 한 대목", "webzine": "웹진 한 호"}
 FILES = ("feed.png", "story.png", "cover.png")
 SIZES = {"feed": (1080, 1350), "story": (1080, 1920)}
 
@@ -264,8 +264,8 @@ body { background: #888; padding: 40px; display: flex; flex-direction: column; g
 .passage { font-family: 'BkSerif', serif; font-weight: 400; line-height: 1.78; letter-spacing: -0.015em;
            border-left: 8px solid var(--accent); padding-left: 52px }
 .passage p + p { margin-top: 0.62em }
-.k-passage .ttl { font-size: 46px; line-height: 1.3; margin: 0 0 56px }
-.story.k-passage .ttl { font-size: 54px }
+.k-passage .ttl, .k-webzine .ttl { font-size: 46px; line-height: 1.3; margin: 0 0 56px }
+.story.k-passage .ttl, .story.k-webzine .ttl { font-size: 54px }
 .hand.k-passage .ttl { font-size: 62px }
 .hand.story.k-passage .ttl { font-size: 72px }
 .head { display: flex; align-items: center; gap: 36px; margin: 0 0 56px }
@@ -331,7 +331,7 @@ def card_html(spec: dict[str, Any], style: dict[str, Any], cover_uri: str | None
             mx, mn = (88, 44) if big else (76, 40)
             body = (f"<div class='inner'><div class='bar'></div>"
                     f"<p class='main fit' data-max='{mx}' data-min='{mn}'>{_words(spec['text'], numbers=True)}</p></div>")
-        elif kind == "passage":
+        elif kind in ("passage", "webzine"):
             mx, mn = (64, 34) if big else (56, 30)
             title = f"<div class='ttl'>{_words(spec['title'])}</div>" if spec.get("title") else ""
             if title or thumb:
@@ -445,6 +445,13 @@ def page_html(share: dict[str, Any], img_base: str, og_base: str | None, react_a
     if share["kind"] == "passage":
         body.append(f"<h1>{_esc(share.get('title') or '기록에서 지은 이야기')}</h1>")
         body.append("<blockquote>" + "".join(f"<p>{_esc(x)}</p>" for x in share.get("lines", [])) + "</blockquote>")
+    elif share["kind"] == "webzine":
+        body.append(f"<h1>{_esc(share.get('title', ''))}</h1>")
+        if share.get("period"):
+            body.append(f"<p class='alt'>{_esc(share['period'])}의 기록으로 만든 한 호</p>")
+        body.append("<blockquote>" + "".join(f"<p>{_esc(x)}</p>" for x in share.get("lines", [])) + "</blockquote>")
+        if "cover.png" in files:
+            body.append(f"<img class='cover' style='width:100%' src='{img_base}cover.png' alt='웹진 표지'>")
     elif share["kind"] == "book":
         body.append(f"<h1>{_esc(share.get('title', ''))}</h1>")
         if "cover.png" in files:
@@ -454,7 +461,7 @@ def page_html(share: dict[str, Any], img_base: str, og_base: str | None, react_a
     else:
         body.append(f"<h1>{_esc(share.get('text', ''))}</h1>")
     note = ("이 카드는 <b>버추얼미</b>가 한 사람의 휴대폰 기록(대화·사진·걸음 수 같은 흔적)을 그 사람의 컴퓨터 안에서 세어 만든 것입니다. "
-            + ("문장의 숫자는 기록에서 센 값입니다." if share["kind"] == "discovery"
+            + ("문장의 숫자는 기록에서 센 값입니다." if share["kind"] in ("discovery", "webzine")
                else "이야기는 기록 속 날짜·장소·활동에서 출발했지만 사건과 대사는 지어낸 것입니다."))
     body.append(f"<div class='note'><b>기록에서 지은 이야기</b><br>{note} 이름과 장소는 관계와 '집'·'직장' 같은 말로 바꿨습니다.</div>")
     chips = "".join(f"<button type='button' data-r='{k}' aria-pressed='false'>{_esc(v)}<b>{counts.get(k) or ''}</b></button>"
@@ -503,14 +510,36 @@ class Shares:
     # ----- 만들기
     def create(self, kind: str, *, columns: dict[str, Any] | None = None, summary_id: str | None = None,
                book_dir: Path | None = None, lines: list[str] | None = None, title: str | None = None,
-               style_book_dir: Path | None = None, date_range: tuple[str, str] | None = None) -> dict[str, Any]:
+               style_book_dir: Path | None = None, date_range: tuple[str, str] | None = None,
+               webzine_dir: Path | None = None) -> dict[str, Any]:
         if kind not in KINDS:
             raise ShareError("모르는 카드 종류입니다")
         changes: list[str] = []
         spec: dict[str, Any] = {"kind": kind}
         share: dict[str, Any] = {"kind": kind, "kind_ko": KINDS[kind]}
         cover_src: Path | None = None
-        if kind == "discovery":
+        webzine_cover: Path | None = None
+        if kind == "webzine":
+            if not webzine_dir or not (webzine_dir / "issue.json").exists():
+                raise ShareError("그런 웹진이 없습니다")
+            iss = json.loads((webzine_dir / "issue.json").read_text("utf-8"))
+            cv = iss.get("cover") or {}
+            title_, ch = public_text(cv.get("headline") or iss.get("title") or "이번 주 웹진", self.store, self.outbound)
+            changes += ch
+            clean = []
+            for x in (cv.get("lines") or [])[:3]:
+                t, ch = public_text(str(x), self.store, self.outbound)
+                clean.append(t)
+                changes += ch
+            style = style_from_book(style_book_dir)
+            spec.update(lines=clean, title=title_, label="이번 주 웹진", tag=f"VirtualME · {iss.get('title', '')}",
+                        source=iss.get("period_ko", ""))
+            share.update(title=title_, lines=clean, text=" ".join(clean), webzine_id=webzine_dir.name,
+                         period=iss.get("period_ko", ""), description=" ".join(clean)[:120] or "기록으로 만든 이번 주 웹진",
+                         alt=f"웹진 표지: {title_}")
+            if (webzine_dir / "pg-cover.png").exists():
+                webzine_cover = webzine_dir / "pg-cover.png"
+        elif kind == "discovery":
             items = {s["id"]: s for s in (columns or {}).get("summaries", [])}
             item = items.get(summary_id or "")
             if not item:
@@ -577,6 +606,12 @@ class Shares:
             if cover_src is not None:
                 report["cover"] = self._render_cover(cover_src, share["title"], d)
                 cover_uri = (d / "cover.png").as_uri()
+            if webzine_cover is not None:
+                # 웹진 표지 쪽 그대로. 표지에 찍힌 글(제목·표지 문구)은 위에서 공개용으로 검사했다
+                from PIL import Image
+
+                with Image.open(webzine_cover) as im:
+                    im.convert("RGB").save(d / "cover.png", optimize=True)
             html_path = d / "card.html"
             html_path.write_text(card_html(spec, style, cover_uri), "utf-8")
             rep = run_render(html_path, d, [("#feed", "feed.png"), ("#story", "story.png")])

@@ -496,6 +496,13 @@ button:disabled { cursor: default; }
 .wz-why li .w { color: #4a453f; }
 .wz-why li .sig { grid-column: 2 / -1; font-size: 11px; color: #8b8378; }
 .wz-note { font-size: 11.5px; color: #6f675c; line-height: 1.55; margin: 0 0 8px; }
+.wz-sched select { font: inherit; font-size: 12px; border: 1px solid #cfc7bb; background: #fff; padding: 4px; }
+.wz-toggle { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.wz-sched .wz-note { margin-top: 6px; }
+.wz-bar .wz-share { font: inherit; color: #1c1a17; background: #f7f4ef; border: 0; padding: 5px 12px; cursor: pointer; }
+.wz-shared { padding: 8px 16px; font-size: 12.5px; background: #ebe6dd; color: #1c1a17; word-break: break-all; }
+.wz-shared.error { color: #b8362c; }
+.wz-shared a { color: #b8362c; }
 .webzine-view { display: flex; flex-direction: column; min-width: 0; }
 .wz-bar { display: flex; gap: 14px; align-items: center; padding: 10px 16px; background: #1c1a17; color: #f7f4ef; font-size: 13px; }
 .wz-bar strong { font-family: 'Times New Roman', serif; font-style: italic; font-weight: 400; font-size: 16px; }

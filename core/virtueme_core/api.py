@@ -65,6 +65,13 @@ class BookBody(BaseModel):
     offline: bool = False
 
 
+class ScheduleBody(BaseModel):
+    enabled: bool
+    every: str = Field(default="week", pattern="^(week|day)$")
+    weekday: int = Field(default=0, ge=0, le=6)
+    hour: int = Field(default=9, ge=0, le=23)
+
+
 class WebzineBody(BaseModel):
     end: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     days: int = Field(default=7, ge=1, le=31)
@@ -92,7 +99,8 @@ class DeleteBody(BaseModel):
 
 
 class ShareBody(BaseModel):
-    kind: str = Field(pattern="^(discovery|book|passage)$")
+    kind: str = Field(pattern="^(discovery|book|passage|webzine)$")
+    webzine_id: str | None = Field(default=None, pattern=r"^\d{8}-\d{5}$")
     summary_id: str | None = Field(default=None, pattern=r"^s[0-9a-f]{11}$")
     book_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{10}$")
     lines: list[str] | None = Field(default=None, max_length=3)
@@ -336,6 +344,26 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
 
         return {"issues": service.webzine_list(), "rules": load_rules()}
 
+    @app.get("/webzine/schedule")
+    def webzine_schedule_get() -> dict[str, Any]:
+        return service.webzine_schedule()
+
+    @app.post("/webzine/schedule")
+    def webzine_schedule_set(body: ScheduleBody) -> dict[str, Any]:
+        return service.webzine_schedule(body.model_dump())
+
+    def _webzine_loop() -> None:
+        import time as _t
+
+        while True:
+            try:
+                service.webzine_tick()
+            except Exception:  # noqa: BLE001 — 다음 차례에 다시 본다
+                pass
+            _t.sleep(300)
+
+    threading.Thread(target=_webzine_loop, daemon=True).start()
+
     @app.get("/webzine/job/{job_id}")
     def webzine_status(job_id: str = PathParam(pattern=r"^[0-9a-f]{12}$")) -> dict[str, Any]:
         got = service.webzine_status(job_id)
@@ -362,11 +390,13 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
             raise HTTPException(422, "책 번호(book_id)가 필요합니다")
         if body.kind == "passage" and not body.lines:
             raise HTTPException(422, "고른 글(lines)이 필요합니다")
+        if body.kind == "webzine" and not body.webzine_id:
+            raise HTTPException(422, "웹진 번호(webzine_id)가 필요합니다")
         if body.lines and any(len(x) > 160 for x in body.lines):
             raise HTTPException(422, "한 줄은 160자까지입니다")
         try:
             return service.share_create(body.kind, body.summary_id, body.book_id, body.lines, body.title,
-                                        body.style_book_id)
+                                        body.style_book_id, body.webzine_id)
         except ShareError as err:
             raise HTTPException(400, str(err)) from err
         except RuntimeError as err:
