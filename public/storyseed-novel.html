@@ -188,6 +188,11 @@ button:focus-visible{outline:2px solid rgba(255,61,154,.5);outline-offset:2px}
 .bookmeta a{color:var(--ink);text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600}
 .bookmeta a:hover{border-color:#fff}
 @media(max-width:560px){.bookshots{grid-template-columns:1fr}.bookrow input{width:100%}}
+/* ── 막장극장 영상 (core: POST /makjang) ── */
+.makvideo{display:block;width:100%;margin-top:16px;border-radius:8px;background:#000;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.makscenes{margin:12px 0 0;padding-left:20px;font-size:12.5px;color:var(--sub);line-height:1.8}
+#makGo{font-weight:700;border:none;background:var(--grad);color:#fff;box-shadow:0 4px 14px rgba(255,61,154,.25)}
+#makGo:hover:not(:disabled){color:#fff}
 </style>
 </head>
 <body style="background:#070A10;color:#EEF0F5">
@@ -240,6 +245,7 @@ button:focus-visible{outline:2px solid rgba(255,61,154,.5);outline-offset:2px}
   </div>
 </div>
 <div class="bookbox" id="bookBox" hidden></div>
+<div class="bookbox" id="makBox" hidden></div>
 <div class="bookbox" id="shareBox" hidden></div>
 
 </div>
@@ -1037,7 +1043,7 @@ const BOOK_GENRES=['미스터리','로맨스','SF','판타지','스릴러','코�
 const LS_BOOK='vx_book_cache',LS_AUTHOR='vx_book_author';
 let BOOKSEQ=0,BOOKKW='',CURBOOK=null;
 function bookCache(){try{return JSON.parse(localStorage.getItem(LS_BOOK)||'{}')}catch(e){return {}}}
-function bookHide(){BOOKSEQ++;CURBOOK=null;$('bookBox').hidden=true;$('bookBox').innerHTML='';$('shareBox').hidden=true;$('shareBox').innerHTML='';selShareHide()}
+function bookHide(){makHide();BOOKSEQ++;CURBOOK=null;$('bookBox').hidden=true;$('bookBox').innerHTML='';$('shareBox').hidden=true;$('shareBox').innerHTML='';selShareHide()}
 function storyOnPaper(){
   const t=$('paper').querySelector('.stitle');
   const paras=[...$('paper').querySelectorAll('.body > p')].map(p=>p.textContent.replace(/\s+/g,' ').trim()).filter(Boolean);
@@ -1062,6 +1068,7 @@ function bookOffer(kw,gi){
   // 같은 키워드·같은 제목으로 만든 책이 있으면 바로 보여 준다 (발표 대비)
   const st=storyOnPaper(),c=bookCache()[kw];
   if(c&&c.title===st.title&&c.book_id)bookPoll(c.book_id,BOOKSEQ,true);
+  makOffer(kw);
 }
 async function bookMake(kw){
   const st=storyOnPaper();
@@ -1107,6 +1114,69 @@ function bookShow(st,my){
       <span>${esc(b.genre||'')}${b.pages?` · ${b.pages}쪽`:''}${how?` · ${how}`:''}${art.cost_usd?` · $${art.cost_usd.toFixed(3)}`:''}${b.seconds?` · ${Math.round(b.seconds)}초`:''}</span></div>`;
   const sh=$('bookShare');
   if(sh)sh.onclick=e=>{e.preventDefault();VX.shareInto($('shareBox'),{kind:'book',book_id:st.book_id},'책 표지')};
+}
+
+/* ============ 막장극장: 검사를 마친 이야기 → 5장면 막장 대본 → Runway 클립 5개·BGM → 약 18.5초 쇼츠 (2~5분) ============
+   팀 막장극장 파이프라인(v3 규격)을 core 가 끝까지 돌린다. 영상 모델에는 대본의 장면 묘사(영어)만 가고,
+   등장인물은 추첨한 나라의 배우로 바뀐다. */
+const LS_MAK='vx_makjang_cache';
+let MAKSEQ=0;
+function makCache(){try{return JSON.parse(localStorage.getItem(LS_MAK)||'{}')}catch(e){return {}}}
+function makHide(){MAKSEQ++;const b=$('makBox');if(b){b.hidden=true;b.innerHTML=''}}
+function makOffer(kw){
+  if(SOURCE!=='core'||!CORE)return;
+  const my=++MAKSEQ;
+  const box=$('makBox');box.hidden=false;
+  box.innerHTML=`<h3>막장극장 영상으로 만들기</h3>
+    <div class="bookrow"><button id="makGo">막장극장 만들기</button></div>
+    <p class="booknote">이 이야기를 5장면 막장드라마 대본으로 바꾸고, 장면마다 실사 클립을 생성해 타이틀·한/영 자막·BGM 을 얹은 약 18초 영상을 만듭니다. 등장인물은 12개 나라 가운데 한 곳의 배우로 바뀝니다. 2~5분 걸리고 한 편에 약 $2.5 가 듭니다.</p>
+    <div id="makOut"></div>`;
+  $('makGo').onclick=()=>makMake(kw,0);
+  const st=storyOnPaper(),c=makCache()[kw];
+  if(c&&c.title===st.title&&c.id)makPoll(c.id,my,true,kw,c.take||0);
+}
+async function makMake(kw,take){
+  const st=storyOnPaper();
+  if(!st.paras.length)return;
+  const my=++MAKSEQ;
+  $('makGo').disabled=true;
+  $('makOut').innerHTML=`<div class="bookprog"><i></i>대본 쓰는 중</div>`;
+  try{
+    const res=await VX.call('/makjang',{keyword:kw,story:st.paras.join('\n\n'),title:st.title||null,take},30000);
+    const all=makCache();all[kw]={id:res.id,title:st.title,take};try{localStorage.setItem(LS_MAK,JSON.stringify(all))}catch(e){}
+    makPoll(res.id,my,false,kw,take);
+  }catch(e){makFail(my,e.message)}
+}
+async function makPoll(id,my,quiet,kw,take){
+  for(;;){
+    if(my!==MAKSEQ)return;
+    let st;
+    try{st=await VX.call('/makjang/'+id,undefined,15000)}catch(e){if(quiet)return;makFail(my,e.message);return}
+    if(my!==MAKSEQ)return;
+    if(st.state==='done'){makShow(st,my,kw,take);return}
+    if(st.state==='error'){if(quiet)return;makFail(my,st.error||'알 수 없는 오류');return}
+    $('makGo').disabled=true;
+    const last=(st.lines||[]).slice(-1)[0]||'';
+    const sc=st.story&&st.story.scenes?`<ol class="makscenes">${st.story.scenes.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`:'';
+    $('makOut').innerHTML=`<div class="bookprog"><i></i>${st.story?`「${esc(st.story.title||'')}」 클립 ${st.clips_done||0}/5`:'대본 쓰는 중'} · ${Math.round(st.elapsed||0)}초<small>${esc(last)}</small></div>${sc}`;
+    await new Promise(r=>setTimeout(r,3000));
+  }
+}
+function makFail(my,msg){
+  if(my!==MAKSEQ)return;
+  $('makGo').disabled=false;$('makGo').textContent='다시 시도';
+  $('makOut').innerHTML=`<div class="err" style="margin-top:12px">영상을 만들지 못했습니다. ${esc(String(msg))}</div>`;
+}
+function makShow(st,my,kw,take){
+  if(my!==MAKSEQ)return;
+  const base=VX.base(),f=st.files||{},s=st.story||{},r=st.report||{};
+  const url=f['makjang.mp4']?base+f['makjang.mp4']:'';
+  $('makGo').disabled=false;$('makGo').textContent='다른 에피소드 만들기';
+  $('makGo').onclick=()=>makMake(kw,(take||0)+1);
+  const name=(s.title||'막장극장').replace(/[\\/:*?"<>|]/g,'');
+  $('makOut').innerHTML=(url?`<video class="makvideo" controls playsinline preload="metadata" src="${url}?t=${Date.now()}"></video>`:'')+
+    `<div class="bookmeta">${url?`<a href="${url}" download="${esc(name)}_막장극장.mp4">영상 내려받기</a>`:''}
+      <span>「${esc(s.title||'')}」${s.nationality?` · ${esc(s.nationality)}`:''}${r.seconds?` · ${r.seconds}초`:''}${r.cost_usd?` · $${Number(r.cost_usd).toFixed(2)}${r.cost_estimated?' (추정)':''}`:''}${r.elapsed?` · ${Math.round(r.elapsed)}초 걸림`:''}</span></div>`;
 }
 
 /* ============ 공유 카드: 이야기 속 문장을 끌어 고르면 그 대목으로 카드를 만든다 (core: POST /share) ============

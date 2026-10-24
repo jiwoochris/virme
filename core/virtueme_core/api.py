@@ -65,6 +65,13 @@ class BookBody(BaseModel):
     offline: bool = False
 
 
+class MakjangBody(BaseModel):
+    keyword: str = Field(min_length=1, max_length=40)
+    story: str = Field(min_length=20, max_length=20000)
+    title: str | None = Field(default=None, max_length=80)
+    take: int = Field(default=0, ge=0, le=99)
+
+
 class ScheduleBody(BaseModel):
     enabled: bool
     every: str = Field(default="week", pattern="^(week|day)$")
@@ -328,6 +335,27 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
     def book_file(book_id: str = PathParam(pattern=r"^[0-9a-f]{10}$"),
                   name: str = PathParam(pattern=r"^(cover|opener|spread)\.png$|^book\.pdf$")):
         got = service.book_file(book_id, name)
+        if not got:
+            raise HTTPException(404, "아직 만들지 않았습니다")
+        return FileResponse(got)
+
+    # ---------- 막장극장: 노벨 화면의 이야기 → 약 18.5초 쇼츠 (클립 생성 때문에 2~5분, 백그라운드) ----------
+    @app.post("/makjang")
+    def makjang_start(body: MakjangBody) -> dict[str, Any]:
+        _ready()
+        return service.makjang_start(body.keyword.strip(), body.story, (body.title or "").strip() or None, body.take)
+
+    @app.get("/makjang/{vid}")
+    def makjang_status(vid: str = PathParam(pattern=r"^[0-9a-f]{10}$")) -> dict[str, Any]:
+        got = service.makjang_status(vid)
+        if not got:
+            raise HTTPException(404, "그런 영상이 없습니다")
+        return got
+
+    @app.get("/makjang/{vid}/{name}")
+    def makjang_file(vid: str = PathParam(pattern=r"^[0-9a-f]{10}$"),
+                     name: str = PathParam(pattern=r"^(makjang\.mp4|story\.json)$")):
+        got = service.makjang_file(vid, name)
         if not got:
             raise HTTPException(404, "아직 만들지 않았습니다")
         return FileResponse(got)

@@ -256,6 +256,25 @@ def cmd_book(args) -> int:
     return 0
 
 
+def cmd_makjang(args) -> int:
+    """노벨 이야기 → 막장극장 쇼츠 (virtueme_core/makjang/__init__.py)."""
+    import json
+
+    from .makjang import make_makjang
+
+    svc = _svc(args)
+    novel = Path(args.story).read_text("utf-8")
+    title = args.title
+    if not title and novel.startswith("TITLE:"):
+        title, _, novel = novel.partition("\n")
+        title = title[6:].strip()
+    fixed = json.loads(Path(args.story_json).read_text("utf-8")) if args.story_json else None
+    res = make_makjang(svc.profile, args.keyword, novel, title=title, take=args.take, story=fixed,
+                       log=lambda m: print("·", m, flush=True))
+    print(json.dumps(res, ensure_ascii=False, indent=1))
+    return 0
+
+
 def cmd_webzine(args) -> int:
     """웹진 한 호 (virtueme_core/webzine/README.md)."""
     from datetime import date
@@ -398,6 +417,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--author", default="나")
     p.add_argument("--offline", action="store_true", help="그림 모델 없이 팔레트로 그린 무늬를 쓴다")
     p.set_defaults(func=cmd_book)
+
+    p = sub.add_parser("makjang", help="노벨 이야기로 약 18.5초 막장극장 쇼츠 만들기: 대본 → Runway 클립 5개·BGM → 조립 (virtueme_core/makjang/__init__.py)")
+    p.add_argument("keyword")
+    p.add_argument("--story", required=True, help="노벨 이야기 파일 (첫 줄 TITLE: 가능)")
+    p.add_argument("--title")
+    p.add_argument("--take", type=int, default=0, help="같은 이야기로 다른 에피소드를 만들 때 1, 2, …")
+    p.add_argument("--story-json", help="대본을 쓰지 않고 이 대본(팀 story JSON 형식)을 쓴다")
+    p.set_defaults(func=cmd_makjang)
 
     p = sub.add_parser("webzine", help="일주일 기록으로 웹진 한 호 만들기: 규칙표로 템플릿 매칭 → HTML·PDF (virtueme_core/webzine/README.md)")
     p.add_argument("--end", help="마지막 날 (YYYY-MM-DD). 없으면 기록의 마지막 날")

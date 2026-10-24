@@ -602,3 +602,79 @@ class Service:
             return None
         path = self._book_dir(book_id) / name
         return path if path.exists() else None
+
+    # ---------- 막장극장 (makjang/): 노벨 이야기 → 약 18.5초 막장 쇼츠 (클립 생성 때문에 2~5분, 백그라운드) ----------
+    def makjang_start(self, keyword: str, story_text: str, title: str | None = None, take: int = 0) -> dict[str, Any]:
+        """같은 소설·같은 take 로 돌고 있거나 끝난 작업이 있으면 그 작업을 그대로 돌려준다.
+        실패한 작업을 다시 시작하면 이미 만든 클립은 건너뛴다."""
+        from .makjang import make_makjang, video_id
+
+        jobs: dict[str, dict[str, Any]] = self.__dict__.setdefault("_makjang_jobs", {})
+        vid = video_id(self.profile, keyword, story_text, title, take)
+        with self._lock:
+            st = jobs.get(vid)
+            if st and st["state"] == "running":
+                return self.makjang_status(vid) or {}
+            if self.makjang_file(vid, "makjang.mp4"):
+                return self.makjang_status(vid) or {}
+            lines: list[str] = []
+            st = {"state": "running", "lines": lines, "started": time.time(), "keyword": keyword}
+            jobs[vid] = st
+
+        def log(msg: str) -> None:
+            lines.append(str(msg))
+            del lines[:-20]
+
+        def run() -> None:
+            try:
+                make_makjang(self.profile, keyword, story_text, title=title, take=take, log=log)
+                st["state"] = "done"
+            except Exception as err:  # 화면에 이유를 보여 준다
+                st.update(state="error", error=str(err)[:400])
+            finally:
+                st["elapsed"] = round(time.time() - st["started"], 1)
+
+        threading.Thread(target=run, daemon=True).start()
+        return self.makjang_status(vid) or {}
+
+    def makjang_status(self, vid: str) -> dict[str, Any] | None:
+        import json
+
+        from .makjang import makjang_dir
+
+        d = makjang_dir(self.profile) / vid
+        st = dict(self.__dict__.get("_makjang_jobs", {}).get(vid) or {})
+        if not st:
+            if not (d / "makjang.mp4").exists():
+                return None
+            st = {"state": "done"}
+        out: dict[str, Any] = {"id": vid, "state": st["state"], "lines": list(st.get("lines", []))[-6:]}
+        if st.get("state") == "running":
+            out["elapsed"] = round(time.time() - st["started"], 1)
+            out["clips_done"] = sum(1 for i in range(1, 6) if (d / f"scene{i}.mp4").exists())
+        elif "elapsed" in st:
+            out["elapsed"] = st["elapsed"]
+        if st.get("error"):
+            out["error"] = st["error"]
+        try:
+            s = json.loads((d / "story.json").read_text("utf-8"))
+            out["story"] = {k: s.get(k) for k in ("title", "title_en", "nationality")} | {
+                "scenes": [sc.get("kr") for sc in s.get("scenes", [])]}
+        except (OSError, ValueError):
+            pass
+        if st["state"] == "done":
+            try:
+                r = json.loads((d / "report.json").read_text("utf-8"))
+                out["report"] = {k: r.get(k) for k in ("seconds", "cost_usd", "cost_estimated", "models", "elapsed")}
+            except (OSError, ValueError):
+                pass
+            out["files"] = {"makjang.mp4": f"/makjang/{vid}/makjang.mp4"}
+        return out
+
+    def makjang_file(self, vid: str, name: str) -> Path | None:
+        from .makjang import makjang_dir
+
+        if name not in ("makjang.mp4", "story.json"):
+            return None
+        path = makjang_dir(self.profile) / vid / name
+        return path if path.exists() else None
