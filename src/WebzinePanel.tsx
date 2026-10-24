@@ -38,8 +38,15 @@ export const WebzinePanel = memo(function WebzinePanel({ active }: { active: boo
 
   const saveSchedule = async (next: Partial<Schedule>) => {
     const body = { enabled: sched?.enabled ?? false, every: sched?.every ?? 'week', weekday: sched?.weekday ?? 0, hour: sched?.hour ?? 9, ...next }
-    const r = await coreFetch('/webzine/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    if (r.ok) setSched((await r.json()) as Schedule)
+    const before = sched
+    setSched((cur) => (cur ? { ...cur, ...next } : cur))   // 누르자마자 바꿔 보여 주고, 저장이 실패하면 되돌린다
+    try {
+      const r = await coreFetch('/webzine/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      if (!r.ok) throw new Error(String(r.status))
+      setSched((await r.json()) as Schedule)
+    } catch {
+      setSched(before)
+    }
   }
 
   const makeShare = async (issueId: string) => {
