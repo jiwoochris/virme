@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { captureStage, downloadPng } from './captureStage'
 import { experienceModes, type ExperienceModeId } from './experienceModes'
 import { InsightPanel } from './InsightPanel'
+import { WebzinePanel } from './WebzinePanel'
 import { MusicPanel, type AudioDrive } from './MusicPanel'
 import { isNarrativeMessage, narrativeLabel, signalsToFeatures, type NarrativeObject } from './narrative'
 import { normalizePersonalData, type NormalizedPersonalData, type PersonalFeatures } from './personalData'
@@ -14,7 +15,7 @@ const PORTRAIT_STORAGE_KEY = 'virtueme:portrait-visible'
 
 export default function App() {
   const state = visualStates[0]
-  const [experienceMode, setExperienceMode] = useState<ExperienceModeId>('novel')
+  const [experienceMode, setExperienceMode] = useState<ExperienceModeId>('webzine')
   const [modeId, setModeId] = useState<VisualModeId>('place')
   const mode = visualModes.find((candidate) => candidate.id === modeId) ?? visualModes[0]
   const [modelStatus, setModelStatus] = useState<ModelLayerStatus>({ status: 'loading', active: false })
@@ -119,6 +120,10 @@ export default function App() {
         </div>
       </header>
 
+      <section className="webzine-panel" data-testid="webzine-mode" hidden={experienceMode !== 'webzine'}>
+        <WebzinePanel active={experienceMode === 'webzine'} />
+      </section>
+
       <section className="storyseed-panel" data-testid="novel-mode" hidden={experienceMode !== 'novel'}>
         <iframe
           src={`${import.meta.env.BASE_URL}storyseed-novel.html`}
@@ -127,13 +132,6 @@ export default function App() {
         />
       </section>
 
-      <section className="storyseed-panel" data-testid="talk-mode" hidden={experienceMode !== 'talk'}>
-        <iframe
-          src={`${import.meta.env.BASE_URL}storyseed-talk.html`}
-          title="Storyseed 채팅 모드"
-          sandbox="allow-scripts allow-same-origin allow-forms"
-        />
-      </section>
 
       <section className="insight-panel" data-testid="insight-mode" hidden={experienceMode !== 'insight'}>
         <InsightPanel narrative={narrative} active={experienceMode === 'insight'} />

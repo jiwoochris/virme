@@ -10,19 +10,19 @@ async function openVisual(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: /VISUAL 비주얼/ }).click()
 }
 
-test('selects novel, talk, insight, and visual inside one page', async ({ page }) => {
+test('selects webzine, novel, visual, and the analysis inside one page', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.experience-nav button')).toHaveCount(4)
-  await expect(page.locator('main')).toHaveAttribute('data-experience-mode', 'novel')
+  await expect(page.locator('main')).toHaveAttribute('data-experience-mode', 'webzine')
+  // core 서버가 켜져 있으면 목록과 만들기 버튼, 꺼져 있으면 켜는 방법이 보인다
+  await expect(page.getByTestId('webzine-mode').locator('.webzine, .webzine-empty').first()).toBeVisible()
+  await expect(page.getByRole('button', { name: /TALK/ })).toHaveCount(0)
+
+  await page.getByRole('button', { name: /NOVEL 노벨/ }).click()
   await expect(page.getByTestId('novel-mode')).toBeVisible()
   await expect(page.frameLocator('iframe[title="Storyseed 노벨 모드"]').getByRole('heading', { name: 'Storyseed' })).toBeVisible()
 
-  await page.getByRole('button', { name: /TALK 채팅/ }).click()
-  await expect(page.locator('main')).toHaveAttribute('data-experience-mode', 'talk')
-  await expect(page.getByTestId('talk-mode')).toBeVisible()
-  await expect(page.frameLocator('iframe[title="Storyseed 채팅 모드"]').getByRole('heading', { name: 'Storyseed Talk' })).toBeVisible()
-
-  await page.getByRole('button', { name: /INSIGHT 데이터/ }).click()
+  await page.getByRole('button', { name: /DATA 분석/ }).click()
   await expect(page.locator('main')).toHaveAttribute('data-experience-mode', 'insight')
   // core 서버가 켜져 있으면 차트, 꺼져 있으면 안내가 보인다
   await expect(page.getByTestId('insight-mode').locator('.insight, .insight-empty').first()).toBeVisible()
@@ -52,17 +52,15 @@ test('shares one narrative object across the header and the visual mode', async 
 
 test('retains Storyseed interactions and state while switching modes', async ({ page }) => {
   await page.goto('/')
+  await page.getByRole('button', { name: /NOVEL 노벨/ }).click()
   const novel = page.frameLocator('iframe[title="Storyseed 노벨 모드"]')
   await novel.getByPlaceholder(/아무 단어나 적어보세요/).fill('혼자')
   await novel.getByRole('button', { name: 'Start' }).click()
   await expect(novel.locator('.stitle')).toHaveText('키가 필요합니다')
   await expect(novel.getByText('OpenRouter API 키가 있어야 동작합니다')).toBeVisible()
 
-  await page.getByRole('button', { name: /TALK 채팅/ }).click()
-  const talk = page.frameLocator('iframe[title="Storyseed 채팅 모드"]')
-  await talk.getByRole('button', { name: '요즘 나 어땠어?' }).click()
-  await expect(talk.locator('.m.user .bub')).toHaveText('요즘 나 어땠어?')
-  await expect(talk.locator('.m.ai .bub').last()).toContainText('연결이 잘 안 되네')
+  await page.getByRole('button', { name: /WEBZINE 웹진/ }).click()
+  await expect(page.getByTestId('webzine-mode')).toBeVisible()
 
   await page.getByRole('button', { name: /NOVEL 노벨/ }).click()
   await expect(novel.getByPlaceholder(/아무 단어나 적어보세요/)).toHaveValue('혼자')
@@ -76,9 +74,9 @@ test('keeps all four experience choices available on mobile', async ({ page }) =
   await expect(choices).toHaveCount(4)
   await expect(choices.first()).toBeInViewport()
   await expect(choices.last()).toBeInViewport()
+  await expect(page.getByTestId('webzine-mode')).toBeVisible()
+  await page.getByRole('button', { name: /NOVEL 노벨/ }).click()
   await expect(page.getByTestId('novel-mode')).toBeVisible()
-  await page.getByRole('button', { name: /TALK 채팅/ }).click()
-  await expect(page.frameLocator('iframe[title="Storyseed 채팅 모드"]').getByPlaceholder(/기록 속의 나에게/)).toBeVisible()
 })
 
 test('offers an off-by-default portrait toggle', async ({ page }) => {

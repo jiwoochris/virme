@@ -3,14 +3,13 @@ import { describe, expect, it } from 'vitest'
 import { experienceModes } from '../src/experienceModes'
 
 describe('integrated experience modes', () => {
-  it('offers novel, talk, insight, and visual in one ordered selector', () => {
-    expect(experienceModes.map((mode) => mode.id)).toEqual(['novel', 'talk', 'insight', 'visual'])
-    expect(experienceModes.map((mode) => mode.koLabel)).toEqual(['노벨', '채팅', '데이터', '비주얼'])
+  it('puts outputs first (webzine, novel, visual) and the analysis last, without talk', () => {
+    expect(experienceModes.map((mode) => mode.id)).toEqual(['webzine', 'novel', 'visual', 'insight'])
+    expect(experienceModes.map((mode) => mode.koLabel)).toEqual(['웹진', '노벨', '비주얼', '분석'])
   })
 
   it('routes both Storyseed modes to local public documents', () => {
     expect(experienceModes.find((mode) => mode.id === 'novel')?.document).toBe('storyseed-novel.html')
-    expect(experienceModes.find((mode) => mode.id === 'talk')?.document).toBe('storyseed-talk.html')
   })
 
   it.each(['storyseed-novel.html', 'storyseed-talk.html'])('%s contains no embedded API key', (name) => {

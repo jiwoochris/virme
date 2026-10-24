@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "about": "웹진 템플릿 자동 매칭 규칙표. 기록 한 건이 신호 하나에 맞으면 그 신호의 weight 만큼 템플릿 점수가 오른다. 한 호의 기록 기간(기본 7일) 동안 템플릿마다 점수를 더하고, min_score 를 넘은 템플릿이 꼭지가 된다. 팀은 이 파일만 고치면 매칭이 바뀐다 (코드는 고치지 않아도 된다).",
+  "templates": {
+    "article":         {"label": "A — Articles · Self-Portrait", "slot": "이번 주의 나", "min_score": 0, "always": true},
+    "documentary":     {"label": "B — Documentary · Feature Story", "slot": "다녀온 곳", "min_score": 6},
+    "fashion":         {"label": "C — Fashion · Trend Report", "slot": "이번 주의 룩", "min_score": 4},
+    "digital_preview": {"label": "D — Digital Preview · Pop Culture", "slot": "보고 들은 것", "min_score": 8},
+    "novel":           {"label": "F — Literature · Novel", "slot": "이야기", "min_score": 0, "story": true},
+    "poem":            {"label": "G — Poem", "slot": "시", "min_score": 3},
+    "data_portrait":   {"label": "E — Data Portrait · Information Graphic", "slot": "데이터 포트레이트", "min_score": 0, "always": true}
+  },
+  "order": ["article", "documentary", "fashion", "digital_preview", "novel", "poem", "data_portrait"],
+  "signals": [
+    {"id": "monologue",      "template": "poem",            "weight": 1.0, "label": "혼잣말형 글 (받는 사람 없는 게시물·스토리, 밤에 혼자 쓴 글)",
+     "match": {"kinds": ["post", "story"], "self": true, "has_text": true}},
+    {"id": "night_self",     "template": "poem",            "weight": 0.5, "label": "밤 11시~새벽 5시에 내가 쓴 글",
+     "match": {"self": true, "has_text": true, "written": true, "hours": [23, 0, 1, 2, 3, 4]}},
+    {"id": "story_material", "template": "novel",           "weight": 0.2, "label": "대화·게시물 (이야기 재료)",
+     "match": {"kinds": ["message", "post", "story"], "has_text": true}},
+    {"id": "selfie",         "template": "fashion",         "weight": 2.0, "label": "셀카·인물 사진·옷·신발 사진",
+     "match": {"photo_tags": ["셀카", "인물 사진", "옷", "신발", "쇼핑"]}},
+    {"id": "fashion_pay",    "template": "fashion",         "weight": 2.0, "label": "옷·화장품·잡화 결제",
+     "match": {"kinds": ["payment"], "categories": ["의류", "패션", "화장품", "뷰티", "잡화", "신발", "백화점", "아울렛", "미용", "네일", "헤어"]}},
+    {"id": "fashion_words",  "template": "fashion",         "weight": 1.0, "label": "옷·화장품 이야기 (검색어·글)",
+     "match": {"terms": ["옷", "코디", "원피스", "자켓", "재킷", "셔츠", "니트", "운동화", "러닝화", "신발", "가방", "화장품", "립", "쿠션", "향수", "선크림", "스킨케어", "헤어", "네일", "룩"]}},
+    {"id": "visits",         "template": "documentary",     "weight": 0.5, "label": "지도 방문 기록",
+     "match": {"kinds": ["visit"]}},
+    {"id": "place_photos",   "template": "documentary",     "weight": 1.5, "label": "풍경·장소 사진",
+     "match": {"photo_tags": ["바다", "해변", "산", "하늘", "노을", "야경", "도시 거리", "강", "호수", "공원", "여행", "공항", "캠핑", "축제", "전시", "공연"]}},
+    {"id": "trip_pay",       "template": "documentary",     "weight": 3.0, "label": "여행 결제 (숙박·항공·렌터카·관광)",
+     "match": {"kinds": ["payment"], "categories": ["숙박", "항공사", "렌터카", "관광", "기념품", "여행"]}},
+    {"id": "watch",          "template": "digital_preview", "weight": 0.3, "label": "유튜브·넷플릭스 시청",
+     "match": {"kinds": ["watch"]}},
+    {"id": "listen",         "template": "digital_preview", "weight": 0.2, "label": "음악 재생",
+     "match": {"kinds": ["listen"]}},
+    {"id": "search",         "template": "digital_preview", "weight": 0.3, "label": "검색",
+     "match": {"kinds": ["search"]}},
+    {"id": "conversation",   "template": "article",         "weight": 0.1, "label": "대화 (인물 꼭지 재료)",
+     "match": {"kinds": ["message"]}},
+    {"id": "health",         "template": "data_portrait",   "weight": 0.5, "label": "건강 하루 요약 (걸음·수면·운동)",
+     "match": {"kinds": ["health"]}}
+  ],
+  "story_pick": {
+    "about": "이야기 꼭지는 소설(novel)과 시(poem) 가운데 고른다. 시 점수가 poem_over 이상이고 소설 점수보다 높으면 시, 아니면 소설. both_over 이상이면 둘 다 싣는다.",
+    "poem_over": 3,
+    "both_over": 8
+  }
+}

@@ -474,6 +474,60 @@ class Service:
             out["files"] = {n: f"/book/{bid}/{n}" for n in self.BOOK_FILES if (d / n).exists()}
         return out
 
+    # ---------- 웹진 (webzine/): 한 사람의 일주일 기록 → 규칙표로 고른 템플릿 꼭지들 → HTML·PDF ----------
+    def webzine_start(self, end: str | None = None, days: int = 7, offline: bool = False) -> dict[str, Any]:
+        """글을 쓰고 검사하고 그리는 데 1~3분 걸려서 백그라운드에서 돌리고 작업 번호를 준다."""
+        import hashlib
+        from datetime import date as _date
+
+        jobs: dict[str, dict[str, Any]] = self.__dict__.setdefault("_wz_jobs", {})
+        job_id = hashlib.sha1(repr((self.profile, end, days, offline, self.data_id())).encode()).hexdigest()[:12]
+        with self._lock:
+            st = jobs.get(job_id)
+            if st and st["state"] == "running":
+                return self.webzine_status(job_id) or {}
+            lines: list[str] = []
+            st = {"state": "running", "lines": lines, "started": time.time()}
+            jobs[job_id] = st
+
+        def log(msg: str) -> None:
+            lines.append(str(msg))
+            del lines[:-20]
+
+        def run() -> None:
+            from .webzine import make_issue
+
+            try:
+                res = make_issue(self, end=_date.fromisoformat(end) if end else None, days=days, offline=offline, log=log)
+                st["issue_id"] = res["id"]
+                st["state"] = "done"
+            except Exception as err:  # 화면에 이유를 보여 준다
+                st.update(state="error", error=str(err)[:400])
+            finally:
+                st["elapsed"] = round(time.time() - st["started"], 1)
+
+        threading.Thread(target=run, daemon=True).start()
+        return self.webzine_status(job_id) or {}
+
+    def webzine_status(self, job_id: str) -> dict[str, Any] | None:
+        st = self.__dict__.get("_wz_jobs", {}).get(job_id)
+        if not st:
+            return None
+        return {"job": job_id, "state": st["state"], "log": st["lines"][-6:], "issue_id": st.get("issue_id"),
+                "error": st.get("error"), "elapsed": st.get("elapsed", round(time.time() - st["started"], 1))}
+
+    def webzine_list(self) -> list[dict[str, Any]]:
+        from .webzine import list_issues
+
+        return list_issues(self.profile)
+
+    def webzine_file(self, issue_id: str, name: str) -> Path | None:
+        from .webzine.issue import issues_dir
+
+        root = (issues_dir(self.profile) / issue_id).resolve()
+        got = (root / name).resolve()
+        return got if got.is_file() and root in got.parents else None
+
     # ---------- 공유 카드 (share.py) ----------
     def share_create(self, kind: str, summary_id: str | None = None, book_id: str | None = None,
                      lines: list[str] | None = None, title: str | None = None,

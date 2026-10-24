@@ -65,6 +65,12 @@ class BookBody(BaseModel):
     offline: bool = False
 
 
+class WebzineBody(BaseModel):
+    end: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    days: int = Field(default=7, ge=1, le=31)
+    offline: bool = False
+
+
 class PlaceNameBody(BaseModel):
     key: str = Field(min_length=3, max_length=80, pattern=r"^(id|pt):")
     name: str | None = Field(default=None, max_length=40)
@@ -316,6 +322,33 @@ def create_app(service: Service, warm: bool = False, token: str | None = None) -
         got = service.book_file(book_id, name)
         if not got:
             raise HTTPException(404, "아직 만들지 않았습니다")
+        return FileResponse(got)
+
+    # ---------- 웹진 (webzine/): 한 호 만들기·목록·파일 ----------
+    @app.post("/webzine")
+    def webzine_start(body: WebzineBody) -> dict[str, Any]:
+        _ready()
+        return service.webzine_start(body.end, body.days, body.offline)
+
+    @app.get("/webzine")
+    def webzine_list() -> dict[str, Any]:
+        from .webzine.match import load_rules
+
+        return {"issues": service.webzine_list(), "rules": load_rules()}
+
+    @app.get("/webzine/job/{job_id}")
+    def webzine_status(job_id: str = PathParam(pattern=r"^[0-9a-f]{12}$")) -> dict[str, Any]:
+        got = service.webzine_status(job_id)
+        if not got:
+            raise HTTPException(404, "그런 작업이 없습니다")
+        return got
+
+    @app.get("/webzine/{issue_id}/{name:path}")
+    def webzine_file(issue_id: str = PathParam(pattern=r"^\d{8}-\d{5}$"),
+                     name: str = PathParam(pattern=r"^(issue\.(html|pdf|json)|pg-[a-z_]+\.png|img/[a-z]\d{2}\.jpg)$")):
+        got = service.webzine_file(issue_id, name)
+        if not got:
+            raise HTTPException(404, "그런 파일이 없습니다")
         return FileResponse(got)
 
     # ---------- 공유 카드·페이지 (share.py): 만들기·목록·지우기는 주인, /s/ 아래는 링크를 받은 사람 ----------

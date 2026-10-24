@@ -256,6 +256,20 @@ def cmd_book(args) -> int:
     return 0
 
 
+def cmd_webzine(args) -> int:
+    """웹진 한 호 (virtueme_core/webzine/README.md)."""
+    from datetime import date
+
+    from .webzine import make_issue
+
+    svc = _svc(args)
+    res = make_issue(svc, end=date.fromisoformat(args.end) if args.end else None, days=args.days, offline=args.offline)
+    for s in res["sections"]:
+        print(f"{'O' if s['included'] else '-'} {s['template']:<16}{s['score']:>7g}  {s['why']}")
+    print(f"issue.html\t{res['id']}")
+    return 0
+
+
 def cmd_share(args) -> int:
     """공유 카드 목록·지우기·정적 사본 내보내기 (virtueme_core/share.py, COLUMNS.md 「공유 카드」)."""
     svc = _svc(args)
@@ -384,6 +398,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--author", default="나")
     p.add_argument("--offline", action="store_true", help="그림 모델 없이 팔레트로 그린 무늬를 쓴다")
     p.set_defaults(func=cmd_book)
+
+    p = sub.add_parser("webzine", help="일주일 기록으로 웹진 한 호 만들기: 규칙표로 템플릿 매칭 → HTML·PDF (virtueme_core/webzine/README.md)")
+    p.add_argument("--end", help="마지막 날 (YYYY-MM-DD). 없으면 기록의 마지막 날")
+    p.add_argument("--days", type=int, default=7, help="한 호의 기간 (기본 7일, 하루치는 1)")
+    p.add_argument("--offline", action="store_true", help="LLM 없이 사실 문장과 기록 문장만으로 만든다")
+    p.set_defaults(func=cmd_webzine)
 
     p = sub.add_parser("share", help="공유 카드 목록·지우기·정적 사본 내보내기 (index.html + 카드 PNG)")
     p.add_argument("action", choices=["list", "delete", "export"])
